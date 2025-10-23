@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastershifu Pro Trader - Live Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 100%);
+            color: white; min-height: 100vh; padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { 
+            text-align: center; padding: 30px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px; margin-bottom: 20px;
+        }
+        .stats { 
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; margin-bottom: 20px;
+        }
+        .stat-card { 
+            background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px; 
+            text-align: center; backdrop-filter: blur(10px);
+        }
+        .stat-card h3 { font-size: 2em; color: #4fc3f7; }
+        .signals { display: grid; gap: 15px; }
+        .signal-card {
+            background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;
+            border-left: 4px solid; backdrop-filter: blur(10px);
+        }
+        .signal-card.buy { border-left-color: #4CAF50; }
+        .signal-card.sell { border-left-color: #f44336; }
+        .signal-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .symbol { font-size: 1.2em; font-weight: bold; }
+        .signal-type { 
+            padding: 5px 10px; border-radius: 15px; font-weight: bold; color: white;
+        }
+        .signal-type.buy { background: #4CAF50; }
+        .signal-type.sell { background: #f44336; }
+        .confidence { 
+            padding: 3px 8px; border-radius: 10px; font-size: 0.8em; margin-left: 10px;
+        }
+        .confidence.high { background: #4CAF50; }
+        .confidence.medium { background: #FF9800; }
+        .confidence.low { background: #f44336; }
+        .price-info { 
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; 
+            margin: 15px 0;
+        }
+        .price-item { 
+            text-align: center; padding: 8px; background: rgba(255,255,255,0.1);
+            border-radius: 6px;
+        }
+        .controls { text-align: center; margin: 20px 0; }
+        .btn {
+            padding: 10px 20px; background: #667eea; color: white; border: none;
+            border-radius: 20px; cursor: pointer; margin: 0 10px;
+        }
+        .loading, .error { text-align: center; padding: 40px; font-size: 1.2em; }
+        .error { color: #f44336; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Mastershifu Pro Trader</h1>
+            <p>Live Price Action Signals - All Deriv Instruments</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card"><h3 id="total-signals">0</h3><p>Total Signals</p></div>
+            <div class="stat-card"><h3 id="strong-signals">0</h3><p>Strong Signals</p></div>
+            <div class="stat-card"><h3 id="buy-signals">0</h3><p>Buy Signals</p></div>
+            <div class="stat-card"><h3 id="sell-signals">0</h3><p>Sell Signals</p></div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="loadSignals()">🔄 Refresh Signals</button>
+            <button class="btn" onclick="autoRefresh()">⚡ Auto Refresh</button>
+        </div>
+        
+        <div id="signals-container">
+            <div class="loading">🔄 Loading trading signals...</div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; opacity: 0.7;">
+            Last updated: <span id="lastUpdate">Loading...</span>
+        </div>
+    </div>
+
+    <script>
+        let autoRefreshInterval = null;
+        
+        async function loadSignals() {
+            const container = document.getElementById('signals-container');
+            try {
+                const response = await fetch('https://raw.githubusercontent.com/CityBlooms/Mastershifu_trader/main/signals/latest.json');
+                const data = await response.json();
+                displaySignals(data);
+            } catch (error) {
+                container.innerHTML = '<div class="error">❌ Unable to load signals</div>';
+            }
+        }
+        
+        function displaySignals(data) {
+            const signals = data.signals || [];
+            const container = document.getElementById('signals-container');
+            
+            // Update stats
+            document.getElementById('total-signals').textContent = signals.length;
+            document.getElementById('strong-signals').textContent = signals.filter(s => s.confidence >= 80).length;
+            document.getElementById('buy-signals').textContent = signals.filter(s => s.signal === 'BUY').length;
+            document.getElementById('sell-signals').textContent = signals.filter(s => s.signal === 'SELL').length;
+            
+            if (signals.length === 0) {
+                container.innerHTML = '<div class="error">📊 No signals detected</div>';
+                return;
+            }
+            
+            let html = '<div class="signals">';
+            signals.forEach(signal => {
+                const confidenceClass = signal.confidence >= 80 ? 'high' : 
+                                      signal.confidence >= 70 ? 'medium' : 'low';
+                
+                html += `
+                    <div class="signal-card ${signal.signal.toLowerCase()}">
+                        <div class="signal-header">
+                            <div class="symbol">${signal.symbol} (${signal.category})</div>
+                            <div>
+                                <span class="signal-type ${signal.signal.toLowerCase()}">${signal.signal}</span>
+                                <span class="confidence ${confidenceClass}">${signal.confidence}%</span>
+                            </div>
+                        </div>
+                        <div style="opacity: 0.8; margin: 10px 0;">${signal.summary}</div>
+                        <div class="price-info">
+                            <div class="price-item"><div>Price</div><div>$${signal.current_price}</div></div>
+                            <div class="price-item"><div>Stop Loss</div><div>$${signal.stop_loss}</div></div>
+                            <div class="price-item"><div>Take Profit</div><div>$${signal.take_profit}</div></div>
+                            <div class="price-item"><div>Risk/Reward</div><div>1:${signal.risk_reward}</div></div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+            
+            document.getElementById('lastUpdate').textContent = new Date(data.meta.timestamp).toLocaleString();
+        }
+        
+        function autoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+                event.target.textContent = '⚡ Auto Refresh';
+            } else {
+                autoRefreshInterval = setInterval(loadSignals, 30000);
+                event.target.textContent = '🛑 Stop Refresh';
+            }
+        }
+        
+        // Load on start
+        loadSignals();
+    </script>
+</body>
+</html>
