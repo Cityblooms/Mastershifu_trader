@@ -1,216 +1,35 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MasterShifu Pro V2 | Elite Trading System</title>
-    
-    <!-- Tailwind CSS -->
+    <title>Trading Signals</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Plotly -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        mastershifu: {
-                            green: '#00FF88',
-                            blue: '#0088FF', 
-                            purple: '#8800FF',
-                            orange: '#FF8800',
-                            red: '#FF4444',
-                            gold: '#FFD700'
-                        },
-                        dark: {
-                            100: '#0A0F1C',
-                            200: '#1A1F2E',
-                            300: '#2A2F3E',
-                            400: '#3A3F4E'
-                        }
-                    },
-                    animation: {
-                        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-                        'signal-pulse': 'signal-pulse 1.5s ease-in-out infinite',
-                        'float': 'float 3s ease-in-out infinite',
-                    }
-                }
-            }
-        }
-    </script>
-    
     <style>
-        :root {
-            --ms-green: #00FF88;
-            --ms-blue: #0088FF;
-            --ms-purple: #8800FF;
-            --ms-orange: #FF8800;
-            --ms-red: #FF4444;
-            --ms-gold: #FFD700;
-        }
-        
         body {
-            background: linear-gradient(135deg, #0A0F1C 0%, #1A1F2E 50%, #2D1B69 100%);
-            background-attachment: fixed;
+            background: #0f172a;
             font-family: 'Inter', sans-serif;
         }
         
-        /* Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
+        .signal-buy {
+            border-left: 4px solid #10b981;
+            background: rgba(16, 185, 129, 0.05);
         }
         
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.1);
-            border-radius: 3px;
+        .signal-sell {
+            border-left: 4px solid #ef4444;
+            background: rgba(239, 68, 68, 0.05);
         }
         
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: linear-gradient(45deg, var(--ms-green), var(--ms-blue));
-            border-radius: 3px;
+        .signal-strong-buy {
+            border-left: 4px solid #10b981;
+            background: rgba(16, 185, 129, 0.1);
         }
         
-        /* Animations */
-        @keyframes pulse-glow {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        @keyframes signal-pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        @keyframes fade-in {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animate-fade-in {
-            animation: fade-in 0.6s ease-out;
-        }
-        
-        /* Component Styles */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 24px;
-            transition: all 0.3s ease;
-        }
-        
-        .glass-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-        
-        .hero-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 16px;
-            padding: 24px;
-            transition: all 0.3s ease;
-        }
-        
-        .hero-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
-        }
-        
-        .nav-item {
-            padding: 12px 20px;
-            border-radius: 12px;
-            color: rgba(255,255,255,0.7);
-            font-weight: 600;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        
-        .nav-item:hover, .nav-item.active {
-            color: white;
-            background: linear-gradient(135deg, rgba(0,255,136,0.2) 0%, rgba(0,136,255,0.2) 100%);
-        }
-        
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 20px;
-            right: 20px;
-            height: 2px;
-            background: linear-gradient(90deg, var(--ms-green), var(--ms-blue));
-            border-radius: 2px;
-        }
-        
-        .control-btn {
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 700;
-            color: white;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .control-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
-        }
-        
-        .time-frame-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            background: rgba(255,255,255,0.1);
-            color: rgba(255,255,255,0.7);
-            font-size: 12px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-        
-        .time-frame-btn.active, .time-frame-btn:hover {
-            background: linear-gradient(135deg, var(--ms-green), var(--ms-blue));
-            color: white;
-            border-color: rgba(255,255,255,0.2);
-        }
-        
-        .signal-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 12px;
-            padding: 16px;
-            transition: all 0.3s ease;
-        }
-        
-        .signal-card:hover {
-            transform: translateX(5px);
-            border-color: rgba(0,255,136,0.3);
-        }
-        
-        .health-bar {
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            height: 8px;
-            overflow: hidden;
-        }
-        
-        .health-bar-fill {
-            height: 100%;
-            border-radius: 10px;
-            transition: width 0.5s ease;
+        .signal-strong-sell {
+            border-left: 4px solid #ef4444;
+            background: rgba(239, 68, 68, 0.1);
         }
         
         .strength-bar {
@@ -223,787 +42,113 @@
         .strength-fill {
             height: 100%;
             border-radius: 4px;
-            background: linear-gradient(90deg, var(--ms-red), var(--ms-orange), var(--ms-gold), var(--ms-green));
-        }
-        
-        /* Notification System */
-        .notification {
-            position: fixed;
-            top: 100px;
-            right: 24px;
-            padding: 16px 20px;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.2);
-            color: white;
-            z-index: 1000;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 350px;
-        }
-        
-        .notification.show {
-            transform: translateX(0);
-        }
-        
-        .notification.success {
-            border-left: 4px solid var(--ms-green);
-        }
-        
-        .notification.error {
-            border-left: 4px solid var(--ms-red);
-        }
-        
-        .notification.warning {
-            border-left: 4px solid var(--ms-orange);
-        }
-        
-        .signal-buy {
-            border-left: 4px solid var(--ms-green);
-        }
-        
-        .signal-sell {
-            border-left: 4px solid var(--ms-red);
-        }
-        
-        .signal-strong-buy {
-            border-left: 4px solid var(--ms-green);
-            background: linear-gradient(135deg, rgba(0,255,136,0.1) 0%, rgba(0,255,136,0.05) 100%);
-        }
-        
-        .signal-strong-sell {
-            border-left: 4px solid var(--ms-red);
-            background: linear-gradient(135deg, rgba(255,68,68,0.1) 0%, rgba(255,68,68,0.05) 100%);
+            background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
         }
     </style>
 </head>
-<body class="h-full antialiased">
-    <!-- Navigation -->
-    <nav class="bg-dark-100/90 backdrop-blur-xl border-b border-mastershifu-green/30 sticky top-0 z-50 shadow-2xl shadow-mastershifu-green/10">
-        <div class="max-w-8xl mx-auto px-6">
-            <div class="flex justify-between items-center h-20">
-                <!-- Logo -->
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <div class="w-14 h-14 bg-gradient-to-br from-mastershifu-green to-mastershifu-blue rounded-2xl flex items-center justify-center shadow-2xl shadow-mastershifu-green/30">
-                            <i class="fas fa-dragon text-white text-2xl"></i>
-                        </div>
-                        <div class="absolute -inset-1 bg-mastershifu-green/30 rounded-2xl blur-sm animate-pulse-glow"></div>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-black bg-gradient-to-r from-mastershifu-green via-mastershifu-blue to-mastershifu-purple bg-clip-text text-transparent">
-                            MASTERSHIFU PRO
-                        </h1>
-                        <p class="text-xs text-gray-400 font-mono tracking-widest">ELITE TRADING SYSTEM V2.1.0</p>
-                    </div>
+<body class="text-white">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-white">
+                Trading Signals
+            </h1>
+            <p class="text-gray-400 mt-2">Real-time market signals</p>
+            
+            <!-- Simple Stats -->
+            <div class="flex justify-center space-x-8 mt-6">
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-400" id="totalSignals">0</div>
+                    <div class="text-sm text-gray-400">Signals</div>
                 </div>
-
-                <!-- Navigation Links -->
-                <div class="hidden lg:flex items-center space-x-1">
-                    <a href="#dashboard" class="nav-item active" data-tab="dashboard">
-                        <i class="fas fa-gem mr-2"></i>Dashboard
-                    </a>
-                    <a href="#signals" class="nav-item" data-tab="signals">
-                        <i class="fas fa-bolt mr-2"></i>Live Signals
-                    </a>
-                    <a href="#trading" class="nav-item" data-tab="trading">
-                        <i class="fas fa-robot mr-2"></i>Auto Trading
-                    </a>
-                    <a href="#performance" class="nav-item" data-tab="performance">
-                        <i class="fas fa-chart-line mr-2"></i>Performance
-                    </a>
-                </div>
-
-                <!-- System Controls -->
-                <div class="flex items-center space-x-4">
-                    <!-- Live Status -->
-                    <div class="flex items-center space-x-3 bg-dark-200/80 px-4 py-2 rounded-xl border border-mastershifu-blue/30">
-                        <div class="flex items-center space-x-2">
-                            <div id="systemIndicator" class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                            <span id="systemStatus" class="text-sm font-bold text-white">SYSTEM OFFLINE</span>
-                        </div>
-                        <div class="w-px h-4 bg-gray-600"></div>
-                        <div class="text-xs text-mastershifu-green font-mono" id="liveClock">--:--:--</div>
-                    </div>
-                    
-                    <!-- Signal Count -->
-                    <div class="bg-gradient-to-r from-mastershifu-purple/20 to-mastershifu-blue/20 px-4 py-2 rounded-xl border border-mastershifu-purple/30">
-                        <div class="flex items-center space-x-2">
-                            <i class="fas fa-bolt text-mastershifu-gold text-sm"></i>
-                            <span id="signalCount" class="text-white font-bold text-lg">0</span>
-                            <span class="text-xs text-gray-400">SIGNALS</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="max-w-8xl mx-auto px-6 py-8">
-        <!-- Dashboard Tab -->
-        <div id="dashboard" class="tab-content active animate-fade-in">
-            <div class="space-y-8">
-                <!-- Hero Stats -->
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <!-- Portfolio Value -->
-                    <div class="hero-card bg-gradient-to-br from-mastershifu-green/10 to-mastershifu-blue/10 border-mastershifu-green/30">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Portfolio Value</p>
-                                <h2 id="portfolioValue" class="text-4xl font-black text-white mt-2">$10,000.00</h2>
-                                <div class="flex items-center mt-2">
-                                    <span id="dailyChange" class="text-mastershifu-green font-bold">+0.00%</span>
-                                    <span class="text-gray-400 text-sm ml-2">Today</span>
-                                </div>
-                            </div>
-                            <div class="w-14 h-14 bg-mastershifu-green/20 rounded-2xl flex items-center justify-center">
-                                <i class="fas fa-wallet text-mastershifu-green text-2xl"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-mastershifu-green/20">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">24H P&L</span>
-                                <span id="dailyPnl" class="text-mastershifu-green font-bold">+$0.00</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Active Positions -->
-                    <div class="hero-card bg-gradient-to-br from-mastershifu-blue/10 to-mastershifu-purple/10 border-mastershifu-blue/30">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Active Positions</p>
-                                <h2 id="activePositions" class="text-4xl font-black text-white mt-2">0</h2>
-                                <div class="flex items-center mt-2 space-x-2">
-                                    <span class="text-mastershifu-green text-sm font-bold">0 LONG</span>
-                                    <span class="text-gray-400">|</span>
-                                    <span class="text-mastershifu-red text-sm font-bold">0 SHORT</span>
-                                </div>
-                            </div>
-                            <div class="w-14 h-14 bg-mastershifu-blue/20 rounded-2xl flex items-center justify-center">
-                                <i class="fas fa-chart-network text-mastershifu-blue text-2xl"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-mastershifu-blue/20">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">Total Exposure</span>
-                                <span id="totalExposure" class="text-white font-bold">$0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Win Rate -->
-                    <div class="hero-card bg-gradient-to-br from-mastershifu-purple/10 to-mastershifu-orange/10 border-mastershifu-purple/30">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Win Rate</p>
-                                <h2 id="winRate" class="text-4xl font-black text-white mt-2">0%</h2>
-                                <div class="flex items-center mt-2">
-                                    <span class="text-gray-400 text-sm">Awaiting Trades</span>
-                                </div>
-                            </div>
-                            <div class="w-14 h-14 bg-mastershifu-purple/20 rounded-2xl flex items-center justify-center">
-                                <i class="fas fa-trophy text-mastershifu-gold text-2xl"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-mastershifu-purple/20">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">Total Trades</span>
-                                <span id="totalTrades" class="text-white font-bold">0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Risk Score -->
-                    <div class="hero-card bg-gradient-to-br from-mastershifu-orange/10 to-mastershifu-red/10 border-mastershifu-orange/30">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Risk Score</p>
-                                <h2 id="riskScore" class="text-4xl font-black text-white mt-2">LOW</h2>
-                                <div class="flex items-center mt-2">
-                                    <span class="text-mastershifu-green font-bold">Optimal Range</span>
-                                </div>
-                            </div>
-                            <div class="w-14 h-14 bg-mastershifu-orange/20 rounded-2xl flex items-center justify-center">
-                                <i class="fas fa-shield-alt text-mastershifu-orange text-2xl"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4 pt-4 border-t border-mastershifu-orange/20">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">VaR (95%)</span>
-                                <span id="var95" class="text-white font-bold">$0</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Trading Control & Performance -->
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <!-- Trading Control -->
-                    <div class="glass-card">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-black text-white">
-                                <i class="fas fa-robot text-mastershifu-blue mr-2"></i>
-                                TRADING CONTROL
-                            </h3>
-                            <div class="text-sm text-mastershifu-green font-mono" id="tradingStatus">READY</div>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="flex space-x-4">
-                                <button id="startTrading" class="control-btn bg-gradient-to-r from-mastershifu-green to-emerald-600 hover:shadow-lg hover:shadow-mastershifu-green/25 flex-1">
-                                    <i class="fas fa-play mr-2"></i>START TRADING
-                                </button>
-                                <button id="stopTrading" class="control-btn bg-gradient-to-r from-mastershifu-red to-pink-600 hover:shadow-lg hover:shadow-mastershifu-red/25 flex-1">
-                                    <i class="fas fa-stop mr-2"></i>STOP TRADING
-                                </button>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="text-center">
-                                    <div class="text-2xl font-black text-mastershifu-green" id="patternSignals">0</div>
-                                    <div class="text-sm text-gray-400">Pattern Signals</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-2xl font-black text-mastershifu-blue" id="executedTrades">0</div>
-                                    <div class="text-sm text-gray-400">Executed Trades</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Performance Chart -->
-                    <div class="glass-card">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-black text-white">
-                                <i class="fas fa-rocket text-mastershifu-blue mr-2"></i>
-                                PERFORMANCE TRACKING
-                            </h3>
-                            <div class="flex space-x-2">
-                                <button class="time-frame-btn active" data-timeframe="1W">1W</button>
-                                <button class="time-frame-btn" data-timeframe="1M">1M</button>
-                                <button class="time-frame-btn" data-timeframe="3M">3M</button>
-                                <button class="time-frame-btn" data-timeframe="1Y">1Y</button>
-                            </div>
-                        </div>
-                        <div id="performanceChart" class="h-96"></div>
-                    </div>
-                </div>
-
-                <!-- Top Signals & System Health -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <!-- Top 5 Strongest Signals -->
-                    <div class="glass-card">
-                        <div class="flex justify-between items-center mb-6">
-                            <h3 class="text-xl font-black text-white">
-                                <i class="fas fa-crown text-mastershifu-gold mr-2"></i>
-                                TOP SIGNALS
-                            </h3>
-                            <div class="text-sm text-mastershifu-green font-mono" id="signalsUpdate">UPDATED: --:--:--</div>
-                        </div>
-                        <div id="topSignals" class="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
-                            <div class="text-center text-gray-500 py-12">
-                                <i class="fas fa-bolt text-4xl mb-3 text-gray-600"></i>
-                                <p class="text-lg">Awaiting Signals</p>
-                                <p class="text-sm mt-1">Start trading to see live signals</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pattern Performance -->
-                    <div class="glass-card">
-                        <h3 class="text-xl font-black text-white mb-6">
-                            <i class="fas fa-chess-knight text-mastershifu-purple mr-2"></i>
-                            PATTERN PERFORMANCE
-                        </h3>
-                        <div id="patternPerformanceChart" class="h-80"></div>
-                    </div>
-
-                    <!-- System Health -->
-                    <div class="glass-card">
-                        <h3 class="text-xl font-black text-white mb-6">
-                            <i class="fas fa-heartbeat text-mastershifu-red mr-2"></i>
-                            SYSTEM HEALTH
-                        </h3>
-                        <div class="space-y-4">
-                            <div class="health-metric">
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-gray-400">Signal Processing</span>
-                                    <span id="cpuUsage" class="text-white font-bold">0%</span>
-                                </div>
-                                <div class="health-bar">
-                                    <div id="cpuBar" class="health-bar-fill bg-mastershifu-green" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="health-metric">
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-gray-400">Data Feed</span>
-                                    <span id="memoryUsage" class="text-white font-bold">0%</span>
-                                </div>
-                                <div class="health-bar">
-                                    <div id="memoryBar" class="health-bar-fill bg-mastershifu-blue" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="health-metric">
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-gray-400">Analysis Engine</span>
-                                    <span id="networkLatency" class="text-white font-bold">0ms</span>
-                                </div>
-                                <div class="health-bar">
-                                    <div id="networkBar" class="health-bar-fill bg-mastershifu-purple" style="width: 0%"></div>
-                                </div>
-                            </div>
-                            <div class="health-metric">
-                                <div class="flex justify-between mb-2">
-                                    <span class="text-gray-400">Trading Engine</span>
-                                    <span id="tradingEngineStatus" class="text-mastershifu-green font-bold">Ready</span>
-                                </div>
-                                <div class="health-bar">
-                                    <div class="health-bar-fill bg-mastershifu-green w-full"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-400" id="strongSignals">0</div>
+                    <div class="text-sm text-gray-400">Strong</div>
                 </div>
             </div>
         </div>
 
-        <!-- Signals Tab -->
-        <div id="signals" class="tab-content">
-            <div class="space-y-8 animate-fade-in">
-                <!-- Signal Filters -->
-                <div class="glass-card">
-                    <div class="flex flex-wrap gap-4 items-center">
-                        <h3 class="text-xl font-black text-white mr-6">
-                            <i class="fas fa-filter text-mastershifu-blue mr-2"></i>
-                            SIGNAL FILTERS
-                        </h3>
-                        <select id="signalTypeFilter" class="bg-dark-300 border border-gray-600 rounded-lg px-4 py-2 text-white">
-                            <option value="all">All Signals</option>
-                            <option value="BUY">Buy Signals</option>
-                            <option value="SELL">Sell Signals</option>
-                            <option value="STRONG_BUY">Strong Buy</option>
-                            <option value="STRONG_SELL">Strong Sell</option>
-                        </select>
-                        <select id="timeframeFilter" class="bg-dark-300 border border-gray-600 rounded-lg px-4 py-2 text-white">
-                            <option value="all">All Timeframes</option>
-                            <option value="1min">1 Minute</option>
-                            <option value="5min">5 Minutes</option>
-                            <option value="15min">15 Minutes</option>
-                            <option value="1hour">1 Hour</option>
-                            <option value="4hour">4 Hours</option>
-                            <option value="1day">1 Day</option>
-                        </select>
-                        <select id="strengthFilter" class="bg-dark-300 border border-gray-600 rounded-lg px-4 py-2 text-white">
-                            <option value="all">All Strengths</option>
-                            <option value="80">80%+ Strength</option>
-                            <option value="90">90%+ Strength</option>
-                            <option value="95">95%+ Strength</option>
-                        </select>
-                        <button id="refreshSignals" class="bg-gradient-to-r from-mastershifu-green to-mastershifu-blue px-6 py-2 rounded-lg font-bold text-white hover:shadow-lg transition-all">
-                            <i class="fas fa-sync-alt mr-2"></i>Refresh
-                        </button>
-                    </div>
-                </div>
+        <!-- Simple Filters -->
+        <div class="flex flex-wrap gap-4 justify-center mb-8">
+            <select id="typeFilter" class="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white">
+                <option value="all">All Signals</option>
+                <option value="BUY">Buy</option>
+                <option value="SELL">Sell</option>
+            </select>
+            
+            <select id="timeframeFilter" class="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white">
+                <option value="all">All Timeframes</option>
+                <option value="1hour">1H</option>
+                <option value="4hour">4H</option>
+                <option value="1day">1D</option>
+            </select>
+            
+            <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition-colors">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+        </div>
 
-                <!-- Live Signals Grid -->
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <!-- Signal Strength Distribution -->
-                    <div class="glass-card">
-                        <h3 class="text-xl font-black text-white mb-6">
-                            <i class="fas fa-chart-bar text-mastershifu-orange mr-2"></i>
-                            SIGNAL STRENGTH DISTRIBUTION
-                        </h3>
-                        <div id="signalStrengthChart" class="h-80"></div>
-                    </div>
-
-                    <!-- Signal Analytics -->
-                    <div class="glass-card">
-                        <h3 class="text-xl font-black text-white mb-6">
-                            <i class="fas fa-chart-pie text-mastershifu-purple mr-2"></i>
-                            SIGNAL ANALYTICS
-                        </h3>
-                        <div id="signalAnalytics" class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4 text-center">
-                                <div>
-                                    <div class="text-2xl font-black text-mastershifu-green" id="totalSignalsCount">0</div>
-                                    <div class="text-sm text-gray-400">Total Signals</div>
-                                </div>
-                                <div>
-                                    <div class="text-2xl font-black text-mastershifu-blue" id="avgStrength">0%</div>
-                                    <div class="text-sm text-gray-400">Avg Strength</div>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4 text-center">
-                                <div>
-                                    <div class="text-2xl font-black text-mastershifu-green" id="buySignals">0</div>
-                                    <div class="text-sm text-gray-400">Buy Signals</div>
-                                </div>
-                                <div>
-                                    <div class="text-2xl font-black text-mastershifu-red" id="sellSignals">0</div>
-                                    <div class="text-sm text-gray-400">Sell Signals</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- All Signals List -->
-                <div class="glass-card">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-xl font-black text-white">
-                            <i class="fas fa-list text-mastershifu-green mr-2"></i>
-                            ALL LIVE SIGNALS
-                        </h3>
-                        <div class="text-sm text-gray-400" id="filteredSignalsCount">Showing 0 signals</div>
-                    </div>
-                    <div id="allSignals" class="space-y-3 max-h-screen overflow-y-auto custom-scrollbar">
-                        <div class="text-center text-gray-500 py-12">
-                            <i class="fas fa-bolt text-4xl mb-3 text-gray-600"></i>
-                            <p class="text-lg">No signals available</p>
-                            <p class="text-sm mt-1">Start the trading system to generate signals</p>
-                        </div>
-                    </div>
-                </div>
+        <!-- Signals Grid -->
+        <div id="signalsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="text-center text-gray-500 py-12 col-span-3">
+                <i class="fas fa-bolt text-4xl mb-3"></i>
+                <p class="text-lg">Loading signals...</p>
             </div>
         </div>
 
-        <!-- Auto Trading Tab -->
-        <div id="trading" class="tab-content">
-            <div class="space-y-8 animate-fade-in">
-                <!-- Trading Configuration -->
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- Trading Settings -->
-                    <div class="glass-card">
-                        <h3 class="text-xl font-black text-white mb-6">
-                            <i class="fas fa-cogs text-mastershifu-blue mr-2"></i>
-                            TRADING CONFIGURATION
-                        </h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Risk Per Trade (%)</label>
-                                <input type="number" id="riskPerTrade" value="1.0" min="0.1" max="5.0" step="0.1" 
-                                       class="w-full bg-dark-300 border border-gray-600 rounded-lg px-4 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Max Daily Loss (%)</label>
-                                <input type="number" id="maxDailyLoss" value="2.0" min="0.5" max="10.0" step="0.5"
-                                       class="w-full bg-dark-300 border border-gray-600 rounded-lg px-4 py-2 text-white">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-400 mb-2">Min Pattern Confidence</label>
-                                <input type="number" id="minConfidence" value="0.75" min="0.5" max="0.95" step="0.05"
-                                       class="w-full bg-dark-300 border border-gray-600 rounded-lg px-4 py-2 text-white">
-                            </div>
-                            <button id="saveSettings" class="w-full bg-gradient-to-r from-mastershifu-green to-mastershifu-blue py-3 rounded-lg font-bold text-white hover:shadow-lg transition-all">
-                                <i class="fas fa-save mr-2"></i>SAVE SETTINGS
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Trading Statistics -->
-                    <div class="glass-card">
-                        <h3 class="text-xl font-black text-white mb-6">
-                            <i class="fas fa-chart-bar text-mastershifu-orange mr-2"></i>
-                            TRADING STATISTICS
-                        </h3>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="text-center p-4 bg-dark-300 rounded-lg">
-                                    <div class="text-2xl font-black text-mastershifu-green" id="totalTradesCount">0</div>
-                                    <div class="text-sm text-gray-400">Total Trades</div>
-                                </div>
-                                <div class="text-center p-4 bg-dark-300 rounded-lg">
-                                    <div class="text-2xl font-black text-mastershifu-blue" id="winRateStats">0%</div>
-                                    <div class="text-sm text-gray-400">Win Rate</div>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div class="text-center p-4 bg-dark-300 rounded-lg">
-                                    <div class="text-2xl font-black text-mastershifu-purple" id="avgProfit">0%</div>
-                                    <div class="text-sm text-gray-400">Avg Profit</div>
-                                </div>
-                                <div class="text-center p-4 bg-dark-300 rounded-lg">
-                                    <div class="text-2xl font-black text-mastershifu-gold" id="sharpeRatio">0.00</div>
-                                    <div class="text-sm text-gray-400">Sharpe Ratio</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Active Positions -->
-                <div class="glass-card">
-                    <h3 class="text-xl font-black text-white mb-6">
-                        <i class="fas fa-chart-network text-mastershifu-green mr-2"></i>
-                        ACTIVE POSITIONS
-                    </h3>
-                    <div id="activePositionsList" class="space-y-3">
-                        <div class="text-center text-gray-500 py-12">
-                            <i class="fas fa-box-open text-4xl mb-3 text-gray-600"></i>
-                            <p class="text-lg">No active positions</p>
-                            <p class="text-sm mt-1">Positions will appear here when trades are executed</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Trading Log -->
-                <div class="glass-card">
-                    <h3 class="text-xl font-black text-white mb-6">
-                        <i class="fas fa-scroll text-mastershifu-blue mr-2"></i>
-                        TRADING LOG
-                    </h3>
-                    <div id="tradingLog" class="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
-                        <div class="text-center text-gray-500 py-8">
-                            <i class="fas fa-history text-2xl mb-2 text-gray-600"></i>
-                            <p>Trading log will appear here</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <!-- Last Update -->
+        <div class="text-center mt-8 text-gray-500 text-sm">
+            Updated: <span id="lastUpdate">--:--:--</span>
         </div>
+    </div>
 
-        <!-- Performance Tab -->
-        <div id="performance" class="tab-content">
-            <div class="space-y-8 animate-fade-in">
-                <!-- Performance Metrics -->
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div class="glass-card text-center">
-                        <div class="w-16 h-16 bg-mastershifu-green/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-tachometer-alt text-mastershifu-green text-2xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-black text-white mb-2" id="performanceSharpe">0.00</h3>
-                        <p class="text-gray-400">Sharpe Ratio</p>
-                    </div>
-                    <div class="glass-card text-center">
-                        <div class="w-16 h-16 bg-mastershifu-blue/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-chart-line text-mastershifu-blue text-2xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-black text-white mb-2" id="performanceDrawdown">0.0%</h3>
-                        <p class="text-gray-400">Max Drawdown</p>
-                    </div>
-                    <div class="glass-card text-center">
-                        <div class="w-16 h-16 bg-mastershifu-purple/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-bolt text-mastershifu-purple text-2xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-black text-white mb-2" id="performanceTrades">0</h3>
-                        <p class="text-gray-400">Total Trades</p>
-                    </div>
-                    <div class="glass-card text-center">
-                        <div class="w-16 h-16 bg-mastershifu-orange/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <i class="fas fa-percentage text-mastershifu-orange text-2xl"></i>
-                        </div>
-                        <h3 class="text-2xl font-black text-white mb-2" id="performanceWinRate">0%</h3>
-                        <p class="text-gray-400">Win Rate</p>
-                    </div>
-                </div>
-
-                <!-- Detailed Performance Charts -->
-                <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                    <div class="glass-card">
-                        <h3 class="text-xl font-black text-white mb-6">EQUITY CURVE</h3>
-                        <div id="equityChart" class="h-96"></div>
-                    </div>
-                    <div class="glass-card">
-                        <h3 class="text-xl font-black text-white mb-6">TRADE DISTRIBUTION</h3>
-                        <div id="tradeDistributionChart" class="h-96"></div>
-                    </div>
-                </div>
-
-                <!-- Performance Summary -->
-                <div class="glass-card">
-                    <h3 class="text-xl font-black text-white mb-6">
-                        <i class="fas fa-trophy text-mastershifu-gold mr-2"></i>
-                        PERFORMANCE SUMMARY
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="text-center p-4 bg-dark-300 rounded-lg">
-                            <div class="text-lg font-bold text-mastershifu-green" id="totalReturn">0.00%</div>
-                            <div class="text-sm text-gray-400">Total Return</div>
-                        </div>
-                        <div class="text-center p-4 bg-dark-300 rounded-lg">
-                            <div class="text-lg font-bold text-mastershifu-blue" id="avgTrade">0.00%</div>
-                            <div class="text-sm text-gray-400">Avg Trade</div>
-                        </div>
-                        <div class="text-center p-4 bg-dark-300 rounded-lg">
-                            <div class="text-lg font-bold text-mastershifu-purple" id="profitFactor">0.00</div>
-                            <div class="text-sm text-gray-400">Profit Factor</div>
-                        </div>
-                        <div class="text-center p-4 bg-dark-300 rounded-lg">
-                            <div class="text-lg font-bold text-mastershifu-orange" id="recoveryFactor">0.00</div>
-                            <div class="text-sm text-gray-400">Recovery Factor</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Footer -->
-    <footer class="border-t border-mastershifu-purple/20 mt-12">
-        <div class="max-w-8xl mx-auto px-6 py-6">
-            <div class="flex justify-between items-center">
-                <div class="text-sm text-gray-400">
-                    © 2024 MasterShifu Pro. Elite Trading System v2.1.0 | <span class="text-mastershifu-green">Professional Grade</span>
-                </div>
-                <div class="flex space-x-4 text-sm text-gray-400">
-                    <span class="font-mono" id="connectionStatus">
-                        <i class="fas fa-satellite-dish text-mastershifu-green mr-1"></i>STANDALONE MODE
-                    </span>
-                    <span class="font-mono" id="dataLatency">
-                        <i class="fas fa-bolt text-mastershifu-blue mr-1"></i><span id="latencyValue">0ms</span>
-                    </span>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Trading System Integration -->
     <script>
-        // MasterShifu Pro Trading System - Standalone Implementation
-        class MastershifuTradingSystem {
+        // Trading System Integration
+        class TradingSignalDashboard {
             constructor() {
-                this.isRunning = false;
                 this.signals = [];
-                this.positions = [];
-                this.performance = {
-                    totalTrades: 0,
-                    winningTrades: 0,
-                    totalPnl: 0,
-                    dailyPnl: 0,
-                    portfolioValue: 10000,
-                    winRate: 0
-                };
-                this.settings = {
-                    riskPerTrade: 1.0,
-                    maxDailyLoss: 2.0,
-                    minConfidence: 0.75,
-                    paperTrading: true
-                };
-                this.updateInterval = null;
-                
                 this.initialize();
             }
 
             initialize() {
-                this.loadSettings();
                 this.setupEventListeners();
-                this.startDataUpdates();
-                this.showNotification('MasterShifu Pro V2 Initialized', 'success');
-            }
-
-            loadSettings() {
-                const savedSettings = localStorage.getItem('mastershifu-settings');
-                if (savedSettings) {
-                    this.settings = { ...this.settings, ...JSON.parse(savedSettings) };
-                    this.updateSettingsForm();
-                }
-            }
-
-            saveSettings() {
-                localStorage.setItem('mastershifu-settings', JSON.stringify(this.settings));
-                this.showNotification('Settings saved successfully', 'success');
-            }
-
-            updateSettingsForm() {
-                document.getElementById('riskPerTrade').value = this.settings.riskPerTrade;
-                document.getElementById('maxDailyLoss').value = this.settings.maxDailyLoss;
-                document.getElementById('minConfidence').value = this.settings.minConfidence;
+                this.generateSignals();
+                this.startAutoRefresh();
             }
 
             setupEventListeners() {
-                // Trading control
-                document.getElementById('startTrading').addEventListener('click', () => this.startTrading());
-                document.getElementById('stopTrading').addEventListener('click', () => this.stopTrading());
-                document.getElementById('saveSettings').addEventListener('click', () => this.saveSettingsFromForm());
-                
-                // Signal filters
-                document.getElementById('refreshSignals').addEventListener('click', () => this.generateSignals());
-                document.getElementById('signalTypeFilter').addEventListener('change', () => this.filterSignals());
-                document.getElementById('timeframeFilter').addEventListener('change', () => this.filterSignals());
-                document.getElementById('strengthFilter').addEventListener('change', () => this.filterSignals());
-                
-                // Tab navigation
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const tab = item.getAttribute('data-tab');
-                        this.switchTab(tab);
-                    });
+                document.getElementById('refreshBtn').addEventListener('click', () => {
+                    this.generateSignals();
                 });
 
-                // Time frame buttons
-                document.querySelectorAll('.time-frame-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.time-frame-btn').forEach(b => b.classList.remove('active'));
-                        e.target.classList.add('active');
-                        this.updateChartTimeFrame(e.target.getAttribute('data-timeframe'));
-                    });
+                document.getElementById('typeFilter').addEventListener('change', () => {
+                    this.filterSignals();
                 });
-            }
 
-            saveSettingsFromForm() {
-                this.settings.riskPerTrade = parseFloat(document.getElementById('riskPerTrade').value);
-                this.settings.maxDailyLoss = parseFloat(document.getElementById('maxDailyLoss').value);
-                this.settings.minConfidence = parseFloat(document.getElementById('minConfidence').value);
-                this.saveSettings();
-            }
-
-            startTrading() {
-                if (this.isRunning) return;
-                
-                this.isRunning = true;
-                this.updateSystemStatus('LIVE TRADING', 'mastershifu-green');
-                this.showNotification('Trading system started successfully', 'success');
-                
-                // Start generating signals
-                this.generateSignals();
-                this.startTradingCycle();
-            }
-
-            stopTrading() {
-                if (!this.isRunning) return;
-                
-                this.isRunning = false;
-                this.updateSystemStatus('SYSTEM OFFLINE', 'red');
-                this.showNotification('Trading system stopped', 'warning');
-                
-                if (this.updateInterval) {
-                    clearInterval(this.updateInterval);
-                }
-            }
-
-            startTradingCycle() {
-                this.updateInterval = setInterval(() => {
-                    if (this.isRunning) {
-                        this.generateSignals();
-                        this.updateDashboard();
-                        this.executeTrades();
-                    }
-                }, 5000); // Update every 5 seconds
+                document.getElementById('timeframeFilter').addEventListener('change', () => {
+                    this.filterSignals();
+                });
             }
 
             generateSignals() {
-                // Generate realistic trading signals
-                const symbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'BTC/USD', 'ETH/USD', 'AAPL', 'TSLA'];
-                const patterns = ['Bullish Engulfing', 'Bearish Engulfing', 'Hammer', 'Shooting Star', 'Morning Star', 'Head & Shoulders'];
-                const timeframes = ['1min', '5min', '15min', '1hour', '4hour'];
+                // Simulate signal generation from your trading system
+                const symbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'BTC/USD'];
+                const patterns = ['Bullish Engulfing', 'Bearish Engulfing', 'Hammer', 'Shooting Star'];
+                const timeframes = ['1hour', '4hour', '1day'];
                 
                 this.signals = [];
                 
                 symbols.forEach(symbol => {
-                    const numSignals = Math.floor(Math.random() * 3) + 1;
-                    for (let i = 0; i < numSignals; i++) {
-                        if (Math.random() > 0.4) { // 60% chance of signal
-                            const signal = this.createSignal(symbol, patterns, timeframes);
-                            this.signals.push(signal);
-                        }
+                    if (Math.random() > 0.4) { // 60% chance of signal per symbol
+                        const signal = this.createSignal(symbol, patterns, timeframes);
+                        this.signals.push(signal);
                     }
                 });
                 
                 // Sort by strength
                 this.signals.sort((a, b) => b.strength - a.strength);
-                this.updateSignalsDisplay();
+                this.filterSignals();
+                this.updateLastUpdate();
             }
 
             createSignal(symbol, patterns, timeframes) {
@@ -1014,11 +159,11 @@
                 
                 let target, stopLoss;
                 if (signalType.includes('BUY')) {
-                    target = basePrice * (1 + (Math.random() * 0.05 + 0.02));
-                    stopLoss = basePrice * (1 - (Math.random() * 0.03 + 0.01));
+                    target = basePrice * (1 + 0.03);
+                    stopLoss = basePrice * (1 - 0.02);
                 } else {
-                    target = basePrice * (1 - (Math.random() * 0.05 + 0.02));
-                    stopLoss = basePrice * (1 + (Math.random() * 0.03 + 0.01));
+                    target = basePrice * (1 - 0.03);
+                    stopLoss = basePrice * (1 + 0.02);
                 }
                 
                 return {
@@ -1030,181 +175,76 @@
                     target: parseFloat(target.toFixed(4)),
                     stopLoss: parseFloat(stopLoss.toFixed(4)),
                     pattern: patterns[Math.floor(Math.random() * patterns.length)],
-                    confidence: parseFloat((Math.random() * 0.2 + 0.8).toFixed(2)), // 0.8-1.0
+                    confidence: parseFloat((Math.random() * 0.2 + 0.8).toFixed(2)),
                     timestamp: new Date().toISOString(),
-                    rsi: parseFloat((Math.random() * 30 + 30).toFixed(2)), // 30-60
-                    macd: parseFloat((Math.random() * 0.04 - 0.02).toFixed(4)),
-                    volume: parseFloat((Math.random() * 1.2 + 0.8).toFixed(2)),
                     riskReward: parseFloat((Math.abs(target - basePrice) / Math.abs(basePrice - stopLoss)).toFixed(2))
                 };
             }
 
-            executeTrades() {
-                // Execute trades based on high-confidence signals
-                const highConfidenceSignals = this.signals.filter(signal => 
-                    signal.confidence >= this.settings.minConfidence && 
-                    signal.strength >= 80
-                ).slice(0, 2); // Max 2 trades per cycle
+            filterSignals() {
+                const typeFilter = document.getElementById('typeFilter').value;
+                const timeframeFilter = document.getElementById('timeframeFilter').value;
                 
-                highConfidenceSignals.forEach(signal => {
-                    if (this.positions.length < 8) { // Max 8 positions
-                        this.openPosition(signal);
-                    }
+                const filteredSignals = this.signals.filter(signal => {
+                    if (typeFilter !== 'all' && signal.signalType !== typeFilter) return false;
+                    if (timeframeFilter !== 'all' && signal.timeframe !== timeframeFilter) return false;
+                    return true;
                 });
                 
-                // Update positions P&L
-                this.updatePositions();
+                this.displaySignals(filteredSignals);
+                this.updateStats(filteredSignals);
             }
 
-            openPosition(signal) {
-                const position = {
-                    id: Date.now(),
-                    symbol: signal.symbol,
-                    direction: signal.signalType.includes('BUY') ? 'LONG' : 'SHORT',
-                    entryPrice: signal.price,
-                    currentPrice: signal.price,
-                    volume: 0.1,
-                    stopLoss: signal.stopLoss,
-                    takeProfit: signal.target,
-                    pnl: 0,
-                    openTime: new Date(),
-                    signal: signal
-                };
+            displaySignals(signals) {
+                const container = document.getElementById('signalsContainer');
                 
-                this.positions.push(position);
-                this.performance.totalTrades++;
-                
-                this.addToTradingLog(`Opened ${position.direction} position on ${signal.symbol} at $${signal.price}`);
-                this.showNotification(`New trade: ${position.direction} ${signal.symbol}`, 'success');
-            }
-
-            updatePositions() {
-                this.positions.forEach(position => {
-                    // Simulate price movement
-                    const priceChange = (Math.random() - 0.5) * position.entryPrice * 0.02;
-                    position.currentPrice = position.entryPrice + priceChange;
-                    
-                    // Calculate P&L
-                    if (position.direction === 'LONG') {
-                        position.pnl = (position.currentPrice - position.entryPrice) * position.volume * 10000;
-                    } else {
-                        position.pnl = (position.entryPrice - position.currentPrice) * position.volume * 10000;
-                    }
-                    
-                    // Check for exit conditions
-                    if ((position.direction === 'LONG' && position.currentPrice >= position.takeProfit) ||
-                        (position.direction === 'SHORT' && position.currentPrice <= position.takeProfit) ||
-                        (position.direction === 'LONG' && position.currentPrice <= position.stopLoss) ||
-                        (position.direction === 'SHORT' && position.currentPrice >= position.stopLoss)) {
-                        this.closePosition(position);
-                    }
-                });
-                
-                // Remove closed positions
-                this.positions = this.positions.filter(p => !p.closed);
-            }
-
-            closePosition(position) {
-                position.closed = true;
-                this.performance.totalPnl += position.pnl;
-                this.performance.dailyPnl += position.pnl;
-                
-                if (position.pnl > 0) {
-                    this.performance.winningTrades++;
-                }
-                
-                this.performance.winRate = (this.performance.winningTrades / this.performance.totalTrades) * 100;
-                this.performance.portfolioValue = 10000 + this.performance.totalPnl;
-                
-                this.addToTradingLog(`Closed ${position.direction} position on ${position.symbol} | P&L: $${position.pnl.toFixed(2)}`);
-            }
-
-            updateDashboard() {
-                // Update hero stats
-                document.getElementById('portfolioValue').textContent = `$${this.performance.portfolioValue.toFixed(2)}`;
-                document.getElementById('dailyPnl').textContent = `$${this.performance.dailyPnl.toFixed(2)}`;
-                document.getElementById('activePositions').textContent = this.positions.length;
-                document.getElementById('totalTrades').textContent = this.performance.totalTrades;
-                document.getElementById('winRate').textContent = `${this.performance.winRate.toFixed(1)}%`;
-                
-                // Update signal count
-                document.getElementById('signalCount').textContent = this.signals.length;
-                document.getElementById('patternSignals').textContent = this.signals.filter(s => s.strength >= 80).length;
-                document.getElementById('executedTrades').textContent = this.performance.totalTrades;
-                
-                // Update performance stats
-                document.getElementById('totalTradesCount').textContent = this.performance.totalTrades;
-                document.getElementById('winRateStats').textContent = `${this.performance.winRate.toFixed(1)}%`;
-                document.getElementById('performanceTrades').textContent = this.performance.totalTrades;
-                document.getElementById('performanceWinRate').textContent = `${this.performance.winRate.toFixed(1)}%`;
-                
-                // Update system health (simulated)
-                this.updateSystemHealth();
-                
-                // Update charts
-                this.updateCharts();
-            }
-
-            updateSystemHealth() {
-                // Simulate system health metrics
-                const cpuUsage = Math.random() * 30 + 20; // 20-50%
-                const memoryUsage = Math.random() * 40 + 30; // 30-70%
-                const networkLatency = Math.floor(Math.random() * 20 + 5); // 5-25ms
-                
-                document.getElementById('cpuUsage').textContent = `${cpuUsage.toFixed(1)}%`;
-                document.getElementById('memoryUsage').textContent = `${memoryUsage.toFixed(1)}%`;
-                document.getElementById('networkLatency').textContent = `${networkLatency}ms`;
-                
-                document.getElementById('cpuBar').style.width = `${cpuUsage}%`;
-                document.getElementById('memoryBar').style.width = `${memoryUsage}%`;
-                document.getElementById('networkBar').style.width = `${Math.min(100, networkLatency * 4)}%`;
-            }
-
-            updateSignalsDisplay() {
-                this.updateTopSignals();
-                this.updateAllSignals();
-                this.updateSignalAnalytics();
-            }
-
-            updateTopSignals() {
-                const topSignalsContainer = document.getElementById('topSignals');
-                const topSignals = this.signals.slice(0, 5);
-                
-                if (topSignals.length === 0) {
-                    topSignalsContainer.innerHTML = `
-                        <div class="text-center text-gray-500 py-12">
-                            <i class="fas fa-bolt text-4xl mb-3 text-gray-600"></i>
-                            <p class="text-lg">No signals available</p>
-                            <p class="text-sm mt-1">Start trading to generate signals</p>
+                if (signals.length === 0) {
+                    container.innerHTML = `
+                        <div class="text-center text-gray-500 py-12 col-span-3">
+                            <i class="fas fa-search text-4xl mb-3"></i>
+                            <p class="text-lg">No signals found</p>
                         </div>
                     `;
                     return;
                 }
                 
-                topSignalsContainer.innerHTML = topSignals.map(signal => `
-                    <div class="signal-card ${this.getSignalClass(signal)}">
-                        <div class="flex justify-between items-start mb-2">
-                            <div class="flex items-center space-x-2">
-                                <span class="font-bold text-white">${signal.symbol}</span>
-                                <span class="px-2 py-1 rounded-full text-xs ${
-                                    signal.signalType.includes('BUY') ? 'bg-mastershifu-green/20 text-mastershifu-green' : 'bg-mastershifu-red/20 text-mastershifu-red'
-                                }">
-                                    ${signal.signalType}
-                                </span>
+                container.innerHTML = signals.map(signal => `
+                    <div class="bg-slate-800 rounded-lg p-4 ${this.getSignalClass(signal)}">
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="font-bold text-white text-lg">${signal.symbol}</div>
+                                <div class="text-xs text-gray-400">${signal.timeframe} • ${signal.pattern}</div>
                             </div>
                             <div class="text-right">
-                                <div class="text-sm font-bold text-white">${signal.strength}%</div>
-                                <div class="text-xs text-gray-400">Strength</div>
+                                <div class="text-lg font-bold ${
+                                    signal.signalType.includes('BUY') ? 'text-green-400' : 'text-red-400'
+                                }">${signal.signalType.replace('_', ' ')}</div>
+                                <div class="text-sm text-gray-400">${signal.strength}%</div>
                             </div>
                         </div>
-                        <div class="space-y-2 text-sm">
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">Pattern:</span>
-                                <span class="text-white">${signal.pattern}</span>
-                            </div>
-                            <div class="flex justify-between">
+                        
+                        <!-- Price Levels -->
+                        <div class="space-y-2 mb-3">
+                            <div class="flex justify-between text-sm">
                                 <span class="text-gray-400">Price:</span>
-                                <span class="text-white">$${signal.price}</span>
+                                <span class="text-white">${signal.price}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Target:</span>
+                                <span class="text-green-400">${signal.target}</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-400">Stop:</span>
+                                <span class="text-red-400">${signal.stopLoss}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Strength -->
+                        <div class="mb-2">
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-gray-400">Strength</span>
+                                <span class="text-white">${signal.strength}%</span>
                             </div>
                             <div class="strength-bar">
                                 <div class="strength-fill" style="width: ${signal.strength}%"></div>
@@ -1212,102 +252,6 @@
                         </div>
                     </div>
                 `).join('');
-                
-                document.getElementById('signalsUpdate').textContent = `UPDATED: ${new Date().toLocaleTimeString()}`;
-            }
-
-            updateAllSignals() {
-                const allSignalsContainer = document.getElementById('allSignals');
-                const filteredSignals = this.filterSignals();
-                
-                if (filteredSignals.length === 0) {
-                    allSignalsContainer.innerHTML = `
-                        <div class="text-center text-gray-500 py-12">
-                            <i class="fas fa-bolt text-4xl mb-3 text-gray-600"></i>
-                            <p class="text-lg">No signals match your filters</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                allSignalsContainer.innerHTML = filteredSignals.map(signal => `
-                    <div class="signal-card ${this.getSignalClass(signal)}">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 rounded-lg bg-dark-300 flex items-center justify-center">
-                                    <i class="fas fa-chart-line ${
-                                        signal.signalType.includes('BUY') ? 'text-mastershifu-green' : 'text-mastershifu-red'
-                                    }"></i>
-                                </div>
-                                <div>
-                                    <div class="font-bold text-white">${signal.symbol}</div>
-                                    <div class="text-xs text-gray-400">${signal.timeframe} • ${signal.pattern}</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-black ${
-                                    signal.signalType.includes('BUY') ? 'text-mastershifu-green' : 'text-mastershifu-red'
-                                }">${signal.signalType}</div>
-                                <div class="text-sm text-gray-400">${signal.strength}% strength</div>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4 text-sm mb-3">
-                            <div>
-                                <div class="text-gray-400">Price</div>
-                                <div class="text-white font-semibold">$${signal.price}</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-400">Target</div>
-                                <div class="text-mastershifu-green font-semibold">$${signal.target}</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-400">Stop Loss</div>
-                                <div class="text-mastershifu-red font-semibold">$${signal.stopLoss}</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-400">R/R Ratio</div>
-                                <div class="text-white font-semibold">1:${signal.riskReward}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center text-xs">
-                            <div class="flex space-x-2">
-                                <span class="px-2 py-1 bg-dark-300 rounded">RSI: ${signal.rsi}</span>
-                                <span class="px-2 py-1 bg-dark-300 rounded">Conf: ${signal.confidence}</span>
-                            </div>
-                            <div class="text-gray-400">${new Date(signal.timestamp).toLocaleTimeString()}</div>
-                        </div>
-                    </div>
-                `).join('');
-                
-                document.getElementById('filteredSignalsCount').textContent = `Showing ${filteredSignals.length} signals`;
-            }
-
-            filterSignals() {
-                const typeFilter = document.getElementById('signalTypeFilter').value;
-                const timeframeFilter = document.getElementById('timeframeFilter').value;
-                const strengthFilter = document.getElementById('strengthFilter').value;
-                
-                return this.signals.filter(signal => {
-                    if (typeFilter !== 'all' && signal.signalType !== typeFilter) return false;
-                    if (timeframeFilter !== 'all' && signal.timeframe !== timeframeFilter) return false;
-                    if (strengthFilter !== 'all' && signal.strength < parseInt(strengthFilter)) return false;
-                    return true;
-                });
-            }
-
-            updateSignalAnalytics() {
-                const totalSignals = this.signals.length;
-                const buySignals = this.signals.filter(s => s.signalType.includes('BUY')).length;
-                const sellSignals = this.signals.filter(s => s.signalType.includes('SELL')).length;
-                const avgStrength = totalSignals > 0 ? 
-                    this.signals.reduce((sum, signal) => sum + signal.strength, 0) / totalSignals : 0;
-                
-                document.getElementById('totalSignalsCount').textContent = totalSignals;
-                document.getElementById('avgStrength').textContent = `${avgStrength.toFixed(1)}%`;
-                document.getElementById('buySignals').textContent = buySignals;
-                document.getElementById('sellSignals').textContent = sellSignals;
             }
 
             getSignalClass(signal) {
@@ -1318,241 +262,28 @@
                 return '';
             }
 
-            updateCharts() {
-                this.updatePerformanceChart();
-                this.updateSignalStrengthChart();
-                this.updatePatternPerformanceChart();
+            updateStats(signals) {
+                const totalSignals = signals.length;
+                const strongSignals = signals.filter(s => s.strength >= 85).length;
+                
+                document.getElementById('totalSignals').textContent = totalSignals;
+                document.getElementById('strongSignals').textContent = strongSignals;
             }
 
-            updatePerformanceChart() {
-                // Simulate performance data
-                const dates = [];
-                const values = [];
-                let currentValue = 10000;
-                
-                for (let i = 0; i < 30; i++) {
-                    dates.push(new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000));
-                    currentValue *= (1 + (Math.random() * 0.02 - 0.01));
-                    values.push(currentValue);
-                }
-                
-                const trace = {
-                    x: dates,
-                    y: values,
-                    type: 'scatter',
-                    mode: 'lines',
-                    name: 'Portfolio Value',
-                    line: { color: '#00FF88', width: 3 }
-                };
-                
-                const layout = {
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    font: { color: 'white' },
-                    xaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
-                    yaxis: { gridcolor: 'rgba(255,255,255,0.1)', tickprefix: '$' },
-                    margin: { t: 30, r: 30, b: 30, l: 50 },
-                    showlegend: false
-                };
-                
-                Plotly.react('performanceChart', [trace], layout);
+            updateLastUpdate() {
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
             }
 
-            updateSignalStrengthChart() {
-                const strengths = this.signals.map(s => s.strength);
-                const trace = {
-                    x: strengths,
-                    type: 'histogram',
-                    marker: { color: '#FF6B35' },
-                    opacity: 0.7
-                };
-                
-                const layout = {
-                    title: { text: '', font: { color: 'white' } },
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    font: { color: 'white' },
-                    xaxis: { 
-                        title: 'Strength', 
-                        gridcolor: 'rgba(255,255,255,0.1)',
-                        range: [0, 100]
-                    },
-                    yaxis: { 
-                        title: 'Count', 
-                        gridcolor: 'rgba(255,255,255,0.1)'
-                    },
-                    margin: { t: 30, r: 30, b: 50, l: 50 }
-                };
-                
-                Plotly.react('signalStrengthChart', [trace], layout);
-            }
-
-            updatePatternPerformanceChart() {
-                const patterns = ['Bullish Engulfing', 'Bearish Engulfing', 'Hammer', 'Shooting Star', 'Morning Star'];
-                const winRates = patterns.map(() => Math.random() * 0.3 + 0.6); // 60-90%
-                
-                const trace = {
-                    x: patterns,
-                    y: winRates,
-                    type: 'bar',
-                    marker: { 
-                        color: ['#00FF88', '#FF4444', '#0088FF', '#8800FF', '#FF8800'] 
-                    }
-                };
-                
-                const layout = {
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    font: { color: 'white' },
-                    xaxis: { gridcolor: 'rgba(255,255,255,0.1)' },
-                    yaxis: { 
-                        gridcolor: 'rgba(255,255,255,0.1)',
-                        tickformat: ',.0%',
-                        range: [0, 1]
-                    },
-                    margin: { t: 30, r: 30, b: 80, l: 50 },
-                    showlegend: false
-                };
-                
-                Plotly.react('patternPerformanceChart', [trace], layout);
-            }
-
-            updateActivePositions() {
-                const container = document.getElementById('activePositionsList');
-                
-                if (this.positions.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center text-gray-500 py-12">
-                            <i class="fas fa-box-open text-4xl mb-3 text-gray-600"></i>
-                            <p class="text-lg">No active positions</p>
-                            <p class="text-sm mt-1">Positions will appear here when trades are executed</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                container.innerHTML = this.positions.map(position => `
-                    <div class="signal-card ${position.direction === 'LONG' ? 'signal-buy' : 'signal-sell'}">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center space-x-3">
-                                <div class="w-12 h-12 rounded-xl bg-dark-300 flex items-center justify-center">
-                                    <i class="fas ${
-                                        position.direction === 'LONG' ? 'fa-arrow-up text-mastershifu-green' : 'fa-arrow-down text-mastershifu-red'
-                                    } text-xl"></i>
-                                </div>
-                                <div>
-                                    <div class="font-bold text-white">${position.symbol}</div>
-                                    <div class="text-sm text-gray-400">${position.direction} • ${position.signal.pattern}</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-black ${
-                                    position.pnl >= 0 ? 'text-mastershifu-green' : 'text-mastershifu-red'
-                                }">$${position.pnl.toFixed(2)}</div>
-                                <div class="text-sm text-gray-400">P&L</div>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <div class="text-gray-400">Entry Price</div>
-                                <div class="text-white font-semibold">$${position.entryPrice.toFixed(4)}</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-400">Current Price</div>
-                                <div class="text-white font-semibold">$${position.currentPrice.toFixed(4)}</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-400">Take Profit</div>
-                                <div class="text-mastershifu-green font-semibold">$${position.takeProfit.toFixed(4)}</div>
-                            </div>
-                            <div>
-                                <div class="text-gray-400">Stop Loss</div>
-                                <div class="text-mastershifu-red font-semibold">$${position.stopLoss.toFixed(4)}</div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            addToTradingLog(message) {
-                const logContainer = document.getElementById('tradingLog');
-                const logEntry = document.createElement('div');
-                logEntry.className = 'flex justify-between items-center py-2 border-b border-gray-700';
-                logEntry.innerHTML = `
-                    <span class="text-sm text-white">${message}</span>
-                    <span class="text-xs text-gray-400">${new Date().toLocaleTimeString()}</span>
-                `;
-                
-                logContainer.insertBefore(logEntry, logContainer.firstChild);
-                
-                // Keep only last 50 entries
-                if (logContainer.children.length > 50) {
-                    logContainer.removeChild(logContainer.lastChild);
-                }
-            }
-
-            updateSystemStatus(status, color) {
-                document.getElementById('systemStatus').textContent = status;
-                document.getElementById('systemIndicator').className = `w-3 h-3 bg-${color} rounded-full animate-pulse`;
-            }
-
-            switchTab(tabName) {
-                // Update navigation
-                document.querySelectorAll('.nav-item').forEach(item => {
-                    item.classList.remove('active');
-                });
-                document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-
-                // Update content
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.remove('active');
-                });
-                document.getElementById(tabName).classList.add('active');
-
-                // Load tab-specific data
-                if (tabName === 'trading') {
-                    this.updateActivePositions();
-                }
-            }
-
-            showNotification(message, type) {
-                const notification = document.createElement('div');
-                notification.className = `notification ${type}`;
-                notification.innerHTML = `
-                    <div class="flex items-center space-x-3">
-                        <i class="fas fa-${
-                            type === 'success' ? 'check-circle' :
-                            type === 'error' ? 'exclamation-circle' : 'info-circle'
-                        }"></i>
-                        <span>${message}</span>
-                    </div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                setTimeout(() => notification.classList.add('show'), 100);
-                setTimeout(() => {
-                    notification.classList.remove('show');
-                    setTimeout(() => notification.remove(), 300);
-                }, 5000);
-            }
-
-            startDataUpdates() {
-                // Update clock
+            startAutoRefresh() {
                 setInterval(() => {
-                    document.getElementById('liveClock').textContent = new Date().toLocaleTimeString();
-                }, 1000);
-                
-                // Initial update
-                this.updateDashboard();
-                this.updateSystemHealth();
+                    this.generateSignals();
+                }, 10000); // Refresh every 10 seconds
             }
         }
 
-        // Initialize the trading system when page loads
+        // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            window.tradingSystem = new MastershifuTradingSystem();
+            new TradingSignalDashboard();
         });
     </script>
 </body>
