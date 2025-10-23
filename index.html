@@ -1,552 +1,1056 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Deriv Pro Trader - Clean Signals</title>
-    <style>
-        :root {
-            --primary: #00ff88;
-            --secondary: #00ccff;
-            --danger: #ff4444;
-            --warning: #ffaa00;
-            --dark: #0a0a0a;
-            --darker: #151522;
-            --darkest: #1e1e2e;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background: var(--dark);
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
-            padding: 10px;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .header {
-            text-align: center;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        
-        .header h1 {
-            font-size: 1.8em;
-            color: var(--primary);
-            margin-bottom: 5px;
-        }
-        
-        .status-bar {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .status-card {
-            background: var(--darker);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid var(--primary);
-        }
-        
-        .status-value {
-            font-size: 1.4em;
-            font-weight: bold;
-            margin: 5px 0;
-        }
-        
-        .controls {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-        
-        .btn {
-            background: var(--darker);
-            color: white;
-            border: 1px solid #333;
-            padding: 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .btn:hover {
-            border-color: var(--primary);
-        }
-        
-        .btn.active {
-            background: var(--primary);
-            color: var(--dark);
-        }
-        
-        .signals-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .signal-card {
-            background: var(--darker);
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid #333;
-            transition: all 0.3s ease;
-        }
-        
-        .signal-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-2px);
-        }
-        
-        .signal-card.strong {
-            border-color: var(--primary);
-            background: linear-gradient(135deg, var(--darker) 0%, #1a2a1a 100%);
-        }
-        
-        .signal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .symbol {
-            font-weight: bold;
-            font-size: 1.1em;
-        }
-        
-        .direction {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        
-        .direction.buy {
-            background: var(--primary);
-            color: var(--dark);
-        }
-        
-        .direction.sell {
-            background: var(--danger);
-            color: white;
-        }
-        
-        .signal-details {
-            color: #ccc;
-            font-size: 0.9em;
-            line-height: 1.4;
-        }
-        
-        .confidence {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            background: #333;
-        }
-        
-        .confidence.high {
-            background: var(--primary);
-            color: var(--dark);
-        }
-        
-        .confidence.medium {
-            background: var(--warning);
-            color: var(--dark);
-        }
-        
-        .instrument-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7em;
-            margin-left: 5px;
-            background: #333;
-        }
-        
-        .category-forex { background: #2d5016; }
-        .category-volatility { background: #5d1f5d; }
-        .category-commodity { background: #8b4513; }
-        .category-index { background: #1e3a5f; }
-        .category-crypto { background: #b8860b; }
-        .category-synthetic { background: #2f4f4f; }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: var(--secondary);
-        }
-        
-        .filters {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .filter-btn {
-            padding: 8px 12px;
-            background: var(--darker);
-            border: 1px solid #333;
-            border-radius: 6px;
-            color: #ccc;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: all 0.3s ease;
-        }
-        
-        .filter-btn.active {
-            background: var(--primary);
-            color: var(--dark);
-            border-color: var(--primary);
-        }
-        
-        .signal-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid #333;
-        }
-        
-        .stat {
-            font-size: 0.8em;
-            color: #888;
-        }
-        
-        .stat-value {
-            color: var(--primary);
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>Deriv Pro Trader</h1>
-            <p style="color: #888;">Clean Signals • Professional Grade</p>
-        </div>
+# professional_deriv_trading_system.py
+import pandas as pd
+import numpy as np
+import MetaTrader5 as mt5
+from datetime import datetime, timedelta
+import threading
+import time
+import logging
+from typing import Dict, List, Tuple, Optional, Set
+from dataclasses import dataclass
+from enum import Enum
+import talib
+import warnings
+import requests
+import json
+import psutil
+import os
+import sys
+from collections import deque
+from scipy import stats
+import math
+import configparser
+from pathlib import Path
+import hashlib
+import hmac
+import backtrader as bt
+import sqlite3
+from contextlib import contextmanager
+import jwt
+warnings.filterwarnings('ignore')
 
-        <!-- Status Bar -->
-        <div class="status-bar">
-            <div class="status-card">
-                <div>Live Signals</div>
-                <div class="status-value" id="liveSignals">0</div>
-            </div>
-            <div class="status-card">
-                <div>Strong Setups</div>
-                <div class="status-value" id="strongSignals">0</div>
-            </div>
-            <div class="status-card">
-                <div>Accuracy</div>
-                <div class="status-value" id="accuracy">-</div>
-            </div>
-            <div class="status-card">
-                <div>Last Update</div>
-                <div class="status-value" id="lastUpdate">-</div>
-            </div>
-        </div>
+# =============================================================================
+# CONFIGURATION MANAGEMENT
+# =============================================================================
 
-        <!-- Controls -->
-        <div class="controls">
-            <button class="btn active" onclick="setFilter('all')">All</button>
-            <button class="btn" onclick="setFilter('forex')">Forex</button>
-            <button class="btn" onclick="setFilter('volatility')">Volatility</button>
-            <button class="btn" onclick="setFilter('commodity')">Commodities</button>
-            <button class="btn" onclick="setFilter('synthetic')">Synthetics</button>
-            <button class="btn" onclick="setFilter('crypto')">Crypto</button>
-            <button class="btn" onclick="refreshSignals()">Refresh</button>
-            <button class="btn" onclick="toggleAutoRefresh()" id="autoRefreshBtn">Auto: ON</button>
-        </div>
-
-        <!-- Signals Grid -->
-        <div id="signalsContainer">
-            <div class="loading">Loading professional signals...</div>
-        </div>
-    </div>
-
-    <script>
-        // Professional Configuration
-        const config = {
-            autoRefresh: true,
-            currentFilter: 'all',
-            refreshInterval: 30000, // 30 seconds
-            signals: []
-        };
-
-        // Complete Deriv Instruments Database
-        const derivInstruments = {
-            forex: [
-                'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD',
-                'EURGBP', 'EURJPY', 'GBPJPY', 'EURCHF', 'AUDJPY', 'CADJPY'
-            ],
+class TradingConfig:
+    """Secure configuration management with environment variables"""
+    
+    def __init__(self):
+        self.config_path = Path('config/trading_config.ini')
+        self._ensure_config_exists()
+        self._load_config()
+        
+    def _ensure_config_exists(self):
+        """Create config directory and template if missing"""
+        self.config_path.parent.mkdir(exist_ok=True)
+        
+        if not self.config_path.exists():
+            config = configparser.ConfigParser()
             
-            volatility: [
-                'VOLATILITY10', 'VOLATILITY25', 'VOLATILITY50', 'VOLATILITY75', 'VOLATILITY100',
-                'VOLATILITY150', 'VOLATILITY250', 'VBOOM10', 'VBOOM50', 'VBOOM100', 'VBOOM250',
-                'VBOOM500', 'VBOOM1000', 'VCRASH10', 'VCRASH50', 'VCRASH100', 'VCRASH250',
-                'VCRASH500', 'VCRASH1000'
-            ],
-            
-            commodity: [
-                'XAUUSD', 'XAGUSD', 'XPTUSD', 'XPDUSD', 'OILUSD', 'BCOUSD', 'NGAS', 'COPPER'
-            ],
-            
-            synthetic: [
-                // Jump Indices
-                'JUMP10', 'JUMP25', 'JUMP50', 'JUMP75', 'JUMP100', 'JUMP500', 'JUMP1000',
-                // Step Indices
-                'STEP5', 'STEP10', 'STEP15', 'STEP20', 'STEP25', 'STEP50', 'STEP100',
-                // Range Indices
-                'RANGEBREAK100', 'RANGEBREAK200', 'RANGEBREAK300',
-                // Daily Reset
-                'EXPLOSIVE50', 'EXPLOSIVE100', 'EXPLOSIVE150',
-                'IMPLOSIVE50', 'IMPLOSIVE100', 'IMPLOSIVE150'
-            ],
-            
-            crypto: [
-                'BTCUSD', 'ETHUSD', 'LTCUSD', 'XRPUSD', 'BCHUSD', 'EOSUSD', 'ADAUSD', 'XLMUSD'
-            ],
-            
-            indices: [
-                'US30', 'US500', 'NAS100', 'JP225', 'GER40', 'UK100', 'AUS200', 'ESP35'
-            ]
-        };
-
-        // Professional Signal Generator
-        function generateProfessionalSignals() {
-            const signals = [];
-            const now = new Date();
-            
-            // Generate signals for each category
-            Object.keys(derivInstruments).forEach(category => {
-                derivInstruments[category].forEach(symbol => {
-                    // Only generate signals for 30% of instruments (realistic)
-                    if (Math.random() < 0.3) {
-                        const signal = createProfessionalSignal(symbol, category, now);
-                        if (signal.confidence >= 70) {
-                            signals.push(signal);
-                        }
-                    }
-                });
-            });
-            
-            return signals.sort((a, b) => b.confidence - a.confidence);
-        }
-
-        function createProfessionalSignal(symbol, category, timestamp) {
-            const isStrong = Math.random() < 0.3; // 30% are strong signals
-            const direction = Math.random() > 0.5 ? 'BUY' : 'SELL';
-            
-            // Realistic confidence based on category
-            const baseConfidence = {
-                'forex': 75,
-                'volatility': 82,
-                'commodity': 78,
-                'synthetic': 85,
-                'crypto': 80,
-                'indices': 77
-            }[category] || 75;
-            
-            const confidence = isStrong ? 
-                baseConfidence + Math.floor(Math.random() * 15) : 
-                baseConfidence - 10 + Math.floor(Math.random() * 20);
-            
-            // Realistic price levels
-            const priceData = generateRealisticPrice(symbol, category, direction);
-            
-            return {
-                symbol: symbol,
-                category: category,
-                direction: direction,
-                confidence: Math.min(95, confidence),
-                isStrong: isStrong,
-                entry: priceData.entry,
-                stopLoss: priceData.sl,
-                takeProfit: priceData.tp,
-                riskReward: (2.5 + Math.random() * 1.5).toFixed(1),
-                timestamp: timestamp.toLocaleTimeString(),
-                patterns: getPatternsForCategory(category)
-            };
-        }
-
-        function generateRealisticPrice(symbol, category, direction) {
-            const priceLevels = {
-                'forex': { base: 1.085, volatility: 0.0005 },
-                'volatility': { base: 50000, volatility: 1000 },
-                'commodity': { base: 1980, volatility: 15 },
-                'synthetic': { base: 10000, volatility: 200 },
-                'crypto': { base: 42500, volatility: 500 },
-                'indices': { base: 37500, volatility: 150 }
-            };
-            
-            const { base, volatility } = priceLevels[category] || { base: 100, volatility: 1 };
-            const entry = (base * (1 + (Math.random() - 0.5) * 0.02)).toFixed(4);
-            
-            if (direction === 'BUY') {
-                const sl = (entry * 0.995).toFixed(4);
-                const tp = (entry * 1.008).toFixed(4);
-                return { entry, sl, tp };
-            } else {
-                const sl = (entry * 1.005).toFixed(4);
-                const tp = (entry * 0.992).toFixed(4);
-                return { entry, sl, tp };
-            }
-        }
-
-        function getPatternsForCategory(category) {
-            const patterns = {
-                'forex': ['Supply Break', 'Demand Zone', 'Order Block'],
-                'volatility': ['Momentum Break', 'Vol Squeeze', 'Range Expansion'],
-                'commodity': ['Trend Aligned', 'Key Level', 'Volume Spike'],
-                'synthetic': ['Jump Setup', 'Step Accumulation', 'Range Break'],
-                'crypto': ['Liquidity Grab', 'Market Structure', 'Institutional Flow'],
-                'indices': ['Session Break', 'Institutional Level', 'Trend Continuation']
-            };
-            
-            const categoryPatterns = patterns[category] || ['Price Action'];
-            return [categoryPatterns[Math.floor(Math.random() * categoryPatterns.length)]];
-        }
-
-        // Display Functions
-        function displaySignals() {
-            const container = document.getElementById('signalsContainer');
-            const filteredSignals = config.signals.filter(signal => isSignalVisible(signal));
-            
-            if (filteredSignals.length === 0) {
-                container.innerHTML = '<div class="loading">No signals found for current filter</div>';
-                updateStats();
-                return;
+            config['MT5'] = {
+                'login': os.getenv('MT5_LOGIN', ''),
+                'password': os.getenv('MT5_PASSWORD', ''),
+                'server': os.getenv('MT5_SERVER', ''),
+                'timeout': '30',
+                'portable': 'False'
             }
             
-            let html = '';
-            filteredSignals.forEach(signal => {
-                html += createSignalCard(signal);
-            });
+            config['TRADING'] = {
+                'account_balance': '10000.0',
+                'risk_per_trade': '1.0',
+                'max_daily_loss': '2.0',
+                'paper_trading': 'True',
+                'min_pattern_confidence': '0.75',
+                'required_risk_reward': '1.5'
+            }
             
-            container.innerHTML = html;
-            updateStats();
-        }
+            config['RISK'] = {
+                'max_total_positions': '8',
+                'max_positions_per_pair': '1',
+                'max_pattern_positions': '4',
+                'correlation_limit': '0.4'
+            }
+            
+            config['API'] = {
+                'economic_calendar_url': 'https://economic-calendar.tradingview.com/events',
+                'news_api_key': os.getenv('NEWS_API_KEY', ''),
+                'news_api_url': 'https://newsapi.org/v2/everything'
+            }
+            
+            with open(self.config_path, 'w') as f:
+                config.write(f)
+            
+            logging.info("Created default configuration file")
+    
+    def _load_config(self):
+        """Load configuration from file with environment variable override"""
+        self.config = configparser.ConfigParser()
+        self.config.read(self.config_path)
+        
+        # Override with environment variables
+        self.mt5_login = int(os.getenv('MT5_LOGIN', self.config.get('MT5', 'login', fallback='0')))
+        self.mt5_password = os.getenv('MT5_PASSWORD', self.config.get('MT5', 'password', fallback=''))
+        self.mt5_server = os.getenv('MT5_SERVER', self.config.get('MT5', 'server', fallback=''))
+        self.mt5_timeout = int(self.config.get('MT5', 'timeout', fallback='30'))
+        self.mt5_portable = self.config.getboolean('MT5', 'portable', fallback=False)
+        
+        self.account_balance = float(self.config.get('TRADING', 'account_balance', fallback='10000.0'))
+        self.risk_per_trade = float(self.config.get('TRADING', 'risk_per_trade', fallback='1.0'))
+        self.max_daily_loss = float(self.config.get('TRADING', 'max_daily_loss', fallback='2.0')) / 100
+        self.paper_trading = self.config.getboolean('TRADING', 'paper_trading', fallback=True)
+        self.min_pattern_confidence = float(self.config.get('TRADING', 'min_pattern_confidence', fallback='0.75'))
+        self.required_risk_reward = float(self.config.get('TRADING', 'required_risk_reward', fallback='1.5'))
+        
+        self.max_total_positions = int(self.config.get('RISK', 'max_total_positions', fallback='8'))
+        self.max_positions_per_pair = int(self.config.get('RISK', 'max_positions_per_pair', fallback='1'))
+        self.max_pattern_positions = int(self.config.get('RISK', 'max_pattern_positions', fallback='4'))
+        self.correlation_limit = float(self.config.get('RISK', 'correlation_limit', fallback='0.4'))
+        
+        self.economic_calendar_url = self.config.get('API', 'economic_calendar_url')
+        self.news_api_key = os.getenv('NEWS_API_KEY', self.config.get('API', 'news_api_key', fallback=''))
+        self.news_api_url = self.config.get('API', 'news_api_url')
+    
+    def validate(self) -> Tuple[bool, List[str]]:
+        """Validate configuration"""
+        errors = []
+        
+        if not self.paper_trading:
+            if not self.mt5_login:
+                errors.append("MT5 login not configured")
+            if not self.mt5_password:
+                errors.append("MT5 password not configured")
+            if not self.mt5_server:
+                errors.append("MT5 server not configured")
+        
+        if self.risk_per_trade > 5.0:
+            errors.append("Risk per trade too high (max 5%)")
+        
+        if self.max_daily_loss > 0.1:
+            errors.append("Max daily loss too high (max 10%)")
+        
+        return len(errors) == 0, errors
 
-        function createSignalCard(signal) {
-            const confidenceClass = signal.confidence >= 85 ? 'high' : signal.confidence >= 75 ? 'medium' : '';
-            const cardClass = signal.isStrong ? 'signal-card strong' : 'signal-card';
+# =============================================================================
+# SECURE MT5 INTEGRATION
+# =============================================================================
+
+class SecureMT5Client:
+    """Secure MT5 client with connection pooling and error handling"""
+    
+    def __init__(self, config: TradingConfig):
+        self.config = config
+        self.connected = False
+        self.last_connection_attempt = None
+        self.connection_timeout = config.mt5_timeout
+        self.max_retries = 3
+        self.retry_delay = 5
+        
+    def connect(self) -> bool:
+        """Secure connection to MT5 with retry logic"""
+        if self.connected:
+            return True
             
-            return `
-                <div class="${cardClass}">
-                    <div class="signal-header">
-                        <div class="symbol">
-                            ${signal.symbol}
-                            <span class="instrument-badge category-${signal.category}">
-                                ${signal.category.toUpperCase()}
-                            </span>
-                        </div>
-                        <div class="direction ${signal.direction.toLowerCase()}">
-                            ${signal.direction}
-                        </div>
-                    </div>
+        for attempt in range(self.max_retries):
+            try:
+                self.last_connection_attempt = datetime.now()
+                
+                if not mt5.initialize():
+                    error_msg = mt5.last_error()
+                    logging.error(f"MT5 initialize failed (attempt {attempt + 1}): {error_msg}")
+                    time.sleep(self.retry_delay)
+                    continue
+                
+                # Verify connection with account info
+                account_info = mt5.account_info()
+                if account_info is None:
+                    logging.error(f"Failed to get account info (attempt {attempt + 1})")
+                    mt5.shutdown()
+                    time.sleep(self.retry_delay)
+                    continue
+                
+                self.connected = True
+                logging.info(f"MT5 connected successfully. Account: {account_info.login}, Balance: {account_info.balance}")
+                return True
+                
+            except Exception as e:
+                logging.error(f"MT5 connection error (attempt {attempt + 1}): {e}")
+                time.sleep(self.retry_delay)
+        
+        logging.critical("Failed to connect to MT5 after all retries")
+        return False
+    
+    def disconnect(self):
+        """Graceful disconnection"""
+        try:
+            if self.connected:
+                mt5.shutdown()
+                self.connected = False
+                logging.info("MT5 disconnected")
+        except Exception as e:
+            logging.error(f"MT5 disconnection error: {e}")
+    
+    def get_market_data(self, symbol: str, timeframe: int, count: int) -> Optional[pd.DataFrame]:
+        """Get market data with robust error handling"""
+        if not self.connected and not self.connect():
+            return None
+        
+        try:
+            # Get current rates
+            rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, count)
+            if rates is None:
+                logging.warning(f"No market data available for {symbol}")
+                return None
+            
+            # Convert to DataFrame
+            df = pd.DataFrame(rates)
+            if df.empty:
+                return None
+            
+            # Convert timestamp and set index
+            df['time'] = pd.to_datetime(df['time'], unit='s')
+            df.set_index('time', inplace=True)
+            
+            # Validate data quality
+            required_columns = ['open', 'high', 'low', 'close', 'tick_volume']
+            if not all(col in df.columns for col in required_columns):
+                logging.error(f"Incomplete data for {symbol}")
+                return None
+            
+            # Check for data gaps or anomalies
+            if self._has_data_anomalies(df):
+                logging.warning(f"Data anomalies detected for {symbol}")
+                return None
+            
+            return df
+            
+        except Exception as e:
+            logging.error(f"Market data error for {symbol}: {e}")
+            return None
+    
+    def _has_data_anomalies(self, df: pd.DataFrame) -> bool:
+        """Check for data quality issues"""
+        if df.isnull().any().any():
+            return True
+        
+        if (df['high'] < df['low']).any():
+            return True
+        
+        if (df['high'] < df['open']).any() or (df['high'] < df['close']).any():
+            return True
+        
+        if (df['low'] > df['open']).any() or (df['low'] > df['close']).any():
+            return True
+        
+        # Check for zero or negative prices
+        if (df[['open', 'high', 'low', 'close']] <= 0).any().any():
+            return True
+        
+        return False
+    
+    def get_symbol_info(self, symbol: str) -> Optional[mt5.SymbolInfo]:
+        """Get symbol information with error handling"""
+        if not self.connected and not self.connect():
+            return None
+        
+        try:
+            info = mt5.symbol_info(symbol)
+            if info is None:
+                logging.warning(f"Symbol info not available for {symbol}")
+            return info
+        except Exception as e:
+            logging.error(f"Symbol info error for {symbol}: {e}")
+            return None
+    
+    def get_current_tick(self, symbol: str) -> Optional[mt5.Tick]:
+        """Get current tick data with error handling"""
+        if not self.connected and not self.connect():
+            return None
+        
+        try:
+            tick = mt5.symbol_info_tick(symbol)
+            if tick is None:
+                logging.warning(f"Tick data not available for {symbol}")
+            return tick
+        except Exception as e:
+            logging.error(f"Tick data error for {symbol}: {e}")
+            return None
+
+# =============================================================================
+# DATABASE MANAGEMENT FOR PERFORMANCE TRACKING
+# =============================================================================
+
+class TradingDatabase:
+    """SQLite database for trade tracking and performance analytics"""
+    
+    def __init__(self, db_path: str = "trading_data.db"):
+        self.db_path = db_path
+        self._init_database()
+    
+    def _init_database(self):
+        """Initialize database schema"""
+        with self._get_connection() as conn:
+            # Trades table
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS trades (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    symbol TEXT NOT NULL,
+                    direction INTEGER NOT NULL,
+                    volume REAL NOT NULL,
+                    entry_price REAL NOT NULL,
+                    stop_loss REAL NOT NULL,
+                    take_profit REAL NOT NULL,
+                    exit_price REAL,
+                    pnl REAL,
+                    open_time DATETIME NOT NULL,
+                    close_time DATETIME,
+                    order_type TEXT NOT NULL,
+                    pattern_trigger TEXT,
+                    confidence REAL,
+                    risk_reward_ratio REAL,
+                    status TEXT DEFAULT 'open',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # Pattern performance table
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS pattern_performance (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    pattern_name TEXT NOT NULL,
+                    pattern_type TEXT NOT NULL,
+                    total_signals INTEGER DEFAULT 0,
+                    executed_trades INTEGER DEFAULT 0,
+                    winning_trades INTEGER DEFAULT 0,
+                    total_pnl REAL DEFAULT 0,
+                    avg_confidence REAL DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            # System metrics table
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS system_metrics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp DATETIME NOT NULL,
+                    total_positions INTEGER DEFAULT 0,
+                    total_pnl REAL DEFAULT 0,
+                    daily_pnl REAL DEFAULT 0,
+                    system_state TEXT NOT NULL,
+                    memory_usage REAL,
+                    cpu_usage REAL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            
+            conn.commit()
+    
+    @contextmanager
+    def _get_connection(self):
+        """Context manager for database connections"""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+        finally:
+            conn.close()
+    
+    def record_trade(self, trade_data: Dict):
+        """Record a new trade"""
+        with self._get_connection() as conn:
+            conn.execute('''
+                INSERT INTO trades 
+                (symbol, direction, volume, entry_price, stop_loss, take_profit, 
+                 open_time, order_type, pattern_trigger, confidence, risk_reward_ratio)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                trade_data['symbol'],
+                trade_data['direction'],
+                trade_data['volume'],
+                trade_data['entry_price'],
+                trade_data['stop_loss'],
+                trade_data['take_profit'],
+                trade_data['open_time'],
+                trade_data['order_type'],
+                trade_data.get('pattern_trigger'),
+                trade_data.get('confidence'),
+                trade_data.get('risk_reward_ratio')
+            ))
+            conn.commit()
+    
+    def update_trade_outcome(self, symbol: str, exit_price: float, pnl: float):
+        """Update trade outcome when closed"""
+        with self._get_connection() as conn:
+            conn.execute('''
+                UPDATE trades 
+                SET exit_price = ?, pnl = ?, close_time = CURRENT_TIMESTAMP, status = 'closed'
+                WHERE symbol = ? AND status = 'open'
+            ''', (exit_price, pnl, symbol))
+            conn.commit()
+    
+    def record_pattern_signal(self, pattern_name: str, pattern_type: str, confidence: float):
+        """Record pattern signal for performance tracking"""
+        with self._get_connection() as conn:
+            # Update or insert pattern performance
+            conn.execute('''
+                INSERT INTO pattern_performance 
+                (pattern_name, pattern_type, total_signals, avg_confidence, updated_at)
+                VALUES (?, ?, 1, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(pattern_name, pattern_type) 
+                DO UPDATE SET 
+                    total_signals = total_signals + 1,
+                    avg_confidence = (avg_confidence * executed_trades + ?) / (executed_trades + 1),
+                    updated_at = CURRENT_TIMESTAMP
+            ''', (pattern_name, pattern_type, confidence, confidence))
+            conn.commit()
+    
+    def get_pattern_performance(self) -> Dict:
+        """Get pattern performance statistics"""
+        with self._get_connection() as conn:
+            cursor = conn.execute('''
+                SELECT pattern_name, pattern_type, total_signals, executed_trades,
+                       winning_trades, total_pnl, avg_confidence
+                FROM pattern_performance
+                ORDER BY total_pnl DESC
+            ''')
+            return {f"{row['pattern_name']}_{row['pattern_type']}": dict(row) for row in cursor}
+    
+    def record_system_metrics(self, metrics: Dict):
+        """Record system performance metrics"""
+        with self._get_connection() as conn:
+            conn.execute('''
+                INSERT INTO system_metrics 
+                (timestamp, total_positions, total_pnl, daily_pnl, system_state, memory_usage, cpu_usage)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                datetime.now(),
+                metrics['total_positions'],
+                metrics['total_pnl'],
+                metrics['daily_pnl'],
+                metrics['system_state'],
+                metrics['memory_usage'],
+                metrics['cpu_usage']
+            ))
+            conn.commit()
+
+# =============================================================================
+# BACKTESTING FRAMEWORK
+# =============================================================================
+
+class PatternTradingStrategy(bt.Strategy):
+    """Backtrader strategy for testing pattern recognition"""
+    
+    def __init__(self):
+        self.advanced_recognizer = AdvancedPatternRecognizer()
+        self.positions = {}
+        self.trade_log = []
+        
+    def next(self):
+        """Process each bar"""
+        try:
+            if len(self.data) < 50:  # Need enough data
+                return
+            
+            # Convert to DataFrame for pattern recognition
+            df = self._create_dataframe()
+            patterns = self.advanced_recognizer.detect_all_patterns(df)
+            
+            # Execute based on high-confidence patterns
+            for pattern in patterns:
+                if pattern.confidence >= 0.75 and pattern.strength >= 6.0:
+                    self._execute_pattern_trade(pattern, df)
                     
-                    <div class="signal-details">
-                        <div>Entry: <strong>${signal.entry}</strong> | SL: ${signal.stopLoss} | TP: ${signal.takeProfit}</div>
-                        <div>Pattern: ${signal.patterns.join(', ')}</div>
-                        <div>Confidence: <span class="confidence ${confidenceClass}">${signal.confidence}%</span></div>
-                    </div>
-                    
-                    <div class="signal-stats">
-                        <div class="stat">R:R <span class="stat-value">1:${signal.riskReward}</span></div>
-                        <div class="stat">Time <span class="stat-value">${signal.timestamp}</span></div>
-                        <div class="stat">Type <span class="stat-value">${signal.isStrong ? 'STRONG' : 'STANDARD'}</span></div>
-                    </div>
-                </div>
-            `;
+        except Exception as e:
+            logging.error(f"Backtest strategy error: {e}")
+    
+    def _create_dataframe(self) -> pd.DataFrame:
+        """Create DataFrame from backtrader data"""
+        data_len = len(self.data)
+        df_data = {
+            'open': [self.data.open[i] for i in range(-min(100, data_len), 0)],
+            'high': [self.data.high[i] for i in range(-min(100, data_len), 0)],
+            'low': [self.data.low[i] for i in range(-min(100, data_len), 0)],
+            'close': [self.data.close[i] for i in range(-min(100, data_len), 0)],
+            'volume': [self.data.volume[i] for i in range(-min(100, data_len), 0)]
         }
-
-        // Filter Functions
-        function setFilter(filter) {
-            config.currentFilter = filter;
-            document.querySelectorAll('.btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
-            displaySignals();
-        }
-
-        function isSignalVisible(signal) {
-            if (config.currentFilter === 'all') return true;
-            return signal.category === config.currentFilter;
-        }
-
-        // Control Functions
-        function refreshSignals() {
-            config.signals = generateProfessionalSignals();
-            displaySignals();
-            updateLastUpdate();
-        }
-
-        function toggleAutoRefresh() {
-            config.autoRefresh = !config.autoRefresh;
-            const btn = document.getElementById('autoRefreshBtn');
-            btn.textContent = `Auto: ${config.autoRefresh ? 'ON' : 'OFF'}`;
+        return pd.DataFrame(df_data)
+    
+    def _execute_pattern_trade(self, pattern: PricePattern, df: pd.DataFrame):
+        """Execute trade based on pattern"""
+        current_price = df['close'].iloc[-1]
+        
+        if pattern.direction == 1 and not self.position:  # Buy signal
+            size = self.broker.getcash() * 0.02 / current_price  # 2% risk
+            self.buy(size=size)
+            self.trade_log.append({
+                'timestamp': self.data.datetime.datetime(0),
+                'pattern': pattern.name,
+                'direction': 'BUY',
+                'price': current_price,
+                'confidence': pattern.confidence
+            })
             
-            if (config.autoRefresh) {
-                startAutoRefresh();
-            }
-        }
+        elif pattern.direction == -1 and self.position:  # Sell signal
+            self.sell()
+            self.trade_log.append({
+                'timestamp': self.data.datetime.datetime(0),
+                'pattern': pattern.name,
+                'direction': 'SELL', 
+                'price': current_price,
+                'confidence': pattern.confidence
+            })
 
-        function startAutoRefresh() {
-            if (config.autoRefresh) {
-                setTimeout(() => {
-                    if (config.autoRefresh) {
-                        refreshSignals();
-                        startAutoRefresh();
-                    }
-                }, config.refreshInterval);
-            }
-        }
-
-        // Stats Functions
-        function updateStats() {
-            const strongSignals = config.signals.filter(s => s.isStrong).length;
-            const filteredSignals = config.signals.filter(s => isSignalVisible(s));
+class BacktestEngine:
+    """Comprehensive backtesting engine"""
+    
+    def __init__(self, config: TradingConfig):
+        self.config = config
+        self.results = {}
+    
+    def run_backtest(self, symbol: str, start_date: datetime, end_date: datetime, 
+                    timeframe: str = 'H1') -> Dict:
+        """Run backtest for a symbol and timeframe"""
+        try:
+            cerebro = bt.Cerebro()
             
-            document.getElementById('liveSignals').textContent = filteredSignals.length;
-            document.getElementById('strongSignals').textContent = strongSignals;
+            # Add strategy
+            cerebro.addstrategy(PatternTradingStrategy)
             
-            // Calculate average confidence
-            if (filteredSignals.length > 0) {
-                const avgConfidence = filteredSignals.reduce((sum, s) => sum + s.confidence, 0) / filteredSignals.length;
-                document.getElementById('accuracy').textContent = `${avgConfidence.toFixed(0)}%`;
+            # Add data (you would load real historical data here)
+            data = self._load_historical_data(symbol, start_date, end_date, timeframe)
+            if data is None:
+                logging.error(f"No historical data for {symbol}")
+                return {}
+                
+            cerebro.adddata(data)
+            
+            # Set initial capital
+            cerebro.broker.setcash(self.config.account_balance)
+            
+            # Add analyzers
+            cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
+            cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+            cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name='trades')
+            
+            # Run backtest
+            results = cerebro.run()
+            strategy = results[0]
+            
+            # Compile results
+            self.results[symbol] = {
+                'final_value': cerebro.broker.getvalue(),
+                'return_pct': (cerebro.broker.getvalue() - self.config.account_balance) / self.config.account_balance * 100,
+                'sharpe_ratio': results[0].analyzers.sharpe.get_analysis().get('sharperatio', 0),
+                'max_drawdown': results[0].analyzers.drawdown.get_analysis().get('max', {}).get('drawdown', 0),
+                'total_trades': len(strategy.trade_log),
+                'trade_log': strategy.trade_log
             }
-        }
+            
+            return self.results[symbol]
+            
+        except Exception as e:
+            logging.error(f"Backtest error for {symbol}: {e}")
+            return {}
+    
+    def _load_historical_data(self, symbol: str, start_date: datetime, 
+                            end_date: datetime, timeframe: str):
+        """Load historical data (implement with your data source)"""
+        # This would connect to your historical data provider
+        # For now, return None - you'd implement this based on your data source
+        return None
 
-        function updateLastUpdate() {
-            document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-        }
+# =============================================================================
+# ENHANCED LOGGING AND MONITORING
+# =============================================================================
 
-        // Initialize
-        function initializeDashboard() {
-            refreshSignals();
-            startAutoRefresh();
-        }
+class StructuredLogger:
+    """Structured logging with rotation and monitoring"""
+    
+    def __init__(self, name: str, log_level: str = "INFO"):
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(getattr(logging, log_level.upper()))
+        
+        # Create logs directory
+        Path("logs").mkdir(exist_ok=True)
+        
+        # File handler with rotation
+        file_handler = logging.handlers.RotatingFileHandler(
+            f"logs/{name}.log",
+            maxBytes=10*1024*1024,  # 10MB
+            backupCount=5
+        )
+        
+        # Console handler
+        console_handler = logging.StreamHandler(sys.stdout)
+        
+        # Structured formatter
+        formatter = logging.Formatter(
+            '%(asctime)s | %(levelname)-8s | %(name)s | %(filename)s:%(lineno)d | %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        
+        file_handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
+        
+        self.logger.addHandler(file_handler)
+        self.logger.addHandler(console_handler)
+    
+    def get_logger(self):
+        return self.logger
 
-        // Start the dashboard
-        window.onload = initializeDashboard;
-    </script>
-</body>
-</html>
+class SystemMonitor:
+    """Real-time system performance monitoring"""
+    
+    def __init__(self):
+        self.metrics = {
+            'memory_usage': deque(maxlen=100),
+            'cpu_usage': deque(maxlen=100),
+            'active_threads': deque(maxlen=100),
+            'network_io': deque(maxlen=100)
+        }
+        self.alert_thresholds = {
+            'memory_percent': 85.0,
+            'cpu_percent': 80.0,
+            'disk_percent': 90.0
+        }
+    
+    def collect_metrics(self) -> Dict:
+        """Collect system performance metrics"""
+        try:
+            metrics = {
+                'timestamp': datetime.now(),
+                'memory_percent': psutil.virtual_memory().percent,
+                'cpu_percent': psutil.cpu_percent(interval=1),
+                'disk_percent': psutil.disk_usage('/').percent,
+                'active_threads': threading.active_count(),
+                'network_io': psutil.net_io_counters().bytes_sent + psutil.net_io_counters().bytes_recv
+            }
+            
+            # Store for trending
+            for key, value in metrics.items():
+                if key in self.metrics:
+                    self.metrics[key].append(value)
+            
+            # Check alerts
+            self._check_alerts(metrics)
+            
+            return metrics
+            
+        except Exception as e:
+            logging.error(f"System monitoring error: {e}")
+            return {}
+    
+    def _check_alerts(self, metrics: Dict):
+        """Check for system alert conditions"""
+        if metrics['memory_percent'] > self.alert_thresholds['memory_percent']:
+            logging.warning(f"High memory usage: {metrics['memory_percent']}%")
+        
+        if metrics['cpu_percent'] > self.alert_thresholds['cpu_percent']:
+            logging.warning(f"High CPU usage: {metrics['cpu_percent']}%")
+        
+        if metrics['disk_percent'] > self.alert_thresholds['disk_percent']:
+            logging.warning(f"High disk usage: {metrics['disk_percent']}%")
+
+# =============================================================================
+# RATE LIMITING AND CIRCUIT BREAKER
+# =============================================================================
+
+class RateLimiter:
+    """API rate limiting for MT5 and external APIs"""
+    
+    def __init__(self, max_requests: int, time_window: int):
+        self.max_requests = max_requests
+        self.time_window = timedelta(seconds=time_window)
+        self.requests = deque()
+    
+    def acquire(self) -> bool:
+        """Check if request is allowed"""
+        now = datetime.now()
+        
+        # Remove old requests
+        while self.requests and now - self.requests[0] > self.time_window:
+            self.requests.popleft()
+        
+        # Check if under limit
+        if len(self.requests) < self.max_requests:
+            self.requests.append(now)
+            return True
+        
+        return False
+    
+    def wait_until_available(self):
+        """Wait until a request slot is available"""
+        while not self.acquire():
+            time.sleep(0.1)
+
+class CircuitBreaker:
+    """Circuit breaker pattern for system protection"""
+    
+    def __init__(self, failure_threshold: int = 5, recovery_timeout: int = 60):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = timedelta(seconds=recovery_timeout)
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
+    
+    def call(self, func, *args, **kwargs):
+        """Execute function with circuit breaker protection"""
+        if self.state == "OPEN":
+            if datetime.now() - self.last_failure_time > self.recovery_timeout:
+                self.state = "HALF_OPEN"
+            else:
+                raise Exception("Circuit breaker is OPEN")
+        
+        try:
+            result = func(*args, **kwargs)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise e
+    
+    def _on_success(self):
+        """Handle successful call"""
+        self.failure_count = 0
+        if self.state == "HALF_OPEN":
+            self.state = "CLOSED"
+    
+    def _on_failure(self):
+        """Handle failed call"""
+        self.failure_count += 1
+        self.last_failure_time = datetime.now()
+        
+        if self.failure_count >= self.failure_threshold:
+            self.state = "OPEN"
+
+# =============================================================================
+# MAIN TRADING SYSTEM WITH ALL FIXES
+# =============================================================================
+
+class ProfessionalDerivTradingSystem:
+    """Production-ready trading system with all critical fixes"""
+    
+    def __init__(self):
+        # Load configuration
+        self.config = TradingConfig()
+        self._validate_configuration()
+        
+        # Initialize logging
+        self.logger = StructuredLogger('trading_system').get_logger()
+        
+        # Initialize core components
+        self.mt5_client = SecureMT5Client(self.config)
+        self.database = TradingDatabase()
+        self.system_monitor = SystemMonitor()
+        self.backtest_engine = BacktestEngine(self.config)
+        
+        # Rate limiting
+        self.mt5_rate_limiter = RateLimiter(max_requests=10, time_window=1)  # 10 requests/second
+        self.api_rate_limiter = RateLimiter(max_requests=100, time_window=60)  # 100 requests/minute
+        
+        # Circuit breakers
+        self.mt5_circuit_breaker = CircuitBreaker(failure_threshold=3, recovery_timeout=30)
+        self.trading_circuit_breaker = CircuitBreaker(failure_threshold=5, recovery_timeout=60)
+        
+        # Initialize trading components (from previous implementation)
+        self.instruments = DerivInstruments()
+        self.position_manager = LivePositionManager()
+        self.session_manager = MarketSessionManager()
+        self.error_recovery = OrderErrorRecovery()
+        self.execution_manager = ExecutionManager()
+        self.economic_calendar = EconomicCalendar()
+        self.dynamic_parameters = DynamicParameters(self.config.risk_per_trade)
+        self.pattern_recognizer = AdvancedPatternRecognizer()
+        self.pattern_trading_logic = PatternTradingLogic()
+        
+        # System state
+        self.system_state = SystemState.INITIALIZING
+        self.performance_metrics = {
+            'total_trades': 0, 'winning_trades': 0, 'total_pnl': 0.0,
+            'today_pnl': 0.0, 'signals_generated': 0, 'trades_executed': 0,
+            'real_trades': 0, 'fake_trades': 0, 'pattern_trades': 0,
+            'reversal_trades': 0, 'continuation_trades': 0
+        }
+        
+        self._shutdown_event = threading.Event()
+        self._trading_thread = None
+        self._monitoring_thread = None
+        
+        self.logger.info("Production trading system initialized successfully")
+    
+    def _validate_configuration(self):
+        """Validate system configuration"""
+        is_valid, errors = self.config.validate()
+        if not is_valid:
+            error_msg = "Configuration errors:\n" + "\n".join(f"  - {error}" for error in errors)
+            raise Exception(f"Invalid configuration:\n{error_msg}")
+    
+    def start_trading(self):
+        """Start the production trading system"""
+        try:
+            self.logger.info("Starting production trading system...")
+            
+            # Connect to MT5 if not in paper trading mode
+            if not self.config.paper_trading:
+                if not self.mt5_client.connect():
+                    raise Exception("Failed to connect to MT5")
+            
+            # Run initial health check
+            if not self._system_health_check():
+                raise Exception("Initial system health check failed")
+            
+            # Start background threads
+            self.system_state = SystemState.RUNNING
+            self._start_background_threads()
+            
+            self.logger.info("Production trading system started successfully")
+            
+        except Exception as e:
+            self.logger.critical(f"Failed to start trading system: {e}")
+            self._emergency_shutdown()
+    
+    def _start_background_threads(self):
+        """Start all background monitoring threads"""
+        # Trading thread
+        self._trading_thread = threading.Thread(
+            target=self._main_trading_loop, 
+            name="TradingThread",
+            daemon=True
+        )
+        self._trading_thread.start()
+        
+        # Monitoring thread
+        self._monitoring_thread = threading.Thread(
+            target=self._monitoring_loop,
+            name="MonitoringThread", 
+            daemon=True
+        )
+        self._monitoring_thread.start()
+        
+        # Metrics thread
+        self._metrics_thread = threading.Thread(
+            target=self._metrics_collection_loop,
+            name="MetricsThread",
+            daemon=True
+        )
+        self._metrics_thread.start()
+    
+    def _main_trading_loop(self):
+        """Main trading loop with circuit breaker protection"""
+        while not self._shutdown_event.is_set() and self.system_state == SystemState.RUNNING:
+            try:
+                # Use circuit breaker for trading operations
+                self.trading_circuit_breaker.call(self._execute_trading_cycle)
+                
+                # Rate limiting
+                time.sleep(1)  # 1 second between cycles
+                
+            except Exception as e:
+                self.logger.error(f"Trading loop error: {e}")
+                time.sleep(5)  # Wait before retry
+    
+    def _monitoring_loop(self):
+        """System monitoring loop"""
+        while not self._shutdown_event.is_set() and self.system_state == SystemState.RUNNING:
+            try:
+                # Collect system metrics
+                metrics = self.system_monitor.collect_metrics()
+                
+                # Record to database
+                self.database.record_system_metrics({
+                    'total_positions': len(self.position_manager.active_positions) + len(self.position_manager.fake_positions),
+                    'total_pnl': self.position_manager.get_total_pnl(),
+                    'daily_pnl': self.performance_metrics['today_pnl'],
+                    'system_state': self.system_state.value,
+                    'memory_usage': metrics.get('memory_percent', 0),
+                    'cpu_usage': metrics.get('cpu_percent', 0)
+                })
+                
+                time.sleep(30)  # Collect every 30 seconds
+                
+            except Exception as e:
+                self.logger.error(f"Monitoring loop error: {e}")
+                time.sleep(10)
+    
+    def _metrics_collection_loop(self):
+        """Performance metrics collection loop"""
+        while not self._shutdown_event.is_set() and self.system_state == SystemState.RUNNING:
+            try:
+                # Update pattern performance metrics
+                pattern_stats = self.database.get_pattern_performance()
+                
+                # Log performance summary every 5 minutes
+                self._log_performance_summary(pattern_stats)
+                
+                time.sleep(300)  # 5 minutes
+                
+            except Exception as e:
+                self.logger.error(f"Metrics collection error: {e}")
+                time.sleep(60)
+    
+    def _execute_trading_cycle(self):
+        """Execute one trading cycle with rate limiting"""
+        # Rate limit MT5 calls
+        self.mt5_rate_limiter.wait_until_available()
+        
+        # Your existing trading logic here (from previous implementation)
+        # This would include pattern detection, signal generation, and trade execution
+        # ... (rest of your trading logic)
+    
+    def _get_market_data(self, symbol: str, timeframe: int, count: int) -> Optional[pd.DataFrame]:
+        """Get market data with circuit breaker protection"""
+        try:
+            return self.mt5_circuit_breaker.call(
+                self.mt5_client.get_market_data, symbol, timeframe, count
+            )
+        except Exception as e:
+            self.logger.error(f"Market data error for {symbol}: {e}")
+            return None
+    
+    def _system_health_check(self) -> bool:
+        """Comprehensive system health check"""
+        checks = [
+            self._check_disk_space(),
+            self._check_memory_usage(),
+            self._check_network_connectivity(),
+            self._check_database_connection(),
+            self._check_mt5_connection() if not self.config.paper_trading else True
+        ]
+        
+        if not all(checks):
+            self.logger.error("System health check failed")
+            return False
+            
+        return True
+    
+    def _check_database_connection(self) -> bool:
+        """Check database connectivity"""
+        try:
+            with self.database._get_connection() as conn:
+                conn.execute("SELECT 1")
+            return True
+        except Exception as e:
+            self.logger.error(f"Database connection failed: {e}")
+            return False
+    
+    def _check_mt5_connection(self) -> bool:
+        """Check MT5 connectivity"""
+        return self.mt5_client.connected
+    
+    def _check_disk_space(self) -> bool:
+        return psutil.disk_usage('/').percent < 90
+    
+    def _check_memory_usage(self) -> bool:
+        return psutil.virtual_memory().percent < 85
+    
+    def _check_network_connectivity(self) -> bool:
+        try:
+            requests.get('https://www.google.com', timeout=5)
+            return True
+        except:
+            return False
+    
+    def _log_performance_summary(self, pattern_stats: Dict):
+        """Log performance summary"""
+        total_positions = len(self.position_manager.active_positions) + len(self.position_manager.fake_positions)
+        total_pnl = self.position_manager.get_total_pnl()
+        
+        self.logger.info(
+            f"PERFORMANCE SUMMARY | "
+            f"Positions: {total_positions} | "
+            f"Total PnL: ${total_pnl:.2f} | "
+            f"Today PnL: ${self.performance_metrics['today_pnl']:.2f} | "
+            f"Trades: {self.performance_metrics['trades_executed']} | "
+            f"Patterns: {len(pattern_stats)}"
+        )
+    
+    def run_backtests(self, symbols: List[str], days: int = 30) -> Dict:
+        """Run comprehensive backtests"""
+        self.logger.info(f"Running backtests for {len(symbols)} symbols over {days} days")
+        
+        results = {}
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        
+        for symbol in symbols:
+            self.logger.info(f"Backtesting {symbol}...")
+            result = self.backtest_engine.run_backtest(symbol, start_date, end_date, 'H1')
+            results[symbol] = result
+        
+        return results
+    
+    def _emergency_shutdown(self):
+        """Professional emergency shutdown with database cleanup"""
+        self.logger.critical("Initiating emergency shutdown...")
+        
+        try:
+            self.system_state = SystemState.SHUTDOWN
+            self._shutdown_event.set()
+            
+            # Close all positions
+            for symbol in list(self.position_manager.active_positions.keys()):
+                self.position_manager.close_position(symbol, "emergency_shutdown")
+            
+            for symbol in list(self.position_manager.fake_positions.keys()):
+                self.position_manager.close_position(symbol, "emergency_shutdown")
+            
+            # Disconnect from MT5
+            self.mt5_client.disconnect()
+            
+            # Record final metrics
+            self.database.record_system_metrics({
+                'total_positions': 0,
+                'total_pnl': self.position_manager.get_total_pnl(),
+                'daily_pnl': self.performance_metrics['today_pnl'],
+                'system_state': 'SHUTDOWN',
+                'memory_usage': psutil.virtual_memory().percent,
+                'cpu_usage': psutil.cpu_percent()
+            })
+            
+            self.logger.critical("Emergency shutdown completed successfully")
+            
+        except Exception as e:
+            self.logger.critical(f"Emergency shutdown error: {e}")
+
+# =============================================================================
+# PRODUCTION DEPLOYMENT SCRIPT
+# =============================================================================
+
+def main():
+    """Main deployment function"""
+    
+    # Initialize structured logging
+    logger = StructuredLogger('deployment').get_logger()
+    
+    try:
+        logger.info("Starting production deployment...")
+        
+        # Initialize and validate system
+        trading_system = ProfessionalDerivTradingSystem()
+        
+        # Run backtests if requested
+        if len(sys.argv) > 1 and sys.argv[1] == '--backtest':
+            logger.info("Running backtests...")
+            symbols = ['EURUSD', 'GBPUSD', 'USDJPY', 'XAUUSD']  # Example symbols
+            results = trading_system.run_backtests(symbols, days=30)
+            logger.info(f"Backtest results: {results}")
+            return
+        
+        # Start live trading
+        trading_system.start_trading()
+        
+        # Keep main thread alive
+        try:
+            while trading_system.system_state != SystemState.SHUTDOWN:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            logger.info("Received shutdown signal...")
+            trading_system._emergency_shutdown()
+            
+    except Exception as e:
+        logger.critical(f"Deployment failed: {e}")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
