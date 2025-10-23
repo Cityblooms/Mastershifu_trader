@@ -1,11 +1,13 @@
 //+------------------------------------------------------------------+
-//|                                  InstitutionalProTrader.mq5      |
-//|                Complete Standalone Trading System v5.0          |
-//|             95% Accuracy | Non-Repainting | Multi-Asset Ready   |
+//|                      InstitutionalProTrader.mq5                 |
+//|                   Professional Grade v6.0 Enhanced             |
+//|             Advanced Analytics & Adaptive Strategies           |
 //+------------------------------------------------------------------+
-#property copyright "Institutional Pro Trader"
-#property version   "5.0"
-#property description "Complete Standalone System with FVG, OB, SR & Advanced Risk Management"
+#property copyright "Institutional Pro Trader v6.0"
+#property version   "6.0"
+#property description "Professional Trading System with Advanced Analytics & Adaptive Strategies"
+#property indicator_chart_window
+#property strict
 
 //--- Includes
 #include <Trade/Trade.mq5>
@@ -20,53 +22,48 @@ input double LotSize          = 0.1;          // Fixed lot size
 input bool   UseAutoLot       = true;         // Use automatic position sizing
 input double RiskPercent      = 1.0;          // Risk per trade (%)
 input int    MaxOrders        = 1;            // Maximum simultaneous trades
-input int    MagicNumber      = 202405;       // Magic number
+input int    MagicNumber      = 202406;       // Magic number
 input double RiskRewardRatio  = 3.0;          // Risk:Reward ratio
 
-input group "=== MULTI-TIMEFRAME CONFIGURATION ==="
-input ENUM_TIMEFRAMES PrimaryTF    = PERIOD_H4;    // Analysis timeframe
-input ENUM_TIMEFRAMES ConfirmTF    = PERIOD_H1;    // Confirmation timeframe
-input ENUM_TIMEFRAMES SignalTF     = PERIOD_M15;   // Entry timeframe
-input bool   RequireTripleConfirmation = true;     // Triple confirmation
+input group "=== STRATEGY PRESETS ==="
+input ENUM_STRATEGY_MODE StrategyMode = STRATEGY_BALANCED; // Trading strategy mode
+input bool   UseAdaptiveMarketMode = true;    // Adapt to market conditions
+input bool   EnableStrategyOptimizer = false; // Auto-optimize parameters
 
-input group "=== PRICE ACTION CONFIGURATION ==="
-input bool   UseFVG           = true;         // Fair Value Gaps
-input bool   UseOrderBlocks   = true;         // Order Blocks
-input bool   UseSupportResistance = true;     // Support/Resistance
-input int    FVG_Lookback     = 20;           // FVG detection bars
-input int    OB_Lookback      = 50;           // OB detection bars
-input int    SR_Lookback      = 100;          // SR detection bars
-input double SR_MinStrength   = 2.0;          // Minimum SR touches
+input group "=== PATTERN RECOGNITION ==="
+input string IndicatorName    = "#4X Bheurekso Pattern.ex5"; // Pattern indicator
+input bool   UseMultiPattern  = true;         // Combine multiple patterns
+input bool   UseVolumeConfirmation = true;    // Volume-based confirmation
+input int    PatternStrengthThreshold = 70;   // Minimum pattern strength (%)
 
-input group "=== ADVANCED VALIDATION ==="
-input bool   UseVolumeConfirmation = true;    // Volume validation
-input bool   UseTrendFilter    = true;        // Trend alignment
-input double MinConfidence     = 0.85;        // Minimum signal confidence (85%)
-input int    BacktestPeriod    = 1000;        // Historical validation bars
-input bool   EnableBacktesting = true;        // Enable historical validation
+input group "=== ADVANCED RISK MANAGEMENT ==="
+input bool   UseDynamicRisk    = true;        // Adjust risk based on market
+input double MaxDailyRisk      = 5.0;         // Maximum daily risk (%)
+input bool   UseCorrelationProtection = true; // Protect against correlated pairs
+input int    MaxDailyTrades    = 10;          // Maximum trades per day
+input bool   UseDrawdownProtection = true;    // Emergency stop on drawdown
+input double MaxDrawdownPercent = 15.0;       // Maximum allowed drawdown (%)
 
-input group "=== RISK MANAGEMENT ==="
-input int    DefaultStopLoss  = 150;          // Default SL (points)
-input int    MinStopLoss      = 50;           // Minimum SL (points)
-input int    MaxStopLoss      = 300;          // Maximum SL (points)
-input bool   UseATRForSL      = true;         // Use ATR for dynamic SL
-input double ATRMultiplier    = 1.5;          // ATR multiplier
-input int    TrailingStart    = 100;          // Trailing start (points)
-input int    TrailingStep     = 50;           // Trailing step (points)
-input bool   UseBreakEven     = true;         // Enable break-even
-input int    BreakEvenAt      = 80;           // Break-even at (points)
+input group "=== PERFORMANCE ANALYTICS ==="
+input bool   EnableLiveMetrics = true;        // Real-time performance tracking
+input bool   ShowAdvancedStats = true;        // Display advanced statistics
+input bool   LogTradeAnalytics = true;        // Log detailed trade analytics
 
-input group "=== TRADING SESSIONS ==="
-input bool   UseSessionFilter = true;         // Filter by trading sessions
-input string LondonOpen       = "08:00";      // London session start
-input string NewYorkOpen      = "13:00";      // New York session start
-input string SessionClose     = "20:00";      // Sessions close
+//--- Enumerations
+enum ENUM_STRATEGY_MODE {
+    STRATEGY_CONSERVATIVE,    // Low risk, high confirmation
+    STRATEGY_BALANCED,        // Balanced risk/reward
+    STRATEGY_AGGRESSIVE,      // High risk, quick entries
+    STRATEGY_SCALPING,        // Quick trades, small profits
+    STRATEGY_SWING            // Longer term, larger moves
+};
 
-input group "=== ADVANCED SETTINGS ==="
-input int    MaxSpread        = 30;           // Maximum allowed spread
-input int    Slippage         = 3;            // Maximum slippage
-input bool   EnableAlerts     = true;         // Enable push notifications
-input bool   LogSignals       = true;         // Log all signals to file
+enum ENUM_MARKET_REGIME {
+    MARKET_TRENDING,          // Strong directional movement
+    MARKET_RANGING,           // Sideways consolidation
+    MARKET_VOLATILE,          // High volatility
+    MARKET_CALM               // Low volatility
+};
 
 //--- Global Variables
 CTrade        trade;
@@ -74,917 +71,791 @@ CAccountInfo  account;
 CPositionInfo position;
 CSymbolInfo   symbol;
 
-//--- Indicator Handles
-int handleMAFast, handleMASlow, handleRSI, handleATR, handleVolumes;
+//--- Dashboard & Analytics
+string dashboardName = "IPTv6_Dashboard_";
+int panelWidth = 320;
+int panelHeight = 280;
 
-//--- Buffers
-double maFast[], maSlow[], rsi[], atr[], volumes[];
-double buySignals[], sellSignals[];
-
-//--- Price Action Structures
-struct FVGZone {
-   double top, bottom;
-   datetime time;
-   bool bullish;
-   int strength;
-   bool active;
+//--- Performance Tracking
+struct TradeMetrics {
+    int totalTrades;
+    int winningTrades;
+    int losingTrades;
+    double totalProfit;
+    double largestWin;
+    double largestLoss;
+    double winRate;
+    double profitFactor;
+    double averageWin;
+    double averageLoss;
+    double expectancy;
+    datetime sessionStart;
+    int tradesToday;
+    double dailyProfit;
 };
 
-struct OrderBlock {
-   double price;
-   datetime time;
-   bool bullish;
-   double volume;
-   int strength;
+struct MarketAnalytics {
+    ENUM_MARKET_REGIME currentRegime;
+    double volatilityIndex;
+    double trendStrength;
+    double marketBias;
+    bool highImpactTime;
+    double atrRatio;
+    double volumeProfile;
 };
 
-struct SRLevel {
-   double price;
-   int touches;
-   bool isSupport;
-   datetime lastTest;
-   double strength;
-};
-
-struct TradingSignal {
-   string symbol;
-   string direction;
-   double entry;
-   double sl;
-   double tp;
-   double confidence;
-   string pattern;
-   datetime timestamp;
-   string validation;
-   int barIndex;
-};
-
-//--- Arrays
-FVGZone fvgZones[200];
-OrderBlock orderBlocks[200];
-SRLevel srLevels[100];
-TradingSignal currentSignals[20];
-
-//--- Counters
-int fvgCount = 0, obCount = 0, srCount = 0, signalCount = 0;
-datetime lastSignalTime = 0;
-double pointMultiplier;
-string currentSymbol;
+//--- Strategy Variables
+TradeMetrics metrics;
+MarketAnalytics market;
+double dailyRiskUsed = 0.0;
+int tradesToday = 0;
+datetime lastTradeTime = 0;
+double sessionStartBalance = 0.0;
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
 //+------------------------------------------------------------------+
 int OnInit() {
-   currentSymbol = Symbol();
-   pointMultiplier = CalculatePointMultiplier();
-   
-   // Initialize symbol info
-   symbol.Name(currentSymbol);
-   symbol.Refresh();
-   
-   // Initialize trading
-   trade.SetExpertMagicNumber(MagicNumber);
-   trade.SetDeviationInPoints(Slippage);
-   trade.SetAsyncMode(false);
-   
-   // Create indicators
-   if(!CreateIndicators()) {
-      Print("Error creating indicators");
-      return INIT_FAILED;
-   }
-   
-   // Initialize buffers
-   InitializeBuffers();
-   
-   // Load historical validation if enabled
-   if(EnableBacktesting && !ValidateHistoricalPatterns()) {
-      Print("Warning: Historical validation failed");
-   }
-   
-   // Initialize price action structures
-   InitializePriceActionStructures();
-   
-   Print("=== Institutional Pro Trader Initialized ===");
-   Print("Symbol: ", currentSymbol);
-   Print("Timeframes: ", EnumToString(PrimaryTF), " | ", EnumToString(ConfirmTF), " | ", EnumToString(SignalTF));
-   Print("Risk Management: ", DoubleToString(RiskPercent, 1), "% per trade");
-   Print("Minimum Confidence: ", DoubleToString(MinConfidence * 100, 1), "%");
-   
-   return INIT_SUCCEEDED;
+    // Initialize trading system
+    if(!InitializeTradingSystem()) {
+        Print("Error: Trading system initialization failed");
+        return INIT_FAILED;
+    }
+    
+    // Initialize analytics
+    InitializeAnalytics();
+    
+    // Apply strategy preset
+    ApplyStrategyPreset(StrategyMode);
+    
+    // Create advanced dashboard
+    CreateAdvancedDashboard();
+    
+    Print("=== Institutional Pro Trader v6.0 Initialized ===");
+    Print("Strategy Mode: ", EnumToString(StrategyMode));
+    Print("Market Adaptation: ", UseAdaptiveMarketMode ? "Enabled" : "Disabled");
+    Print("Advanced Analytics: ", EnableLiveMetrics ? "Enabled" : "Disabled");
+    
+    return INIT_SUCCEEDED;
 }
 
 //+------------------------------------------------------------------+
-//| Create all required indicators                                  |
+//| Initialize trading system                                       |
 //+------------------------------------------------------------------+
-bool CreateIndicators() {
-   // Trend indicators
-   handleMAFast = iMA(currentSymbol, PrimaryTF, 8, 0, MODE_SMA, PRICE_CLOSE);
-   handleMASlow = iMA(currentSymbol, PrimaryTF, 21, 0, MODE_SMA, PRICE_CLOSE);
-   handleRSI = iRSI(currentSymbol, PrimaryTF, 14, PRICE_CLOSE);
-   handleATR = iATR(currentSymbol, PrimaryTF, 14);
-   handleVolumes = iVolumes(currentSymbol, PrimaryTF, VOLUME_TICK);
-   
-   // Verify all handles
-   if(handleMAFast == INVALID_HANDLE || handleMASlow == INVALID_HANDLE || 
-      handleRSI == INVALID_HANDLE || handleATR == INVALID_HANDLE) {
-      return false;
-   }
-   
-   return true;
+bool InitializeTradingSystem() {
+    symbol.Name(Symbol());
+    symbol.Refresh();
+    
+    if(!symbol.Name()) {
+        Print("Error: Symbol initialization failed");
+        return false;
+    }
+    
+    trade.SetExpertMagicNumber(MagicNumber);
+    trade.SetDeviationInPoints(3);
+    trade.SetAsyncMode(true);
+    
+    sessionStartBalance = account.Balance();
+    
+    return true;
 }
 
 //+------------------------------------------------------------------+
-//| Initialize buffer arrays                                        |
+//| Initialize analytics system                                     |
 //+------------------------------------------------------------------+
-void InitializeBuffers() {
-   ArraySetAsSeries(maFast, true);
-   ArraySetAsSeries(maSlow, true);
-   ArraySetAsSeries(rsi, true);
-   ArraySetAsSeries(atr, true);
-   ArraySetAsSeries(volumes, true);
+void InitializeAnalytics() {
+    // Initialize metrics
+    metrics.totalTrades = 0;
+    metrics.winningTrades = 0;
+    metrics.losingTrades = 0;
+    metrics.totalProfit = 0.0;
+    metrics.largestWin = 0.0;
+    metrics.largestLoss = 0.0;
+    metrics.winRate = 0.0;
+    metrics.profitFactor = 0.0;
+    metrics.sessionStart = TimeCurrent();
+    metrics.tradesToday = 0;
+    metrics.dailyProfit = 0.0;
+    
+    // Initialize market analytics
+    market.currentRegime = MARKET_CALM;
+    market.volatilityIndex = 0.0;
+    market.trendStrength = 0.0;
+    market.marketBias = 0.0;
+    market.highImpactTime = false;
+    market.atrRatio = 0.0;
+    market.volumeProfile = 0.0;
 }
 
 //+------------------------------------------------------------------+
-//| Validate historical patterns                                    |
+//| Apply strategy preset                                           |
 //+------------------------------------------------------------------+
-bool ValidateHistoricalPatterns() {
-   Print("Starting historical pattern validation...");
-   
-   MqlRates rates[];
-   ArraySetAsSeries(rates, true);
-   int copied = CopyRates(currentSymbol, PrimaryTF, 0, BacktestPeriod, rates);
-   
-   if(copied <= 100) {
-      Print("Insufficient historical data for validation");
-      return true;
-   }
-   
-   double accuracy = BacktestTradingPatterns(rates);
-   double winRate = CalculateHistoricalWinRate(rates);
-   
-   Print("Historical Validation Results:");
-   Print("Pattern Accuracy: ", DoubleToString(accuracy * 100, 1), "%");
-   Print("Win Rate: ", DoubleToString(winRate * 100, 1), "%");
-   
-   return (accuracy >= MinConfidence && winRate >= 0.6);
-}
-
-//+------------------------------------------------------------------+
-//| Backtest trading patterns on historical data                    |
-//+------------------------------------------------------------------+
-double BacktestTradingPatterns(MqlRates &rates[]) {
-   int totalPatterns = 0;
-   int validPatterns = 0;
-   
-   for(int i = 100; i < ArraySize(rates) - 10; i++) {
-      // Simulate pattern detection
-      bool hasPattern = DetectHistoricalPattern(rates, i);
-      if(hasPattern) {
-         totalPatterns++;
-         if(IsPatternProfitable(rates, i)) {
-            validPatterns++;
-         }
-      }
-   }
-   
-   return (totalPatterns > 0) ? (double)validPatterns / totalPatterns : 0.0;
-}
-
-//+------------------------------------------------------------------+
-//| Detect historical pattern (non-repainting)                      |
-//+------------------------------------------------------------------+
-bool DetectHistoricalPattern(MqlRates &rates[], int index) {
-   // Use only data available at the time (no look-ahead)
-   if(index >= ArraySize(rates) - 5) return false;
-   
-   // Check for valid setup
-   bool trendAligned = CheckTrendAlignment(rates, index);
-   bool priceAction = CheckPriceActionSetup(rates, index);
-   bool volumeOK = CheckVolumeConfirmation(rates, index);
-   
-   return (trendAligned && priceAction && volumeOK);
-}
-
-//+------------------------------------------------------------------+
-//| Check if pattern was profitable historically                    |
-//+------------------------------------------------------------------+
-bool IsPatternProfitable(MqlRates &rates[], int signalIndex) {
-   double entry = rates[signalIndex].close;
-   double sl = entry * 0.98;  // 2% SL for simulation
-   double tp = entry * 1.06;  // 6% TP for 1:3 RR
-   
-   // Check next bars for TP hit before SL
-   for(int i = signalIndex + 1; i < MathMin(signalIndex + 15, ArraySize(rates)); i++) {
-      if(rates[i].high >= tp) return true;
-      if(rates[i].low <= sl) return false;
-   }
-   
-   return rates[MathMin(signalIndex + 10, ArraySize(rates) - 1)].close > entry;
-}
-
-//+------------------------------------------------------------------+
-//| Calculate historical win rate                                   |
-//+------------------------------------------------------------------+
-double CalculateHistoricalWinRate(MqlRates &rates[]) {
-   int trades = 0;
-   int winners = 0;
-   
-   for(int i = 100; i < ArraySize(rates) - 20; i++) {
-      if(IsTradingSignal(rates, i)) {
-         trades++;
-         double exitPrice = rates[i + 10].close;
-         double entryPrice = rates[i].close;
-         if((exitPrice - entryPrice) / entryPrice > 0.002) { // 0.2% profit
-            winners++;
-         }
-      }
-   }
-   
-   return (trades > 0) ? (double)winners / trades : 0.0;
+void ApplyStrategyPreset(ENUM_STRATEGY_MODE mode) {
+    switch(mode) {
+        case STRATEGY_CONSERVATIVE:
+            RiskPercent = 0.5;
+            RiskRewardRatio = 3.0;
+            PatternStrengthThreshold = 80;
+            MaxDailyTrades = 5;
+            break;
+            
+        case STRATEGY_BALANCED:
+            RiskPercent = 1.0;
+            RiskRewardRatio = 2.5;
+            PatternStrengthThreshold = 70;
+            MaxDailyTrades = 10;
+            break;
+            
+        case STRATEGY_AGGRESSIVE:
+            RiskPercent = 2.0;
+            RiskRewardRatio = 2.0;
+            PatternStrengthThreshold = 60;
+            MaxDailyTrades = 15;
+            break;
+            
+        case STRATEGY_SCALPING:
+            RiskPercent = 0.3;
+            RiskRewardRatio = 1.5;
+            PatternStrengthThreshold = 65;
+            MaxDailyTrades = 20;
+            break;
+            
+        case STRATEGY_SWING:
+            RiskPercent = 1.5;
+            RiskRewardRatio = 3.0;
+            PatternStrengthThreshold = 75;
+            MaxDailyTrades = 8;
+            break;
+    }
+    
+    Print("Strategy preset applied: ", EnumToString(mode));
 }
 
 //+------------------------------------------------------------------+
 //| Expert tick function                                             |
 //+------------------------------------------------------------------+
 void OnTick() {
-   // Update market data
-   symbol.Refresh();
-   
-   // Check for new bar
-   if(IsNewBar()) {
-      // Update indicator buffers
-      UpdateIndicatorBuffers();
-      
-      // Update price action structures
-      UpdatePriceActionStructures();
-      
-      // Check trading conditions
-      if(CheckTradingConditions()) {
-         // Generate and validate signal
-         TradingSignal signal = GenerateTradingSignal();
-         if(signal.confidence >= MinConfidence) {
-            ExecuteValidatedSignal(signal);
-         }
-      }
-      
-      // Manage open positions
-      ManageOpenPositions();
-      
-      // Log current status
-      if(LogSignals) LogCurrentStatus();
-   }
+    // Update market data
+    symbol.Refresh();
+    
+    // Update market analytics
+    UpdateMarketAnalytics();
+    
+    // Update dashboard
+    UpdateAdvancedDashboard();
+    
+    // Check emergency conditions
+    if(CheckEmergencyConditions()) {
+        return;
+    }
+    
+    // Process trading on new bar
+    if(IsNewBar()) {
+        // Update daily metrics
+        UpdateDailyMetrics();
+        
+        // Adaptive strategy adjustment
+        if(UseAdaptiveMarketMode) {
+            AdaptiveStrategyAdjustment();
+        }
+        
+        // Check trading conditions
+        if(CheckEnhancedTradingConditions()) {
+            ExecuteAdaptiveTradingStrategy();
+        }
+        
+        // Manage positions with adaptive logic
+        ManageAdaptivePositions();
+    }
 }
 
 //+------------------------------------------------------------------+
-//| Update indicator buffers                                        |
+//| Update market analytics                                         |
 //+------------------------------------------------------------------+
-void UpdateIndicatorBuffers() {
-   // Copy latest indicator values
-   CopyBuffer(handleMAFast, 0, 0, 5, maFast);
-   CopyBuffer(handleMASlow, 0, 0, 5, maSlow);
-   CopyBuffer(handleRSI, 0, 0, 5, rsi);
-   CopyBuffer(handleATR, 0, 0, 5, atr);
-   CopyBuffer(handleVolumes, 0, 0, 5, volumes);
+void UpdateMarketAnalytics() {
+    // Calculate volatility index (normalized ATR)
+    double atr = iATR(Symbol(), PERIOD_H1, 14, 0);
+    double atrPercent = (atr / symbol.Bid()) * 100;
+    market.volatilityIndex = atrPercent;
+    
+    // Calculate trend strength
+    market.trendStrength = CalculateTrendStrength();
+    
+    // Determine market regime
+    market.currentRegime = DetermineMarketRegime();
+    
+    // Calculate market bias
+    market.marketBias = CalculateMarketBias();
+    
+    // Check for high-impact news times
+    market.highImpactTime = IsHighImpactTime();
+    
+    // Update volume profile
+    market.volumeProfile = CalculateVolumeProfile();
+    
+    // Update ATR ratio
+    market.atrRatio = CalculateAtrRatio();
 }
 
 //+------------------------------------------------------------------+
-//| Update price action structures                                  |
+//| Calculate trend strength                                        |
 //+------------------------------------------------------------------+
-void UpdatePriceActionStructures() {
-   if(UseFVG) UpdateFVGZones();
-   if(UseOrderBlocks) UpdateOrderBlocks();
-   if(UseSupportResistance) UpdateSupportResistance();
+double CalculateTrendStrength() {
+    double maFast = iMA(Symbol(), PERIOD_H1, 8, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double maSlow = iMA(Symbol(), PERIOD_H1, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double maDiff = MathAbs(maFast - maSlow) / symbol.Point();
+    
+    // Normalize to 0-100 scale
+    double strength = (maDiff / 50.0) * 100.0;
+    return MathMin(MathMax(strength, 0.0), 100.0);
 }
 
 //+------------------------------------------------------------------+
-//| Generate trading signal with confidence scoring                 |
+//| Determine market regime                                         |
 //+------------------------------------------------------------------+
-TradingSignal GenerateTradingSignal() {
-   TradingSignal signal;
-   signal.symbol = currentSymbol;
-   signal.timestamp = TimeCurrent();
-   signal.confidence = 0.0;
-   signal.barIndex = 0;
-   
-   // Get base signal confidence
-   double baseConfidence = CalculateBaseSignalConfidence();
-   if(baseConfidence < 0.6) return signal;
-   
-   // Price action confirmation
-   double paConfidence = CalculatePriceActionConfidence();
-   
-   // Trend alignment
-   double trendConfidence = CalculateTrendConfidence();
-   
-   // Volume confirmation
-   double volumeConfidence = CalculateVolumeConfidence();
-   
-   // Market condition filter
-   double marketConfidence = CalculateMarketConditionConfidence();
-   
-   // Final weighted confidence
-   signal.confidence = (baseConfidence * 0.35) +
-                      (paConfidence * 0.25) +
-                      (trendConfidence * 0.20) +
-                      (volumeConfidence * 0.10) +
-                      (marketConfidence * 0.10);
-   
-   // Only proceed if confidence meets threshold
-   if(signal.confidence >= MinConfidence) {
-      DetermineSignalDirection(signal);
-      CalculateRiskParameters(signal);
-      signal.pattern = "Institutional_Pro";
-      signal.validation = StringFormat("Conf:%.1f%%|Base:%.1f%%|PA:%.1f%%", 
-                                      signal.confidence * 100, baseConfidence * 100, paConfidence * 100);
-   }
-   
-   return signal;
+ENUM_MARKET_REGIME DetermineMarketRegime() {
+    double volatility = market.volatilityIndex;
+    double trendStr = market.trendStrength;
+    
+    if(volatility > 0.8 && trendStr > 60.0) {
+        return MARKET_TRENDING;
+    } else if(volatility > 1.0) {
+        return MARKET_VOLATILE;
+    } else if(trendStr < 30.0 && volatility < 0.5) {
+        return MARKET_RANGING;
+    } else {
+        return MARKET_CALM;
+    }
 }
 
 //+------------------------------------------------------------------+
-//| Calculate base signal confidence                               |
+//| Calculate market bias                                           |
 //+------------------------------------------------------------------+
-double CalculateBaseSignalConfidence() {
-   double confidence = 0.0;
-   
-   // Check trend alignment
-   bool trendUp = maFast[0] > maSlow[0] && maFast[1] > maSlow[1];
-   bool trendDown = maFast[0] < maSlow[0] && maFast[1] < maSlow[1];
-   
-   // RSI conditions
-   bool rsiOversold = rsi[0] < 30 && rsi[1] < 35;
-   bool rsiOverbought = rsi[0] > 70 && rsi[1] > 65;
-   
-   // Volume confirmation
-   bool volumeSpike = volumes[0] > volumes[1] * 1.2;
-   
-   // Signal combinations
-   if(trendUp && rsiOversold && volumeSpike) confidence = 0.85;
-   else if(trendDown && rsiOverbought && volumeSpike) confidence = 0.85;
-   else if(trendUp && rsiOversold) confidence = 0.75;
-   else if(trendDown && rsiOverbought) confidence = 0.75;
-   else if(trendUp || trendDown) confidence = 0.60;
-   
-   return confidence;
+double CalculateMarketBias() {
+    // Use multiple timeframes for bias calculation
+    double biasM15 = CalculateBiasForTimeframe(PERIOD_M15);
+    double biasH1 = CalculateBiasForTimeframe(PERIOD_H1);
+    double biasH4 = CalculateBiasForTimeframe(PERIOD_H4);
+    
+    // Weighted average (more weight to higher timeframes)
+    return (biasM15 * 0.2 + biasH1 * 0.3 + biasH4 * 0.5);
 }
 
 //+------------------------------------------------------------------+
-//| Calculate price action confidence                              |
+//| Calculate bias for specific timeframe                           |
 //+------------------------------------------------------------------+
-double CalculatePriceActionConfidence() {
-   double confidence = 0.0;
-   int confirmations = 0;
-   int totalChecks = 0;
-   
-   if(UseFVG) {
-      totalChecks++;
-      if(CheckFVGAlignment()) confirmations++;
-   }
-   
-   if(UseOrderBlocks) {
-      totalChecks++;
-      if(CheckOrderBlockAlignment()) confirmations++;
-   }
-   
-   if(UseSupportResistance) {
-      totalChecks++;
-      if(CheckSupportResistanceAlignment()) confirmations++;
-   }
-   
-   if(totalChecks > 0) {
-      confidence = (double)confirmations / totalChecks;
-   }
-   
-   return confidence;
+double CalculateBiasForTimeframe(ENUM_TIMEFRAMES tf) {
+    double maFast = iMA(Symbol(), tf, 8, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double maSlow = iMA(Symbol(), tf, 21, 0, MODE_SMA, PRICE_CLOSE, 0);
+    double rsi = iRSI(Symbol(), tf, 14, PRICE_CLOSE, 0);
+    
+    double bias = 0.0;
+    if(maFast > maSlow) bias += 0.5;
+    if(rsi > 50) bias += 0.3;
+    if(symbol.Bid() > maSlow) bias += 0.2;
+    
+    return bias;
 }
 
 //+------------------------------------------------------------------+
-//| Update FVG zones                                                |
+//| Check emergency conditions                                      |
 //+------------------------------------------------------------------+
-void UpdateFVGZones() {
-   double high[], low[];
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
-   
-   CopyHigh(currentSymbol, PrimaryTF, 1, FVG_Lookback, high);
-   CopyLow(currentSymbol, PrimaryTF, 1, FVG_Lookback, low);
-   
-   fvgCount = 0;
-   
-   for(int i = 2; i < FVG_Lookback - 2; i++) {
-      // Bullish FVG: current low > previous high
-      if(low[i] > high[i+1] + (10 * Point())) {
-         fvgZones[fvgCount].top = low[i];
-         fvgZones[fvgCount].bottom = high[i+1];
-         fvgZones[fvgCount].bullish = true;
-         fvgZones[fvgCount].time = iTime(currentSymbol, PrimaryTF, i);
-         fvgZones[fvgCount].strength = CalculateFVGStrength(fvgZones[fvgCount]);
-         fvgZones[fvgCount].active = IsFVGActive(fvgZones[fvgCount]);
-         fvgCount++;
-      }
-      // Bearish FVG: current high < previous low
-      else if(high[i] < low[i+1] - (10 * Point())) {
-         fvgZones[fvgCount].top = low[i+1];
-         fvgZones[fvgCount].bottom = high[i];
-         fvgZones[fvgCount].bullish = false;
-         fvgZones[fvgCount].time = iTime(currentSymbol, PrimaryTF, i);
-         fvgZones[fvgCount].strength = CalculateFVGStrength(fvgZones[fvgCount]);
-         fvgZones[fvgCount].active = IsFVGActive(fvgZones[fvgCount]);
-         fvgCount++;
-      }
-      
-      if(fvgCount >= 199) break;
-   }
+bool CheckEmergencyConditions() {
+    // Check drawdown protection
+    if(UseDrawdownProtection) {
+        double currentBalance = account.Balance();
+        double drawdownPercent = ((sessionStartBalance - currentBalance) / sessionStartBalance) * 100.0;
+        
+        if(drawdownPercent >= MaxDrawdownPercent) {
+            CloseAllPositions();
+            Print("EMERGENCY: Maximum drawdown reached! All positions closed.");
+            return true;
+        }
+    }
+    
+    // Check daily risk limit
+    if(dailyRiskUsed >= MaxDailyRisk) {
+        Print("WARNING: Daily risk limit reached. Trading paused.");
+        return true;
+    }
+    
+    // Check daily trade limit
+    if(tradesToday >= MaxDailyTrades) {
+        Print("WARNING: Daily trade limit reached. Trading paused.");
+        return true;
+    }
+    
+    return false;
 }
 
 //+------------------------------------------------------------------+
-//| Update Order Blocks                                             |
+//| Adaptive strategy adjustment                                    |
 //+------------------------------------------------------------------+
-void UpdateOrderBlocks() {
-   double open[], high[], low[], close[];
-   long volume[];
-   ArraySetAsSeries(open, true);
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
-   ArraySetAsSeries(close, true);
-   ArraySetAsSeries(volume, true);
-   
-   CopyOpen(currentSymbol, PrimaryTF, 1, OB_Lookback, open);
-   CopyHigh(currentSymbol, PrimaryTF, 1, OB_Lookback, high);
-   CopyLow(currentSymbol, PrimaryTF, 1, OB_Lookback, low);
-   CopyClose(currentSymbol, PrimaryTF, 1, OB_Lookback, close);
-   CopyTickVolume(currentSymbol, PrimaryTF, 1, OB_Lookback, volume);
-   
-   obCount = 0;
-   
-   for(int i = 3; i < OB_Lookback - 3; i++) {
-      // Bullish Order Block: strong up move after down move
-      if(close[i] > open[i] && (close[i] - open[i]) > (high[i] - low[i]) * 0.6 &&
-         close[i-1] < open[i-1] && volume[i] > volume[i-1] * 1.3) {
-         orderBlocks[obCount].price = low[i];
-         orderBlocks[obCount].time = iTime(currentSymbol, PrimaryTF, i);
-         orderBlocks[obCount].bullish = true;
-         orderBlocks[obCount].volume = volume[i];
-         orderBlocks[obCount].strength = CalculateOBStrength(orderBlocks[obCount]);
-         obCount++;
-      }
-      // Bearish Order Block: strong down move after up move
-      else if(close[i] < open[i] && (open[i] - close[i]) > (high[i] - low[i]) * 0.6 &&
-              close[i-1] > open[i-1] && volume[i] > volume[i-1] * 1.3) {
-         orderBlocks[obCount].price = high[i];
-         orderBlocks[obCount].time = iTime(currentSymbol, PrimaryTF, i);
-         orderBlocks[obCount].bullish = false;
-         orderBlocks[obCount].volume = volume[i];
-         orderBlocks[obCount].strength = CalculateOBStrength(orderBlocks[obCount]);
-         obCount++;
-      }
-      
-      if(obCount >= 199) break;
-   }
+void AdaptiveStrategyAdjustment() {
+    switch(market.currentRegime) {
+        case MARKET_TRENDING:
+            // Increase position sizes in trends
+            if(RiskPercent < 2.0) RiskPercent *= 1.2;
+            break;
+            
+        case MARKET_VOLATILE:
+            // Reduce risk in high volatility
+            RiskPercent *= 0.7;
+            break;
+            
+        case MARKET_RANGING:
+            // Use smaller positions in ranges
+            RiskPercent *= 0.8;
+            break;
+            
+        case MARKET_CALM:
+            // Normal risk in calm markets
+            break;
+    }
+    
+    // Ensure risk stays within bounds
+    RiskPercent = MathMin(MathMax(RiskPercent, 0.1), 5.0);
 }
 
 //+------------------------------------------------------------------+
-//| Update Support Resistance Levels                               |
+//| Enhanced trading conditions check                               |
 //+------------------------------------------------------------------+
-void UpdateSupportResistance() {
-   double high[], low[];
-   ArraySetAsSeries(high, true);
-   ArraySetAsSeries(low, true);
-   
-   CopyHigh(currentSymbol, PrimaryTF, 1, SR_Lookback, high);
-   CopyLow(currentSymbol, PrimaryTF, 1, SR_Lookback, low);
-   
-   srCount = 0;
-   
-   // Find swing highs and lows
-   for(int i = 5; i < SR_Lookback - 5; i++) {
-      // Swing High
-      if(IsSwingHigh(high, low, i)) {
-         AddSRLevel(high[i], false, i);
-      }
-      // Swing Low
-      if(IsSwingLow(high, low, i)) {
-         AddSRLevel(low[i], true, i);
-      }
-   }
+bool CheckEnhancedTradingConditions() {
+    // Basic checks
+    if(CountOpenPositions() >= MaxOrders) return false;
+    if(symbol.Spread() > 50 * symbol.Point()) return false;
+    
+    // Market regime filters
+    if(market.currentRegime == MARKET_VOLATILE && !IsStrategyCompatible(STRATEGY_AGGRESSIVE)) {
+        return false;
+    }
+    
+    // Time filters
+    if(market.highImpactTime) {
+        Print("High impact time detected - trading paused");
+        return false;
+    }
+    
+    // Volume confirmation
+    if(UseVolumeConfirmation && !CheckVolumeConfirmation()) {
+        return false;
+    }
+    
+    return true;
 }
 
 //+------------------------------------------------------------------+
-//| Execute validated signal                                        |
+//| Execute adaptive trading strategy                               |
 //+------------------------------------------------------------------+
-void ExecuteValidatedSignal(TradingSignal &signal) {
-   // Check if we already have a recent signal
-   if(TimeCurrent() - lastSignalTime < 3600) { // 1-hour cooldown
-      return;
-   }
-   
-   // Check position limits
-   if(CountOpenPositions() >= MaxOrders) {
-      return;
-   }
-   
-   // Check spread
-   if(symbol.Spread() > MaxSpread * Point()) {
-      Print("Spread too high: ", symbol.Spread() / Point());
-      return;
-   }
-   
-   double lotSize = CalculateLotSize(signal.sl);
-   bool result = false;
-   
-   if(signal.direction == "BUY") {
-      double entry = symbol.Ask();
-      result = trade.Buy(lotSize, currentSymbol, entry, signal.sl, signal.tp,
-                        StringFormat("IPRO|Conf:%.1f%%|RR:1:%.1f", 
-                        signal.confidence * 100, RiskRewardRatio));
-   } 
-   else if(signal.direction == "SELL") {
-      double entry = symbol.Bid();
-      result = trade.Sell(lotSize, currentSymbol, entry, signal.sl, signal.tp,
-                         StringFormat("IPRO|Conf:%.1f%%|RR:1:%.1f", 
-                         signal.confidence * 100, RiskRewardRatio));
-   }
-   
-   if(result) {
-      lastSignalTime = TimeCurrent();
-      Print("Signal Executed: ", signal.direction, " | ", signal.validation);
-      
-      if(EnableAlerts) {
-         SendNotification(StringFormat("IPRO Signal: %s %s | Conf: %.1f%%", 
-                                      currentSymbol, signal.direction, signal.confidence * 100));
-      }
-   }
+void ExecuteAdaptiveTradingStrategy() {
+    // Get enhanced signal with market context
+    TradingSignal signal = GenerateEnhancedSignal();
+    
+    if(signal.confidence >= (PatternStrengthThreshold / 100.0)) {
+        // Adjust position size based on market conditions
+        double adjustedLotSize = CalculateAdaptiveLotSize(signal);
+        
+        // Execute trade with enhanced risk management
+        ExecuteTradeWithAdaptiveRisk(signal, adjustedLotSize);
+        
+        // Update metrics
+        UpdateTradeMetrics();
+    }
 }
 
 //+------------------------------------------------------------------+
-//| Manage open positions                                           |
+//| Calculate adaptive lot size                                     |
 //+------------------------------------------------------------------+
-void ManageOpenPositions() {
-   for(int i = PositionsTotal() - 1; i >= 0; i--) {
-      ulong ticket = PositionGetTicket(i);
-      if(PositionGetInteger(POSITION_MAGIC) == MagicNumber && 
-         PositionGetString(POSITION_SYMBOL) == currentSymbol) {
-         
-         ManageTrailingStop(ticket);
-         ManageBreakEven(ticket);
-      }
-   }
+double CalculateAdaptiveLotSize(TradingSignal &signal) {
+    double baseLotSize = CalculateLotSize();
+    
+    // Adjust based on market regime
+    double adjustmentFactor = 1.0;
+    
+    switch(market.currentRegime) {
+        case MARKET_TRENDING:
+            adjustmentFactor = 1.2; // Increase in trends
+            break;
+        case MARKET_VOLATILE:
+            adjustmentFactor = 0.7; // Decrease in high volatility
+            break;
+        case MARKET_RANGING:
+            adjustmentFactor = 0.8; // Slight decrease in ranges
+            break;
+        case MARKET_CALM:
+            adjustmentFactor = 1.0; // Normal in calm markets
+            break;
+    }
+    
+    // Adjust based on signal confidence
+    adjustmentFactor *= signal.confidence;
+    
+    // Adjust based on time of day
+    if(IsHighImpactTime()) {
+        adjustmentFactor *= 0.5;
+    }
+    
+    double adjustedLotSize = baseLotSize * adjustmentFactor;
+    return MathMin(adjustedLotSize, symbol.LotsMax());
 }
 
 //+------------------------------------------------------------------+
-//| Manage trailing stop                                            |
+//| Enhanced position management                                    |
 //+------------------------------------------------------------------+
-void ManageTrailingStop(ulong ticket) {
-   if(TrailingStart <= 0) return;
-   
-   if(PositionSelectByTicket(ticket)) {
-      double currentSL = PositionGetDouble(POSITION_SL);
-      double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
-      double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
-      ENUM_POSITION_TYPE type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
-      
-      if(type == POSITION_TYPE_BUY) {
-         double newSL = currentPrice - TrailingStart * Point();
-         if(newSL > currentSL && newSL > openPrice) {
-            if(currentSL == 0 || newSL > currentSL + TrailingStep * Point()) {
-               trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));
+void ManageAdaptivePositions() {
+    for(int i = PositionsTotal() - 1; i >= 0; i--) {
+        ulong ticket = PositionGetTicket(i);
+        if(PositionGetInteger(POSITION_MAGIC) == MagicNumber && 
+           PositionGetString(POSITION_SYMBOL) == symbol.Name()) {
+            
+            // Adaptive trailing stop
+            ApplyAdaptiveTrailingStop(ticket);
+            
+            // Dynamic breakeven
+            ApplyDynamicBreakeven(ticket);
+            
+            // Partial profit taking
+            if(ShouldTakePartialProfit(ticket)) {
+                TakePartialProfit(ticket);
             }
-         }
-      }
-      else if(type == POSITION_TYPE_SELL) {
-         double newSL = currentPrice + TrailingStart * Point();
-         if(newSL < currentSL && newSL < openPrice) {
-            if(currentSL == 0 || newSL < currentSL - TrailingStep * Point()) {
-               trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));
-            }
-         }
-      }
-   }
+        }
+    }
 }
 
 //+------------------------------------------------------------------+
-//| Manage break-even                                               |
+//| Apply adaptive trailing stop                                    |
 //+------------------------------------------------------------------+
-void ManageBreakEven(ulong ticket) {
-   if(!UseBreakEven || BreakEvenAt <= 0) return;
-   
-   if(PositionSelectByTicket(ticket)) {
-      double currentSL = PositionGetDouble(POSITION_SL);
-      double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
-      double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
-      ENUM_POSITION_TYPE type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
-      
-      if(type == POSITION_TYPE_BUY) {
-         double profitPoints = (currentPrice - openPrice) / Point();
-         if(profitPoints >= BreakEvenAt && currentSL < openPrice) {
-            trade.PositionModify(ticket, openPrice, PositionGetDouble(POSITION_TP));
-         }
-      }
-      else if(type == POSITION_TYPE_SELL) {
-         double profitPoints = (openPrice - currentPrice) / Point();
-         if(profitPoints >= BreakEvenAt && (currentSL > openPrice || currentSL == 0)) {
-            trade.PositionModify(ticket, openPrice, PositionGetDouble(POSITION_TP));
-         }
-      }
-   }
+void ApplyAdaptiveTrailingStop(ulong ticket) {
+    if(!PositionSelectByTicket(ticket)) return;
+    
+    double currentSL = PositionGetDouble(POSITION_SL);
+    double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
+    double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
+    ENUM_POSITION_TYPE type = (ENUM_POSITION_TYPE)PositionGetInteger(POSITION_TYPE);
+    
+    double risk = MathAbs(openPrice - currentSL);
+    double profit = MathAbs(currentPrice - openPrice);
+    
+    // Adaptive trail start based on market volatility
+    double trailStartRR = market.volatilityIndex > 1.0 ? 2.0 : 1.5;
+    
+    if(profit < risk * trailStartRR) return;
+    
+    // Adaptive trail distance based on ATR
+    double atr = iATR(symbol.Name(), Period(), 14, 0);
+    double trailDistance = atr * 0.5; // 0.5 ATR trailing stop
+    
+    double newSL = 0;
+    if(type == POSITION_TYPE_BUY) {
+        newSL = currentPrice - trailDistance;
+        if(newSL > currentSL) {
+            trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));
+        }
+    } else {
+        newSL = currentPrice + trailDistance;
+        if(newSL < currentSL) {
+            trade.PositionModify(ticket, newSL, PositionGetDouble(POSITION_TP));
+        }
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Take partial profits                                            |
+//+------------------------------------------------------------------+
+bool ShouldTakePartialProfit(ulong ticket) {
+    if(!PositionSelectByTicket(ticket)) return false;
+    
+    double openPrice = PositionGetDouble(POSITION_PRICE_OPEN);
+    double currentPrice = PositionGetDouble(POSITION_PRICE_CURRENT);
+    double tpPrice = PositionGetDouble(POSITION_TP);
+    
+    double profit = MathAbs(currentPrice - openPrice);
+    double totalPotential = MathAbs(tpPrice - openPrice);
+    
+    // Take partial at 50% of target
+    return (profit >= totalPotential * 0.5);
+}
+
+void TakePartialProfit(ulong ticket) {
+    if(!PositionSelectByTicket(ticket)) return;
+    
+    double currentVolume = PositionGetDouble(POSITION_VOLUME);
+    if(currentVolume > symbol.LotsMin() * 2) {
+        double closeVolume = currentVolume * 0.5; // Close 50%
+        trade.PositionClosePartial(ticket, closeVolume);
+        Print("Partial profit taken: ", closeVolume, " lots");
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Update performance metrics                                      |
+//+------------------------------------------------------------------+
+void UpdateTradeMetrics() {
+    // This would be called when trades are opened/closed
+    // Implementation would track all trade statistics
+}
+
+void UpdateDailyMetrics() {
+    MqlDateTime today;
+    TimeCurrent(today);
+    today.hour = 0;
+    today.min = 0;
+    today.sec = 0;
+    
+    datetime startOfDay = StructToTime(today);
+    
+    // Reset daily metrics if new day
+    if(metrics.sessionStart < startOfDay) {
+        metrics.tradesToday = 0;
+        metrics.dailyProfit = 0.0;
+        dailyRiskUsed = 0.0;
+        metrics.sessionStart = TimeCurrent();
+    }
+}
+
+//+------------------------------------------------------------------+
+//| Create advanced dashboard                                       |
+//+------------------------------------------------------------------+
+void CreateAdvancedDashboard() {
+    // Main panel
+    CreatePanel("MainPanel", 5, 20, panelWidth, panelHeight, clrDarkSlateGray, clrDimGray, true);
+    
+    // Title section
+    CreateLabel("Title", 15, 25, "INSTITUTIONAL PRO TRADER v6.0", 11, clrGold, CORNER_LEFT_UPPER);
+    CreateLabel("SubTitle", 15, 45, "Advanced Analytics Edition", 8, clrSilver, CORNER_LEFT_UPPER);
+    
+    // Strategy section
+    CreateLabel("StrategyLabel", 15, 70, "STRATEGY:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("StrategyValue", 85, 70, EnumToString(StrategyMode), 9, clrYellow, CORNER_LEFT_UPPER);
+    
+    CreateLabel("RegimeLabel", 15, 90, "MARKET REGIME:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("RegimeValue", 120, 90, "ANALYZING", 9, clrLime, CORNER_LEFT_UPPER);
+    
+    // Performance section
+    CreateLabel("WinRateLabel", 15, 115, "WIN RATE:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("WinRateValue", 85, 115, "0.0%", 9, clrWhite, CORNER_LEFT_UPPER);
+    
+    CreateLabel("ProfitLabel", 15, 135, "DAILY P/L:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("ProfitValue", 85, 135, "0.00", 9, clrLime, CORNER_LEFT_UPPER);
+    
+    // Market analytics section
+    CreateLabel("VolatilityLabel", 15, 160, "VOLATILITY:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("VolatilityValue", 85, 160, "0.0", 9, clrWhite, CORNER_LEFT_UPPER);
+    
+    CreateLabel("TrendLabel", 15, 180, "TREND STR:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("TrendValue", 85, 180, "0.0", 9, clrWhite, CORNER_LEFT_UPPER);
+    
+    // Risk management section
+    CreateLabel("RiskLabel", 15, 205, "RISK USED:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("RiskValue", 85, 205, "0.0%", 9, clrWhite, CORNER_LEFT_UPPER);
+    
+    CreateLabel("TradesLabel", 15, 225, "TRADES TODAY:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("TradesValue", 105, 225, "0/"+string(MaxDailyTrades), 9, clrWhite, CORNER_LEFT_UPPER);
+    
+    // Status section
+    CreateLabel("StatusLabel", 15, 250, "STATUS:", 9, clrWhite, CORNER_LEFT_UPPER);
+    CreateLabel("StatusValue", 65, 250, "ANALYZING", 9, clrLime, CORNER_LEFT_UPPER);
+}
+
+//+------------------------------------------------------------------+
+//| Update advanced dashboard                                       |
+//+------------------------------------------------------------------+
+void UpdateAdvancedDashboard() {
+    // Update strategy info
+    ObjectSetString(0, dashboardName+"StrategyValue", OBJPROP_TEXT, EnumToString(StrategyMode));
+    ObjectSetString(0, dashboardName+"RegimeValue", OBJPROP_TEXT, EnumToString(market.currentRegime));
+    
+    // Update performance
+    ObjectSetString(0, dashboardName+"WinRateValue", OBJPROP_TEXT, DoubleToString(metrics.winRate, 1)+"%");
+    
+    string profitText = DoubleToString(metrics.dailyProfit, 2);
+    color profitColor = metrics.dailyProfit >= 0 ? clrLime : clrRed;
+    ObjectSetString(0, dashboardName+"ProfitValue", OBJPROP_TEXT, profitText);
+    ObjectSetInteger(0, dashboardName+"ProfitValue", OBJPROP_COLOR, profitColor);
+    
+    // Update market analytics
+    ObjectSetString(0, dashboardName+"VolatilityValue", OBJPROP_TEXT, DoubleToString(market.volatilityIndex, 2)+"%");
+    ObjectSetString(0, dashboardName+"TrendValue", OBJPROP_TEXT, DoubleToString(market.trendStrength, 1));
+    
+    // Update risk management
+    ObjectSetString(0, dashboardName+"RiskValue", OBJPROP_TEXT, DoubleToString(dailyRiskUsed, 1)+"%");
+    ObjectSetString(0, dashboardName+"TradesValue", OBJPROP_TEXT, string(tradesToday)+"/"+string(MaxDailyTrades));
+    
+    // Update status
+    string status = CheckEmergencyConditions() ? "PAUSED" : "ACTIVE";
+    color statusColor = CheckEmergencyConditions() ? clrOrange : clrLime;
+    ObjectSetString(0, dashboardName+"StatusValue", OBJPROP_TEXT, status);
+    ObjectSetInteger(0, dashboardName+"StatusValue", OBJPROP_COLOR, statusColor);
 }
 
 //+------------------------------------------------------------------+
 //| Utility Functions                                               |
 //+------------------------------------------------------------------+
-double CalculatePointMultiplier() {
-   return (symbol.Digits() == 5 || symbol.Digits() == 3) ? 10 : 1;
-}
-
-double Point() {
-   return symbol.Point() * pointMultiplier;
-}
-
 bool IsNewBar() {
-   static datetime lastBar = 0;
-   datetime currentBar = iTime(currentSymbol, PERIOD_CURRENT, 0);
-   if(currentBar != lastBar) {
-      lastBar = currentBar;
-      return true;
-   }
-   return false;
+    static datetime lastBar = 0;
+    datetime currentBar = iTime(Symbol(), Period(), 0);
+    if(currentBar != lastBar) {
+        lastBar = currentBar;
+        return true;
+    }
+    return false;
 }
 
 int CountOpenPositions() {
-   int count = 0;
-   for(int i = 0; i < PositionsTotal(); i++) {
-      if(PositionGetTicket(i)) {
-         if(PositionGetInteger(POSITION_MAGIC) == MagicNumber && 
-            PositionGetString(POSITION_SYMBOL) == currentSymbol) {
-            count++;
-         }
-      }
-   }
-   return count;
+    int count = 0;
+    for(int i = 0; i < PositionsTotal(); i++) {
+        if(PositionGetTicket(i)) {
+            if(PositionGetInteger(POSITION_MAGIC) == MagicNumber && 
+               PositionGetString(POSITION_SYMBOL) == Symbol()) {
+                count++;
+            }
+        }
+    }
+    return count;
 }
 
-double CalculateLotSize(double slPrice) {
-   if(!UseAutoLot) return LotSize;
-   
-   double accountBalance = account.Balance();
-   double riskAmount = accountBalance * RiskPercent / 100.0;
-   double tickValue = symbol.TickValue();
-   double tickSize = symbol.TickSize();
-   
-   if(tickValue == 0 || tickSize == 0) return LotSize;
-   
-   double slDistance = MathAbs(symbol.Ask() - slPrice);
-   double riskPoints = slDistance / tickSize;
-   double moneyAtRisk = riskPoints * tickValue;
-   
-   if(moneyAtRisk == 0) return LotSize;
-   
-   double lots = (riskAmount / moneyAtRisk) * symbol.LotsStep();
-   lots = MathFloor(lots / symbol.LotsStep()) * symbol.LotsStep();
-   
-   lots = MathMin(lots, symbol.LotsMax());
-   lots = MathMax(lots, symbol.LotsMin());
-   
-   return lots;
+void CloseAllPositions() {
+    for(int i = PositionsTotal() - 1; i >= 0; i--) {
+        ulong ticket = PositionGetTicket(i);
+        if(PositionGetInteger(POSITION_MAGIC) == MagicNumber) {
+            trade.PositionClose(ticket);
+        }
+    }
 }
 
-//+------------------------------------------------------------------+
-//| Price Action Validation Functions                               |
-//+------------------------------------------------------------------+
-bool CheckFVGAlignment() {
-   double currentPrice = (symbol.Ask() + symbol.Bid()) / 2;
-   
-   for(int i = 0; i < fvgCount; i++) {
-      if(!fvgZones[i].active) continue;
-      
-      if(fvgZones[i].bullish) {
-         if(currentPrice > fvgZones[i].bottom && currentPrice < fvgZones[i].top) {
+bool IsHighImpactTime() {
+    // Simplified implementation - in production, integrate with economic calendar
+    MqlDateTime timeNow;
+    TimeCurrent(timeNow);
+    
+    // Example: Avoid London/New York overlap (13:00-16:00 GMT)
+    if(timeNow.hour >= 13 && timeNow.hour < 16) {
+        return true;
+    }
+    
+    return false;
+}
+
+bool IsStrategyCompatible(ENUM_STRATEGY_MODE mode) {
+    // Check if current market regime is compatible with strategy
+    switch(market.currentRegime) {
+        case MARKET_VOLATILE:
+            return (mode == STRATEGY_AGGRESSIVE || mode == STRATEGY_SCALPING);
+        case MARKET_TRENDING:
+            return (mode == STRATEGY_SWING || mode == STRATEGY_BALANCED);
+        case MARKET_RANGING:
+            return (mode == STRATEGY_SCALPING || mode == STRATEGY_CONSERVATIVE);
+        default:
             return true;
-         }
-      } else {
-         if(currentPrice < fvgZones[i].top && currentPrice > fvgZones[i].bottom) {
-            return true;
-         }
-      }
-   }
-   return false;
+    }
 }
 
-bool CheckOrderBlockAlignment() {
-   double currentPrice = (symbol.Ask() + symbol.Bid()) / 2;
-   
-   for(int i = 0; i < obCount; i++) {
-      double distance = MathAbs(currentPrice - orderBlocks[i].price) / Point();
-      if(distance < 30) { // Within 30 points
-         return true;
-      }
-   }
-   return false;
+bool CheckVolumeConfirmation() {
+    long currentVolume = iVolume(Symbol(), Period(), 0);
+    long avgVolume = 0;
+    
+    for(int i = 1; i <= 20; i++) {
+        avgVolume += iVolume(Symbol(), Period(), i);
+    }
+    avgVolume /= 20;
+    
+    return currentVolume > avgVolume * 1.2;
 }
 
-bool CheckSupportResistanceAlignment() {
-   double currentPrice = (symbol.Ask() + symbol.Bid()) / 2;
-   
-   for(int i = 0; i < srCount; i++) {
-      double distance = MathAbs(currentPrice - srLevels[i].price) / Point();
-      if(distance < 20 && srLevels[i].touches >= SR_MinStrength) {
-         return true;
-      }
-   }
-   return false;
+double CalculateVolumeProfile() {
+    // Simplified volume profile calculation
+    long totalVolume = 0;
+    for(int i = 0; i < 50; i++) {
+        totalVolume += iVolume(Symbol(), Period(), i);
+    }
+    return (double)totalVolume / 50.0;
 }
 
-bool IsFVGActive(FVGZone &fvg) {
-   double currentPrice = (symbol.Ask() + symbol.Bid()) / 2;
-   bool priceInZone = (currentPrice >= fvg.bottom && currentPrice <= fvg.top);
-   bool isRecent = (TimeCurrent() - fvg.time) < 86400 * 7; // 7 days
-   return priceInZone && isRecent;
-}
-
-int CalculateFVGStrength(FVGZone &fvg) {
-   double size = (fvg.top - fvg.bottom) / Point();
-   if(size > 80) return 3;
-   if(size > 40) return 2;
-   return 1;
-}
-
-int CalculateOBStrength(OrderBlock &ob) {
-   if(ob.volume > 1000000) return 3;
-   if(ob.volume > 500000) return 2;
-   return 1;
-}
-
-bool IsSwingHigh(double &high[], double &low[], int index) {
-   return (high[index] > high[index-1] && high[index] > high[index-2] &&
-           high[index] > high[index+1] && high[index] > high[index+2]);
-}
-
-bool IsSwingLow(double &high[], double &low[], int index) {
-   return (low[index] < low[index-1] && low[index] < low[index-2] &&
-           low[index] < low[index+1] && low[index] < low[index+2]);
-}
-
-void AddSRLevel(double price, bool isSupport, int index) {
-   // Check if level exists
-   for(int i = 0; i < srCount; i++) {
-      if(MathAbs(srLevels[i].price - price) < (25 * Point())) {
-         srLevels[i].touches++;
-         srLevels[i].lastTest = iTime(currentSymbol, PrimaryTF, index);
-         return;
-      }
-   }
-   
-   // Add new level
-   if(srCount < 99) {
-      srLevels[srCount].price = price;
-      srLevels[srCount].isSupport = isSupport;
-      srLevels[srCount].touches = 1;
-      srLevels[srCount].lastTest = iTime(currentSymbol, PrimaryTF, index);
-      srLevels[srCount].strength = 1;
-      srCount++;
-   }
+double CalculateAtrRatio() {
+    double atrCurrent = iATR(Symbol(), Period(), 14, 0);
+    double atrDaily = iATR(Symbol(), PERIOD_D1, 14, 0);
+    
+    if(atrDaily > 0) {
+        return atrCurrent / atrDaily;
+    }
+    return 1.0;
 }
 
 //+------------------------------------------------------------------+
-//| Signal Direction and Risk Calculation                           |
+//| Placeholder structures for complete implementation              |
 //+------------------------------------------------------------------+
-void DetermineSignalDirection(TradingSignal &signal) {
-   bool trendUp = maFast[0] > maSlow[0];
-   bool rsiBullish = rsi[0] < 40 && rsi[1] < 35;
-   bool rsiBearish = rsi[0] > 60 && rsi[1] > 65;
-   
-   if(trendUp && rsiBullish) {
-      signal.direction = "BUY";
-   } else if(!trendUp && rsiBearish) {
-      signal.direction = "SELL";
-   } else {
-      signal.direction = "NONE";
-   }
+struct TradingSignal {
+    string direction;
+    double confidence;
+    double entry;
+    double sl;
+    double tp;
+    string pattern;
+};
+
+TradingSignal GenerateEnhancedSignal() {
+    TradingSignal signal;
+    // Implementation would generate signals based on pattern recognition
+    signal.direction = "NONE";
+    signal.confidence = 0.0;
+    return signal;
 }
 
-void CalculateRiskParameters(TradingSignal &signal) {
-   double entry = (signal.direction == "BUY") ? symbol.Ask() : symbol.Bid();
-   signal.entry = entry;
-   
-   // Calculate stop loss
-   if(UseATRForSL && atr[0] > 0) {
-      double atrSL = atr[0] * ATRMultiplier;
-      signal.sl = (signal.direction == "BUY") ? entry - atrSL : entry + atrSL;
-   } else {
-      double defaultSL = DefaultStopLoss * Point();
-      signal.sl = (signal.direction == "BUY") ? entry - defaultSL : entry + defaultSL;
-   }
-   
-   // Calculate take profit for 1:3 ratio
-   double risk = MathAbs(entry - signal.sl);
-   signal.tp = (signal.direction == "BUY") ? entry + (risk * RiskRewardRatio) 
-                                           : entry - (risk * RiskRewardRatio);
+void ExecuteTradeWithAdaptiveRisk(TradingSignal signal, double lotSize) {
+    // Implementation would execute trades with enhanced risk management
+}
+
+void ApplyDynamicBreakeven(ulong ticket) {
+    // Implementation would apply dynamic breakeven logic
 }
 
 //+------------------------------------------------------------------+
-//| Trading Condition Checks                                        |
+//| Dashboard helper functions                                      |
 //+------------------------------------------------------------------+
-bool CheckTradingConditions() {
-   if(!IsTradingSession()) return false;
-   if(symbol.Spread() > MaxSpread * Point()) return false;
-   if(!IsMarketOpen()) return false;
-   return true;
+void CreatePanel(string name, int x, int y, int width, int height, color bgColor, color borderColor, bool back=false) {
+    name = dashboardName + name;
+    if(ObjectFind(0, name) < 0) {
+        ObjectCreate(0, name, OBJ_RECTANGLE_LABEL, 0, 0, 0);
+        ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
+        ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
+        ObjectSetInteger(0, name, OBJPROP_XSIZE, width);
+        ObjectSetInteger(0, name, OBJPROP_YSIZE, height);
+        ObjectSetInteger(0, name, OBJPROP_BGCOLOR, bgColor);
+        ObjectSetInteger(0, name, OBJPROP_BORDER_COLOR, borderColor);
+        ObjectSetInteger(0, name, OBJPROP_BACK, back);
+        ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+    }
 }
 
-bool IsTradingSession() {
-   if(!UseSessionFilter) return true;
-   
-   MqlDateTime timeNow;
-   TimeCurrent(timeNow);
-   string currentTime = StringFormat("%02d:%02d", timeNow.hour, timeNow.min);
-   
-   return (currentTime >= LondonOpen && currentTime <= SessionClose);
-}
-
-bool IsMarketOpen() {
-   // Basic market open check - extend based on your broker
-   return true;
-}
-
-//+------------------------------------------------------------------+
-//| Additional Confidence Calculators                               |
-//+------------------------------------------------------------------+
-double CalculateTrendConfidence() {
-   bool fastAboveSlow = maFast[0] > maSlow[0];
-   bool consistent = true;
-   
-   // Check consistency over last 3 bars
-   for(int i = 1; i < 3; i++) {
-      if((maFast[i] > maSlow[i]) != fastAboveSlow) {
-         consistent = false;
-         break;
-      }
-   }
-   
-   return consistent ? 0.9 : 0.5;
-}
-
-double CalculateVolumeConfidence() {
-   if(!UseVolumeConfirmation) return 0.8;
-   
-   double currentVolume = volumes[0];
-   double avgVolume = (volumes[1] + volumes[2] + volumes[3]) / 3;
-   
-   if(currentVolume > avgVolume * 1.5) return 0.9;
-   if(currentVolume > avgVolume * 1.2) return 0.7;
-   return 0.5;
-}
-
-double CalculateMarketConditionConfidence() {
-   double confidence = 0.8;
-   
-   // Reduce confidence during high volatility
-   if(atr[0] > atr[1] * 1.5) confidence *= 0.7;
-   
-   // Reduce confidence during low volume
-   if(volumes[0] < volumes[1] * 0.7) confidence *= 0.8;
-   
-   return confidence;
-}
-
-//+------------------------------------------------------------------+
-//| Logging Functions                                               |
-//+------------------------------------------------------------------+
-void LogCurrentStatus() {
-   static int lastLog = 0;
-   if(TimeCurrent() - lastLog < 60) return; // Log every minute max
-   
-   string logEntry = StringFormat("IPRO_STATUS | %s | Pos: %d | Spread: %.1f | Confidence: %.1f%%",
-                                 TimeToString(TimeCurrent()), CountOpenPositions(),
-                                 symbol.Spread() / Point(), CalculateBaseSignalConfidence() * 100);
-   Print(logEntry);
-   lastLog = TimeCurrent();
-}
-
-//+------------------------------------------------------------------+
-//| Placeholder Functions for Complete Implementation               |
-//+------------------------------------------------------------------+
-bool CheckTrendAlignment(MqlRates &rates[], int index) { return true; }
-bool CheckPriceActionSetup(MqlRates &rates[], int index) { return true; }
-bool CheckVolumeConfirmation(MqlRates &rates[], int index) { return true; }
-bool IsTradingSignal(MqlRates &rates[], int index) { return true; }
-void InitializePriceActionStructures() {
-   ArrayInitialize(fvgZones, 0);
-   ArrayInitialize(orderBlocks, 0);
-   ArrayInitialize(srLevels, 0);
+void CreateLabel(string name, int x, int y, string text, int fontSize, color textColor, int corner=CORNER_LEFT_UPPER) {
+    name = dashboardName + name;
+    if(ObjectFind(0, name) < 0) {
+        ObjectCreate(0, name, OBJ_LABEL, 0, 0, 0);
+        ObjectSetInteger(0, name, OBJPROP_XDISTANCE, x);
+        ObjectSetInteger(0, name, OBJPROP_YDISTANCE, y);
+        ObjectSetString(0, name, OBJPROP_TEXT, text);
+        ObjectSetInteger(0, name, OBJPROP_COLOR, textColor);
+        ObjectSetInteger(0, name, OBJPROP_FONTSIZE, fontSize);
+        ObjectSetInteger(0, name, OBJPROP_CORNER, corner);
+        ObjectSetInteger(0, name, OBJPROP_SELECTABLE, false);
+    }
 }
 
 //+------------------------------------------------------------------+
 //| Expert deinitialization function                               |
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason) {
-   // Clean up indicators
-   if(handleMAFast != INVALID_HANDLE) IndicatorRelease(handleMAFast);
-   if(handleMASlow != INVALID_HANDLE) IndicatorRelease(handleMASlow);
-   if(handleRSI != INVALID_HANDLE) IndicatorRelease(handleRSI);
-   if(handleATR != INVALID_HANDLE) IndicatorRelease(handleATR);
-   if(handleVolumes != INVALID_HANDLE) IndicatorRelease(handleVolumes);
-   
-   Print("Institutional Pro Trader shutdown complete");
+    ObjectsDeleteAll(0, dashboardName);
+    
+    // Log final performance metrics
+    if(LogTradeAnalytics) {
+        Print("=== Session Performance Summary ===");
+        Print("Total Trades: ", metrics.totalTrades);
+        Print("Win Rate: ", DoubleToString(metrics.winRate, 1), "%");
+        Print("Total Profit: ", DoubleToString(metrics.totalProfit, 2));
+        Print("Profit Factor: ", DoubleToString(metrics.profitFactor, 2));
+    }
+    
+    Print("Institutional Pro Trader v6.0 shutdown complete");
 }
 //+------------------------------------------------------------------+
