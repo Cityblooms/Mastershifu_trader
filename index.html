@@ -1,290 +1,985 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trading Signals</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            background: #0f172a;
-            font-family: 'Inter', sans-serif;
+# mastershifu_v2_complete.py
+import pandas as pd
+import numpy as np
+import MetaTrader5 as mt5
+from datetime import datetime, timedelta
+import threading
+import time
+import logging
+import json
+import warnings
+from typing import Dict, List, Tuple, Optional, Any
+from dataclasses import dataclass, asdict
+from enum import Enum
+import talib
+from flask import Flask, render_template_string, jsonify
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import backtrader as bt
+
+warnings.filterwarnings('ignore')
+
+# =============================================================================
+# ENUMS AND DATA STRUCTURES
+# =============================================================================
+
+class MarketSession(Enum):
+    ASIAN = "Asian"
+    LONDON = "London" 
+    NEW_YORK = "New_York"
+    OVERLAP = "Overlap"
+
+class SystemState(Enum):
+    INITIALIZING = "INITIALIZING"
+    RUNNING = "RUNNING"
+    PAUSED = "PAUSED"
+    ERROR = "ERROR"
+    SHUTDOWN = "SHUTDOWN"
+
+class SignalDirection(Enum):
+    STRONG_BUY = "STRONG_BUY"
+    BUY = "BUY"
+    NEUTRAL = "NEUTRAL"
+    SELL = "SELL"
+    STRONG_SELL = "STRONG_SELL"
+
+class TrendDirection(Enum):
+    STRONG_UPTREND = "STRONG_UPTREND"
+    UPTREND = "UPTREND"
+    SIDEWAYS = "SIDEWAYS"
+    DOWNTREND = "DOWNTREND"
+    STRONG_DOWNTREND = "STRONG_DOWNTREND"
+
+@dataclass
+class LivePosition:
+    symbol: str
+    direction: int
+    volume: float
+    entry_price: float
+    stop_loss: float
+    take_profit: float
+    open_time: datetime
+    ticket: int
+    current_pnl: float = 0.0
+
+@dataclass
+class TradingSession:
+    name: str
+    start_hour: int
+    end_hour: int
+    volatility_multiplier: float
+
+@dataclass
+class TradingSignal:
+    symbol: str
+    direction: SignalDirection
+    confidence: float
+    strength: float
+    patterns: List[str]
+    entry_price: float
+    stop_loss: float
+    take_profit: float
+    atr: float
+    timestamp: datetime
+    rsi: float
+    trend: TrendDirection
+    fibonacci_levels: Dict[str, float]
+    support_level: float
+    resistance_level: float
+    has_fvg: bool
+    has_order_block: bool
+    has_bos: bool
+    volume_profile: Dict[str, float]
+
+@dataclass
+class BacktestResult:
+    total_trades: int
+    winning_trades: int
+    total_pnl: float
+    win_rate: float
+    sharpe_ratio: float
+    max_drawdown: float
+    profit_factor: float
+    trades: List[Dict]
+
+# =============================================================================
+# ADVANCED TECHNICAL ANALYSIS ENGINE
+# =============================================================================
+
+class AdvancedTechnicalAnalysis:
+    """Advanced technical analysis with all required indicators"""
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+    
+    def calculate_trend(self, df: pd.DataFrame) -> TrendDirection:
+        """Calculate comprehensive trend direction"""
+        # Multiple timeframe trend analysis
+        trends = []
+        
+        # EMA Trend (8, 21, 50, 200)
+        ema_8 = talib.EMA(df['close'], timeperiod=8)
+        ema_21 = talib.EMA(df['close'], timeperiod=21)
+        ema_50 = talib.EMA(df['close'], timeperiod=50)
+        ema_200 = talib.EMA(df['close'], timeperiod=200)
+        
+        # Price position relative to EMAs
+        current_price = df['close'].iloc[-1]
+        
+        if (current_price > ema_8.iloc[-1] > ema_21.iloc[-1] > ema_50.iloc[-1] > ema_200.iloc[-1] and
+            ema_8.iloc[-1] > ema_8.iloc[-2]):
+            trends.append(5)  # Strong uptrend
+        elif (current_price > ema_8.iloc[-1] > ema_21.iloc[-1] > ema_50.iloc[-1] and
+              ema_8.iloc[-1] > ema_8.iloc[-2]):
+            trends.append(4)  # Uptrend
+        elif (current_price < ema_8.iloc[-1] < ema_21.iloc[-1] < ema_50.iloc[-1] < ema_200.iloc[-1] and
+              ema_8.iloc[-1] < ema_8.iloc[-2]):
+            trends.append(1)  # Strong downtrend
+        elif (current_price < ema_8.iloc[-1] < ema_21.iloc[-1] < ema_50.iloc[-1] and
+              ema_8.iloc[-1] < ema_8.iloc[-2]):
+            trends.append(2)  # Downtrend
+        else:
+            trends.append(3)  # Sideways
+        
+        # ADX Trend Strength
+        adx = talib.ADX(df['high'], df['low'], df['close'], timeperiod=14)
+        if adx.iloc[-1] > 25:
+            if trends[-1] in [5, 4]:  # Strong trend confirmation
+                trends.append(trends[-1] + 0.5)
+            elif trends[-1] in [1, 2]:
+                trends.append(trends[-1] - 0.5)
+        
+        # Ichimoku Cloud
+        tenkan_sen = (df['high'].rolling(9).max() + df['low'].rolling(9).min()) / 2
+        kijun_sen = (df['high'].rolling(26).max() + df['low'].rolling(26).min()) / 2
+        senkou_span_a = ((tenkan_sen + kijun_sen) / 2).shift(26)
+        senkou_span_b = ((df['high'].rolling(52).max() + df['low'].rolling(52).min()) / 2).shift(26)
+        
+        if (current_price > senkou_span_a.iloc[-1] and current_price > senkou_span_b.iloc[-1] and
+            senkou_span_a.iloc[-1] > senkou_span_b.iloc[-1]):
+            trends.append(5)
+        elif (current_price < senkou_span_a.iloc[-1] and current_price < senkou_span_b.iloc[-1] and
+              senkou_span_a.iloc[-1] < senkou_span_b.iloc[-1]):
+            trends.append(1)
+        
+        avg_trend = np.mean(trends)
+        
+        if avg_trend >= 4.5:
+            return TrendDirection.STRONG_UPTREND
+        elif avg_trend >= 3.5:
+            return TrendDirection.UPTREND
+        elif avg_trend <= 1.5:
+            return TrendDirection.STRONG_DOWNTREND
+        elif avg_trend <= 2.5:
+            return TrendDirection.DOWNTREND
+        else:
+            return TrendDirection.SIDEWAYS
+    
+    def calculate_fibonacci_levels(self, df: pd.DataFrame) -> Dict[str, float]:
+        """Calculate Fibonacci retracement and extension levels"""
+        if len(df) < 100:
+            return {}
+        
+        # Find recent swing high and low
+        lookback = 100
+        high_data = df['high'].tail(lookback)
+        low_data = df['low'].tail(lookback)
+        
+        swing_high = high_data.max()
+        swing_low = low_data.min()
+        
+        # Find the most recent swing points
+        swing_high_idx = high_data.idxmax()
+        swing_low_idx = low_data.idxmin()
+        
+        # Ensure we have proper swing structure
+        if swing_high_idx > swing_low_idx:
+            # Uptrend
+            trend_range = swing_high - swing_low
+        else:
+            # Downtrend
+            trend_range = swing_low - swing_high
+            swing_high, swing_low = swing_low, swing_high
+        
+        if trend_range == 0:
+            return {}
+        
+        # Fibonacci levels
+        levels = {
+            '0.0': swing_low,
+            '0.236': swing_low + trend_range * 0.236,
+            '0.382': swing_low + trend_range * 0.382,
+            '0.5': swing_low + trend_range * 0.5,
+            '0.618': swing_low + trend_range * 0.618,
+            '0.786': swing_low + trend_range * 0.786,
+            '1.0': swing_high,
+            '1.272': swing_high + trend_range * 0.272,
+            '1.618': swing_high + trend_range * 0.618
         }
         
-        .signal-buy {
-            border-left: 4px solid #10b981;
-            background: rgba(16, 185, 129, 0.05);
-        }
+        return levels
+    
+    def detect_volume_profile(self, df: pd.DataFrame) -> Dict[str, float]:
+        """Calculate volume profile levels"""
+        if 'volume' not in df.columns:
+            return {}
         
-        .signal-sell {
-            border-left: 4px solid #ef4444;
-            background: rgba(239, 68, 68, 0.05);
-        }
+        # Price levels for volume analysis
+        price_min = df['low'].min()
+        price_max = df['high'].max()
+        price_range = price_max - price_min
         
-        .signal-strong-buy {
-            border-left: 4px solid #10b981;
-            background: rgba(16, 185, 129, 0.1);
-        }
+        if price_range == 0:
+            return {}
         
-        .signal-strong-sell {
-            border-left: 4px solid #ef4444;
-            background: rgba(239, 68, 68, 0.1);
-        }
+        # Create price buckets
+        num_buckets = 20
+        bucket_size = price_range / num_buckets
+        volume_profile = {}
         
-        .strength-bar {
-            background: rgba(255,255,255,0.1);
-            border-radius: 4px;
-            height: 6px;
-            overflow: hidden;
-        }
-        
-        .strength-fill {
-            height: 100%;
-            border-radius: 4px;
-            background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
-        }
-    </style>
-</head>
-<body class="text-white">
-    <div class="max-w-6xl mx-auto px-4 py-8">
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-white">
-                Trading Signals
-            </h1>
-            <p class="text-gray-400 mt-2">Real-time market signals</p>
+        for i in range(num_buckets):
+            price_level = price_min + (i * bucket_size)
+            next_level = price_level + bucket_size
             
-            <!-- Simple Stats -->
-            <div class="flex justify-center space-x-8 mt-6">
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-green-400" id="totalSignals">0</div>
-                    <div class="text-sm text-gray-400">Signals</div>
-                </div>
-                <div class="text-center">
-                    <div class="text-2xl font-bold text-blue-400" id="strongSignals">0</div>
-                    <div class="text-sm text-gray-400">Strong</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Simple Filters -->
-        <div class="flex flex-wrap gap-4 justify-center mb-8">
-            <select id="typeFilter" class="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white">
-                <option value="all">All Signals</option>
-                <option value="BUY">Buy</option>
-                <option value="SELL">Sell</option>
-            </select>
+            # Volume in this price range
+            mask = (df['low'] >= price_level) & (df['high'] <= next_level)
+            volume_in_range = df.loc[mask, 'volume'].sum()
             
-            <select id="timeframeFilter" class="bg-slate-800 border border-slate-600 rounded-lg px-4 py-2 text-white">
-                <option value="all">All Timeframes</option>
-                <option value="1hour">1H</option>
-                <option value="4hour">4H</option>
-                <option value="1day">1D</option>
-            </select>
+            volume_profile[f"{price_level:.5f}"] = volume_in_range
+        
+        # Find POC (Point of Control)
+        if volume_profile:
+            poc_price = max(volume_profile, key=volume_profile.get)
+            volume_profile['poc'] = float(poc_price)
+        
+        return volume_profile
+    
+    def calculate_support_resistance(self, df: pd.DataFrame) -> Tuple[float, float]:
+        """Calculate dynamic support and resistance with volume confirmation"""
+        if len(df) < 50:
+            return df['low'].min(), df['high'].max()
+        
+        # Use fractal points for S/R
+        lookback = 50
+        support_levels = []
+        resistance_levels = []
+        
+        for i in range(2, lookback - 2):
+            # Support fractal
+            if (df['low'].iloc[i] < df['low'].iloc[i-1] and 
+                df['low'].iloc[i] < df['low'].iloc[i-2] and
+                df['low'].iloc[i] < df['low'].iloc[i+1] and
+                df['low'].iloc[i] < df['low'].iloc[i+2]):
+                support_levels.append(df['low'].iloc[i])
             
-            <button id="refreshBtn" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-semibold transition-colors">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-        </div>
+            # Resistance fractal
+            if (df['high'].iloc[i] > df['high'].iloc[i-1] and 
+                df['high'].iloc[i] > df['high'].iloc[i-2] and
+                df['high'].iloc[i] > df['high'].iloc[i+1] and
+                df['high'].iloc[i] > df['high'].iloc[i+2]):
+                resistance_levels.append(df['high'].iloc[i])
+        
+        # Use most recent significant levels
+        current_price = df['close'].iloc[-1]
+        valid_support = [s for s in support_levels if s < current_price]
+        valid_resistance = [r for r in resistance_levels if r > current_price]
+        
+        support = max(valid_support) if valid_support else df['low'].tail(20).min()
+        resistance = min(valid_resistance) if valid_resistance else df['high'].tail(20).max()
+        
+        return support, resistance
 
-        <!-- Signals Grid -->
-        <div id="signalsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div class="text-center text-gray-500 py-12 col-span-3">
-                <i class="fas fa-bolt text-4xl mb-3"></i>
-                <p class="text-lg">Loading signals...</p>
-            </div>
-        </div>
+# =============================================================================
+# REAL MARKET DATA INTEGRATION
+# =============================================================================
 
-        <!-- Last Update -->
-        <div class="text-center mt-8 text-gray-500 text-sm">
-            Updated: <span id="lastUpdate">--:--:--</span>
-        </div>
-    </div>
+class RealMarketData:
+    """Real market data integration with MT5/TradingView"""
+    
+    def __init__(self):
+        self.mt5_connected = False
+        self.logger = logging.getLogger(__name__)
+    
+    def connect_mt5(self) -> bool:
+        """Connect to MetaTrader 5"""
+        try:
+            if not mt5.initialize():
+                self.logger.error("MT5 initialization failed")
+                return False
+            
+            self.mt5_connected = True
+            self.logger.info("Connected to MT5 successfully")
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"MT5 connection error: {e}")
+            return False
+    
+    def get_live_data(self, symbol: str, timeframe: int, count: int) -> Optional[pd.DataFrame]:
+        """Get real market data from MT5"""
+        if not self.mt5_connected:
+            if not self.connect_mt5():
+                return None
+        
+        try:
+            rates = mt5.copy_rates_from_pos(symbol, timeframe, 0, count)
+            if rates is None:
+                self.logger.warning(f"No data returned for {symbol}")
+                return None
+            
+            df = pd.DataFrame(rates)
+            df['time'] = pd.to_datetime(df['time'], unit='s')
+            df.set_index('time', inplace=True)
+            
+            # Verify data quality
+            if len(df) < count * 0.8:  # Require at least 80% of requested data
+                self.logger.warning(f"Insufficient data for {symbol}: {len(df)}/{count}")
+                return None
+            
+            # Check for stale data
+            latest_time = df.index.max()
+            time_diff = datetime.now() - latest_time
+            if time_diff > timedelta(minutes=10):
+                self.logger.warning(f"Stale data for {symbol}: {time_diff}")
+                return None
+            
+            return df
+            
+        except Exception as e:
+            self.logger.error(f"Market data error for {symbol}: {e}")
+            return None
+    
+    def get_current_price(self, symbol: str) -> Optional[float]:
+        """Get current bid price for symbol"""
+        if not self.mt5_connected:
+            return None
+        
+        try:
+            tick = mt5.symbol_info_tick(symbol)
+            if tick is None:
+                return None
+            return tick.bid
+        except Exception as e:
+            self.logger.error(f"Price fetch error for {symbol}: {e}")
+            return None
 
-    <script>
-        // Trading System Integration
-        class TradingSignalDashboard {
-            constructor() {
-                this.signals = [];
-                this.initialize();
-            }
+# =============================================================================
+# BACKTESTING ENGINE
+# =============================================================================
 
-            initialize() {
-                this.setupEventListeners();
-                this.generateSignals();
-                this.startAutoRefresh();
-            }
+class BacktestingEngine:
+    """Advanced backtesting engine with Backtrader"""
+    
+    def __init__(self):
+        self.logger = logging.getLogger(__name__)
+    
+    def run_backtest(self, strategy_class, data: pd.DataFrame, 
+                    initial_cash: float = 10000.0, commission: float = 0.001) -> BacktestResult:
+        """Run comprehensive backtest"""
+        try:
+            cerebro = bt.Cerebro()
+            cerebro.broker.setcash(initial_cash)
+            cerebro.broker.setcommission(commission=commission)
+            
+            # Add data
+            data_feed = bt.feeds.PandasData(dataname=data)
+            cerebro.adddata(data_feed)
+            
+            # Add strategy
+            cerebro.addstrategy(strategy_class)
+            
+            # Add analyzers
+            cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trades")
+            cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")
+            cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
+            
+            # Run backtest
+            results = cerebro.run()
+            strat = results[0]
+            
+            # Extract results
+            trade_analysis = strat.analyzers.trades.get_analysis()
+            sharpe_analysis = strat.analyzers.sharpe.get_analysis()
+            drawdown_analysis = strat.analyzers.drawdown.get_analysis()
+            
+            total_trades = trade_analysis.total.closed
+            winning_trades = trade_analysis.won.total
+            total_pnl = cerebro.broker.getvalue() - initial_cash
+            
+            return BacktestResult(
+                total_trades=total_trades,
+                winning_trades=winning_trades,
+                total_pnl=total_pnl,
+                win_rate=winning_trades / total_trades if total_trades > 0 else 0,
+                sharpe_ratio=sharpe_analysis.get('sharperatio', 0),
+                max_drawdown=drawdown_analysis.max.drawdown,
+                profit_factor=trade_analysis.pnl.gross.total / abs(trade_analysis.pnl.gross.total - trade_analysis.pnl.net.total) if trade_analysis.pnl.gross.total != trade_analysis.pnl.net.total else 0,
+                trades=[]
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Backtesting error: {e}")
+            return BacktestResult(0, 0, 0, 0, 0, 0, 0, [])
 
-            setupEventListeners() {
-                document.getElementById('refreshBtn').addEventListener('click', () => {
-                    this.generateSignals();
-                });
+class MastershifuStrategy(bt.Strategy):
+    """Mastershifu V2 Backtesting Strategy"""
+    
+    def __init__(self):
+        self.technical_analysis = AdvancedTechnicalAnalysis()
+        self.data_close = self.datas[0].close
+        self.order = None
+        
+    def next(self):
+        if self.order:
+            return
+        
+        # Get recent data for analysis
+        lookback = 100
+        if len(self) < lookback:
+            return
+        
+        # Create DataFrame from backtrader data
+        df = pd.DataFrame({
+            'open': [bar[0] for bar in self.datas[0].open.get(size=lookback)],
+            'high': [bar[0] for bar in self.datas[0].high.get(size=lookback)],
+            'low': [bar[0] for bar in self.datas[0].low.get(size=lookback)],
+            'close': [bar[0] for bar in self.datas[0].close.get(size=lookback)],
+            'volume': [bar[0] for bar in self.datas[0].volume.get(size=lookback)] if hasattr(self.datas[0], 'volume') else [1] * lookback
+        })
+        
+        # Generate signal (simplified for backtest)
+        signal = self.generate_signal(df)
+        
+        if signal and signal.direction in [SignalDirection.BUY, SignalDirection.STRONG_BUY]:
+            if not self.position:
+                self.order = self.buy()
+        elif signal and signal.direction in [SignalDirection.SELL, SignalDirection.STRONG_SELL]:
+            if not self.position:
+                self.order = self.sell()
+    
+    def generate_signal(self, df: pd.DataFrame) -> Optional[TradingSignal]:
+        """Generate trading signal for backtesting"""
+        # Simplified signal generation for backtest
+        # In real implementation, use the full signal generation logic
+        rsi = talib.RSI(df['close'], timeperiod=14).iloc[-1]
+        current_price = df['close'].iloc[-1]
+        
+        if rsi < 30:
+            return TradingSignal(
+                symbol="BACKTEST",
+                direction=SignalDirection.BUY,
+                confidence=0.7,
+                strength=5.0,
+                patterns=['RSI_Oversold'],
+                entry_price=current_price,
+                stop_loss=current_price * 0.99,
+                take_profit=current_price * 1.02,
+                atr=1.0,
+                timestamp=datetime.now(),
+                rsi=rsi,
+                trend=TrendDirection.UPTREND,
+                fibonacci_levels={},
+                support_level=current_price * 0.99,
+                resistance_level=current_price * 1.01,
+                has_fvg=False,
+                has_order_block=False,
+                has_bos=False,
+                volume_profile={}
+            )
+        elif rsi > 70:
+            return TradingSignal(
+                symbol="BACKTEST",
+                direction=SignalDirection.SELL,
+                confidence=0.7,
+                strength=5.0,
+                patterns=['RSI_Overbought'],
+                entry_price=current_price,
+                stop_loss=current_price * 1.01,
+                take_profit=current_price * 0.98,
+                atr=1.0,
+                timestamp=datetime.now(),
+                rsi=rsi,
+                trend=TrendDirection.DOWNTREND,
+                fibonacci_levels={},
+                support_level=current_price * 0.99,
+                resistance_level=current_price * 1.01,
+                has_fvg=False,
+                has_order_block=False,
+                has_bos=False,
+                volume_profile={}
+            )
+        
+        return None
 
-                document.getElementById('typeFilter').addEventListener('change', () => {
-                    this.filterSignals();
-                });
+# =============================================================================
+# COMPLETE TRADING SYSTEM
+# =============================================================================
 
-                document.getElementById('timeframeFilter').addEventListener('change', () => {
-                    this.filterSignals();
-                });
-            }
-
-            generateSignals() {
-                // Simulate signal generation from your trading system
-                const symbols = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'BTC/USD'];
-                const patterns = ['Bullish Engulfing', 'Bearish Engulfing', 'Hammer', 'Shooting Star'];
-                const timeframes = ['1hour', '4hour', '1day'];
+class MastershifuV2TradingSystem:
+    """Complete Mastershifu V2 Trading System"""
+    
+    def __init__(self, account_balance: float = 10000.0, risk_per_trade: float = 1.0):
+        # Initialize components
+        self.technical_analysis = AdvancedTechnicalAnalysis()
+        self.market_data = RealMarketData()
+        self.backtesting_engine = BacktestingEngine()
+        
+        # Trading configuration
+        self.account_balance = account_balance
+        self.risk_per_trade = risk_per_trade
+        self.max_daily_loss = 0.02
+        
+        # System state
+        self.system_state = SystemState.INITIALIZING
+        self.trading_enabled = True
+        self.recent_signals = []
+        self.performance_metrics = {
+            'total_trades': 0,
+            'winning_trades': 0,
+            'total_pnl': 0.0,
+            'today_pnl': 0.0,
+            'signals_generated': 0
+        }
+        
+        # Threading
+        self._shutdown_event = threading.Event()
+        self._trading_thread = None
+        
+        # Setup logging
+        self._setup_logging()
+        
+        self.logger.info("Mastershifu V2 Trading System initialized")
+    
+    def _setup_logging(self):
+        """Setup professional logging"""
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.FileHandler('mastershifu_v2.log'),
+                logging.StreamHandler()
+            ]
+        )
+        self.logger = logging.getLogger(__name__)
+    
+    def start_live_trading(self):
+        """Start live trading system"""
+        try:
+            self.logger.info("Starting Mastershifu V2 Live Trading...")
+            
+            # Connect to market data
+            if not self.market_data.connect_mt5():
+                raise Exception("Failed to connect to market data")
+            
+            self.system_state = SystemState.RUNNING
+            
+            # Start trading thread
+            self._trading_thread = threading.Thread(target=self._trading_loop, daemon=True)
+            self._trading_thread.start()
+            
+            self.logger.info("Live trading started successfully")
+            
+        except Exception as e:
+            self.logger.critical(f"Failed to start live trading: {e}")
+            self.system_state = SystemState.ERROR
+    
+    def _trading_loop(self):
+        """Main trading loop"""
+        while not self._shutdown_event.is_set() and self.system_state == SystemState.RUNNING:
+            try:
+                # Monitor major instruments
+                symbols = ['EURUSD', 'XAUUSD', 'BTCUSD', 'US500']
                 
-                this.signals = [];
+                for symbol in symbols:
+                    signal = self._generate_signal(symbol)
+                    if signal:
+                        self.recent_signals.append(signal)
+                        self.performance_metrics['signals_generated'] += 1
+                        self.logger.info(f"Signal generated: {symbol} - {signal.direction.value}")
                 
-                symbols.forEach(symbol => {
-                    if (Math.random() > 0.4) { // 60% chance of signal per symbol
-                        const signal = this.createSignal(symbol, patterns, timeframes);
-                        this.signals.push(signal);
-                    }
-                });
+                # Keep only recent signals
+                if len(self.recent_signals) > 50:
+                    self.recent_signals = self.recent_signals[-50:]
                 
-                // Sort by strength
-                this.signals.sort((a, b) => b.strength - a.strength);
-                this.filterSignals();
-                this.updateLastUpdate();
-            }
+                # Sleep until next cycle
+                self._shutdown_event.wait(60)  # 1 minute cycles
+                
+            except Exception as e:
+                self.logger.error(f"Trading loop error: {e}")
+                time.sleep(30)
+    
+    def _generate_signal(self, symbol: str) -> Optional[TradingSignal]:
+        """Generate trading signal for symbol"""
+        try:
+            # Get real market data
+            df = self.market_data.get_live_data(symbol, mt5.TIMEFRAME_H1, 200)
+            if df is None:
+                return None
+            
+            # Calculate all technical indicators
+            trend = self.technical_analysis.calculate_trend(df)
+            fibonacci_levels = self.technical_analysis.calculate_fibonacci_levels(df)
+            support, resistance = self.technical_analysis.calculate_support_resistance(df)
+            volume_profile = self.technical_analysis.detect_volume_profile(df)
+            
+            # RSI analysis
+            rsi = talib.RSI(df['close'], timeperiod=14).iloc[-1]
+            
+            # Generate signal based on confluence
+            signal_strength = 0
+            patterns = []
+            
+            # Trend analysis
+            if trend == TrendDirection.STRONG_UPTREND:
+                signal_strength += 2
+                patterns.append("STRONG_UPTREND")
+            elif trend == TrendDirection.UPTREND:
+                signal_strength += 1
+                patterns.append("UPTREND")
+            elif trend == TrendDirection.STRONG_DOWNTREND:
+                signal_strength -= 2
+                patterns.append("STRONG_DOWNTREND")
+            elif trend == TrendDirection.DOWNTREND:
+                signal_strength -= 1
+                patterns.append("DOWNTREND")
+            
+            # RSI signals
+            if rsi < 30:
+                signal_strength += 2
+                patterns.append("RSI_OVERSOLD")
+            elif rsi > 70:
+                signal_strength -= 2
+                patterns.append("RSI_OVERBOUGHT")
+            
+            # Support/Resistance
+            current_price = df['close'].iloc[-1]
+            if current_price <= support * 1.001:
+                signal_strength += 1
+                patterns.append("AT_SUPPORT")
+            elif current_price >= resistance * 0.999:
+                signal_strength -= 1
+                patterns.append("AT_RESISTANCE")
+            
+            # Determine signal direction
+            if signal_strength >= 3:
+                direction = SignalDirection.STRONG_BUY
+                confidence = min(0.95, signal_strength / 6)
+            elif signal_strength >= 1:
+                direction = SignalDirection.BUY
+                confidence = min(0.85, signal_strength / 4)
+            elif signal_strength <= -3:
+                direction = SignalDirection.STRONG_SELL
+                confidence = min(0.95, abs(signal_strength) / 6)
+            elif signal_strength <= -1:
+                direction = SignalDirection.SELL
+                confidence = min(0.85, abs(signal_strength) / 4)
+            else:
+                return None  # No clear signal
+            
+            # Calculate position parameters
+            atr = talib.ATR(df['high'], df['low'], df['close'], timeperiod=14).iloc[-1]
+            
+            if direction in [SignalDirection.BUY, SignalDirection.STRONG_BUY]:
+                stop_loss = current_price - 2 * atr
+                take_profit = current_price + 3 * atr
+            else:
+                stop_loss = current_price + 2 * atr
+                take_profit = current_price - 3 * atr
+            
+            return TradingSignal(
+                symbol=symbol,
+                direction=direction,
+                confidence=confidence,
+                strength=abs(signal_strength),
+                patterns=patterns,
+                entry_price=current_price,
+                stop_loss=stop_loss,
+                take_profit=take_profit,
+                atr=atr,
+                timestamp=datetime.now(),
+                rsi=rsi,
+                trend=trend,
+                fibonacci_levels=fibonacci_levels,
+                support_level=support,
+                resistance_level=resistance,
+                has_fvg=False,  # Simplified for demo
+                has_order_block=False,
+                has_bos=False,
+                volume_profile=volume_profile
+            )
+            
+        except Exception as e:
+            self.logger.error(f"Signal generation error for {symbol}: {e}")
+            return None
+    
+    def run_backtest(self, symbol: str, start_date: datetime, end_date: datetime) -> BacktestResult:
+        """Run backtest for symbol"""
+        try:
+            # Get historical data
+            if not self.market_data.connect_mt5():
+                raise Exception("Failed to connect to market data")
+            
+            # Calculate number of bars needed
+            days_diff = (end_date - start_date).days
+            bar_count = days_diff * 24  # Assuming H1 data
+            
+            df = self.market_data.get_live_data(symbol, mt5.TIMEFRAME_H1, bar_count)
+            if df is None:
+                raise Exception(f"Failed to get historical data for {symbol}")
+            
+            # Filter data for backtest period
+            df = df[(df.index >= start_date) & (df.index <= end_date)]
+            
+            if len(df) < 100:
+                raise Exception("Insufficient data for backtest")
+            
+            # Run backtest
+            result = self.backtesting_engine.run_backtest(MastershifuStrategy, df)
+            
+            self.logger.info(f"Backtest completed for {symbol}: {result.win_rate:.1%} win rate")
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"Backtest error for {symbol}: {e}")
+            return BacktestResult(0, 0, 0, 0, 0, 0, 0, [])
+    
+    def get_system_status(self) -> Dict[str, Any]:
+        """Get current system status"""
+        return {
+            'system_state': self.system_state.value,
+            'trading_enabled': self.trading_enabled,
+            'signals_generated': self.performance_metrics['signals_generated'],
+            'recent_signals_count': len(self.recent_signals),
+            'market_data_connected': self.market_data.mt5_connected
+        }
+    
+    def stop_system(self):
+        """Stop the trading system"""
+        self.logger.info("Stopping Mastershifu V2 system...")
+        self.system_state = SystemState.SHUTDOWN
+        self._shutdown_event.set()
+        
+        if self._trading_thread:
+            self._trading_thread.join(timeout=30)
+        
+        self.logger.info("System stopped successfully")
 
-            createSignal(symbol, patterns, timeframes) {
-                const signalTypes = ['BUY', 'SELL', 'STRONG_BUY', 'STRONG_SELL'];
-                const signalType = signalTypes[Math.floor(Math.random() * signalTypes.length)];
-                const strength = Math.random() * 30 + 70; // 70-100 strength
-                const basePrice = 50 + Math.random() * 200;
-                
-                let target, stopLoss;
-                if (signalType.includes('BUY')) {
-                    target = basePrice * (1 + 0.03);
-                    stopLoss = basePrice * (1 - 0.02);
-                } else {
-                    target = basePrice * (1 - 0.03);
-                    stopLoss = basePrice * (1 + 0.02);
+# =============================================================================
+# WEB DASHBOARD
+# =============================================================================
+
+class MastershifuDashboard:
+    """Web Dashboard for Mastershifu V2"""
+    
+    def __init__(self, trading_system: MastershifuV2TradingSystem):
+        self.trading_system = trading_system
+        self.app = Flask(__name__)
+        self._setup_routes()
+    
+    def _setup_routes(self):
+        """Setup Flask routes"""
+        
+        @self.app.route('/')
+        def dashboard():
+            return render_template_string(self._get_dashboard_html())
+        
+        @self.app.route('/api/signals')
+        def get_signals():
+            signals = [asdict(signal) for signal in self.trading_system.recent_signals[-20:]]
+            # Convert datetime objects to strings
+            for signal in signals:
+                signal['timestamp'] = signal['timestamp'].isoformat()
+                signal['trend'] = signal['trend'].value
+                signal['direction'] = signal['direction'].value
+            return jsonify(signals)
+        
+        @self.app.route('/api/status')
+        def get_status():
+            return jsonify(self.trading_system.get_system_status())
+        
+        @self.app.route('/api/backtest/<symbol>')
+        def run_backtest(symbol):
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30)
+            result = self.trading_system.run_backtest(symbol, start_date, end_date)
+            return jsonify(asdict(result))
+    
+    def _get_dashboard_html(self) -> str:
+        """Get dashboard HTML template"""
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Mastershifu V2 - Professional Trading System</title>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <style>
+                :root {
+                    --primary: #2563eb;
+                    --success: #10b981;
+                    --danger: #ef4444;
+                    --warning: #f59e0b;
+                    --dark: #1f2937;
+                    --darker: #111827;
                 }
-                
-                return {
-                    symbol,
-                    signalType,
-                    strength: Math.round(strength),
-                    timeframe: timeframes[Math.floor(Math.random() * timeframes.length)],
-                    price: parseFloat(basePrice.toFixed(4)),
-                    target: parseFloat(target.toFixed(4)),
-                    stopLoss: parseFloat(stopLoss.toFixed(4)),
-                    pattern: patterns[Math.floor(Math.random() * patterns.length)],
-                    confidence: parseFloat((Math.random() * 0.2 + 0.8).toFixed(2)),
-                    timestamp: new Date().toISOString(),
-                    riskReward: parseFloat((Math.abs(target - basePrice) / Math.abs(basePrice - stopLoss)).toFixed(2))
-                };
-            }
-
-            filterSignals() {
-                const typeFilter = document.getElementById('typeFilter').value;
-                const timeframeFilter = document.getElementById('timeframeFilter').value;
-                
-                const filteredSignals = this.signals.filter(signal => {
-                    if (typeFilter !== 'all' && signal.signalType !== typeFilter) return false;
-                    if (timeframeFilter !== 'all' && signal.timeframe !== timeframeFilter) return false;
-                    return true;
-                });
-                
-                this.displaySignals(filteredSignals);
-                this.updateStats(filteredSignals);
-            }
-
-            displaySignals(signals) {
-                const container = document.getElementById('signalsContainer');
-                
-                if (signals.length === 0) {
-                    container.innerHTML = `
-                        <div class="text-center text-gray-500 py-12 col-span-3">
-                            <i class="fas fa-search text-4xl mb-3"></i>
-                            <p class="text-lg">No signals found</p>
-                        </div>
-                    `;
-                    return;
+                body { 
+                    font-family: 'Segoe UI', sans-serif; 
+                    background: var(--darker); 
+                    color: white; 
+                    margin: 0; 
+                    padding: 20px; 
                 }
-                
-                container.innerHTML = signals.map(signal => `
-                    <div class="bg-slate-800 rounded-lg p-4 ${this.getSignalClass(signal)}">
-                        <!-- Header -->
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <div class="font-bold text-white text-lg">${signal.symbol}</div>
-                                <div class="text-xs text-gray-400">${signal.timeframe} • ${signal.pattern}</div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-lg font-bold ${
-                                    signal.signalType.includes('BUY') ? 'text-green-400' : 'text-red-400'
-                                }">${signal.signalType.replace('_', ' ')}</div>
-                                <div class="text-sm text-gray-400">${signal.strength}%</div>
-                            </div>
+                .container { max-width: 1400px; margin: 0 auto; }
+                .header { text-align: center; margin-bottom: 30px; }
+                .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                .card { background: var(--dark); padding: 20px; border-radius: 12px; }
+                .signal { 
+                    border-left: 4px solid; 
+                    margin: 10px 0; 
+                    padding: 15px; 
+                    background: rgba(255,255,255,0.05);
+                    border-radius: 8px;
+                }
+                .STRONG_BUY { border-color: var(--success); }
+                .BUY { border-color: #34d399; }
+                .SELL { border-color: #f87171; }
+                .STRONG_SELL { border-color: var(--danger); }
+                .status-bar { 
+                    display: flex; 
+                    justify-content: space-between; 
+                    margin-bottom: 20px;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                }
+                .status-item { 
+                    display: flex; 
+                    align-items: center; 
+                    gap: 8px; 
+                }
+                .status-dot {
+                    width: 10px;
+                    height: 10px;
+                    border-radius: 50%;
+                    animation: pulse 2s infinite;
+                }
+                .running { background: var(--success); }
+                .error { background: var(--danger); }
+                @keyframes pulse {
+                    0% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                    100% { opacity: 1; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>MasterShifu V2 - Professional Trading System</h1>
+                    <div class="status-bar" id="statusBar">
+                        <div class="status-item">
+                            <div class="status-dot running"></div>
+                            <span>System Status: <span id="systemStatus">Loading...</span></span>
                         </div>
-                        
-                        <!-- Price Levels -->
-                        <div class="space-y-2 mb-3">
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">Price:</span>
-                                <span class="text-white">${signal.price}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">Target:</span>
-                                <span class="text-green-400">${signal.target}</span>
-                            </div>
-                            <div class="flex justify-between text-sm">
-                                <span class="text-gray-400">Stop:</span>
-                                <span class="text-red-400">${signal.stopLoss}</span>
-                            </div>
+                        <div class="status-item">
+                            <span>Signals Generated: <span id="signalsCount">0</span></span>
                         </div>
-                        
-                        <!-- Strength -->
-                        <div class="mb-2">
-                            <div class="flex justify-between text-xs mb-1">
-                                <span class="text-gray-400">Strength</span>
-                                <span class="text-white">${signal.strength}%</span>
-                            </div>
-                            <div class="strength-bar">
-                                <div class="strength-fill" style="width: ${signal.strength}%"></div>
-                            </div>
+                        <div class="status-item">
+                            <span>Market Data: <span id="marketData">Checking...</span></span>
                         </div>
                     </div>
-                `).join('');
-            }
-
-            getSignalClass(signal) {
-                if (signal.signalType === 'STRONG_BUY') return 'signal-strong-buy';
-                if (signal.signalType === 'STRONG_SELL') return 'signal-strong-sell';
-                if (signal.signalType === 'BUY') return 'signal-buy';
-                if (signal.signalType === 'SELL') return 'signal-sell';
-                return '';
-            }
-
-            updateStats(signals) {
-                const totalSignals = signals.length;
-                const strongSignals = signals.filter(s => s.strength >= 85).length;
+                </div>
                 
-                document.getElementById('totalSignals').textContent = totalSignals;
-                document.getElementById('strongSignals').textContent = strongSignals;
-            }
+                <div class="grid">
+                    <div class="card">
+                        <h2>Recent Trading Signals</h2>
+                        <div id="signalsContainer"></div>
+                    </div>
+                    
+                    <div class="card">
+                        <h2>System Performance</h2>
+                        <canvas id="performanceChart" width="400" height="200"></canvas>
+                        <div id="performanceMetrics"></div>
+                    </div>
+                </div>
+            </div>
 
-            updateLastUpdate() {
-                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
-            }
+            <script>
+                async function updateDashboard() {
+                    try {
+                        const [signalsResponse, statusResponse] = await Promise.all([
+                            fetch('/api/signals'),
+                            fetch('/api/status')
+                        ]);
+                        
+                        const signals = await signalsResponse.json();
+                        const status = await statusResponse.json();
+                        
+                        // Update status
+                        document.getElementById('systemStatus').textContent = status.system_state;
+                        document.getElementById('signalsCount').textContent = status.signals_generated;
+                        document.getElementById('marketData').textContent = 
+                            status.market_data_connected ? 'Connected' : 'Disconnected';
+                        
+                        // Update signals
+                        const container = document.getElementById('signalsContainer');
+                        container.innerHTML = signals.map(signal => `
+                            <div class="signal ${signal.direction}">
+                                <strong>${signal.symbol}</strong> - ${signal.direction} 
+                                <span style="float: right;">${(signal.confidence * 100).toFixed(1)}%</span><br>
+                                <small>Price: ${signal.entry_price.toFixed(5)} | 
+                                RSI: ${signal.rsi.toFixed(1)} | 
+                                Trend: ${signal.trend}</small><br>
+                                <small>Patterns: ${signal.patterns.join(', ')}</small><br>
+                                <small>${new Date(signal.timestamp).toLocaleString()}</small>
+                            </div>
+                        `).join('');
+                        
+                    } catch (error) {
+                        console.error('Dashboard update error:', error);
+                    }
+                }
+                
+                // Update every 5 seconds
+                setInterval(updateDashboard, 5000);
+                updateDashboard();
+            </script>
+        </body>
+        </html>
+        """
+    
+    def run(self, host: str = '0.0.0.0', port: int = 5000):
+        """Run the dashboard"""
+        self.app.run(host=host, port=port, debug=False)
 
-            startAutoRefresh() {
-                setInterval(() => {
-                    this.generateSignals();
-                }, 10000); // Refresh every 10 seconds
-            }
-        }
+# =============================================================================
+# MAIN EXECUTION
+# =============================================================================
 
-        // Initialize dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            new TradingSignalDashboard();
-        });
-    </script>
-</body>
-</html>
+def main():
+    """Main execution function"""
+    
+    # Initialize the trading system
+    trading_system = MastershifuV2TradingSystem(
+        account_balance=10000.0,
+        risk_per_trade=1.0
+    )
+    
+    # Initialize dashboard
+    dashboard = MastershifuDashboard(trading_system)
+    
+    try:
+        # Start live trading
+        trading_system.start_live_trading()
+        
+        # Run dashboard
+        print("Starting Mastershifu V2 Dashboard on http://localhost:5000")
+        dashboard.run()
+        
+    except KeyboardInterrupt:
+        print("\nShutting down Mastershifu V2...")
+        trading_system.stop_system()
+    except Exception as e:
+        print(f"System error: {e}")
+        trading_system.stop_system()
+
+if __name__ == "__main__":
+    main()
