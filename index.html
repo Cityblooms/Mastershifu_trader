@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forex & Synthetic Trading Dashboard</title>
     <style>
+        /* [Previous CSS remains the same] */
         :root {
             --bg: #0a0e17;
             --card: #131a2a;
@@ -569,18 +570,35 @@
             EMA_LONG: 20,
             RSI_PERIOD: 14,
             STABILITY: 2,
-            CACHE_KEY: 'trading_dashboard_v4',
+            CACHE_KEY: 'trading_dashboard_v5',
             MAX_SIGNALS: 15
         };
 
-        // Forex and Synthetic symbols
+        // Enhanced Forex, Commodities, and Synthetic symbols
         const symbols = [
+            // Forex Major Pairs
             { name: "EUR/USD", type: "Forex", price: 1.08542, change: 0.0012, changePercent: 0.11 },
             { name: "GBP/USD", type: "Forex", price: 1.26789, change: -0.0023, changePercent: -0.18 },
             { name: "USD/JPY", type: "Forex", price: 151.234, change: 0.456, changePercent: 0.30 },
             { name: "AUD/USD", type: "Forex", price: 0.65731, change: 0.0008, changePercent: 0.12 },
             { name: "USD/CAD", type: "Forex", price: 1.35467, change: -0.0011, changePercent: -0.08 },
             { name: "USD/CHF", type: "Forex", price: 0.89765, change: 0.0005, changePercent: 0.06 },
+            { name: "NZD/USD", type: "Forex", price: 0.61234, change: -0.0015, changePercent: -0.24 },
+            { name: "EUR/GBP", type: "Forex", price: 0.85678, change: 0.0009, changePercent: 0.11 },
+            
+            // Commodities
+            { name: "GOLD", type: "Commodity", price: 1987.65, change: 12.34, changePercent: 0.62 },
+            { name: "SILVER", type: "Commodity", price: 23.456, change: -0.123, changePercent: -0.52 },
+            { name: "OIL", type: "Commodity", price: 78.901, change: 1.234, changePercent: 1.59 },
+            { name: "COPPER", type: "Commodity", price: 3.8765, change: 0.0456, changePercent: 1.19 },
+            
+            // Indices
+            { name: "US30", type: "Index", price: 34567.89, change: 123.45, changePercent: 0.36 },
+            { name: "SPX500", type: "Index", price: 4567.89, change: -23.45, changePercent: -0.51 },
+            { name: "NAS100", type: "Index", price: 15678.90, change: 67.89, changePercent: 0.43 },
+            { name: "GER40", type: "Index", price: 16789.01, change: -45.67, changePercent: -0.27 },
+            
+            // Synthetic Indices
             { name: "BOOM 1000", type: "Synthetic", price: 543.21, change: 12.34, changePercent: 2.32 },
             { name: "CRASH 1000", type: "Synthetic", price: 456.78, change: -8.76, changePercent: -1.88 },
             { name: "R_100", type: "Synthetic", price: 123.45, change: 3.21, changePercent: 2.67 },
@@ -617,9 +635,10 @@
                 minuteCandles[symbol.name] = [];
                 let basePrice = symbol.price;
                 
-                // Generate historical data
+                // Generate historical data with more balanced trends
                 for (let i = 0; i < CONFIG.PRICE_HISTORY_LEN; i++) {
-                    const trend = Math.sin(i / 20) * 0.02;
+                    // Create more balanced trends (not always bearish)
+                    const trend = Math.sin(i / 20 + Math.random() * 2) * 0.02;
                     const volatility = (Math.random() - 0.5) * 0.01;
                     basePrice = basePrice * (1 + trend + volatility);
                     const timestamp = Date.now() - (CONFIG.PRICE_HISTORY_LEN - i) * 60000;
@@ -696,7 +715,7 @@
             return 100 - (100 / (1 + rs));
         }
 
-        // Signal generation
+        // Enhanced signal generation with balanced buy/sell logic
         function analyzeMultiTF(symbol) {
             const mins = minuteCandles[symbol];
             if (!mins || mins.length < 30) return null;
@@ -711,12 +730,32 @@
             
             const rsi = calcRSI(closes);
             const emaDiff = emaShort - emaLong;
-            const direction = emaDiff > 0 ? 'BUY' : 'SELL';
+            
+            // Enhanced direction logic with RSI consideration
+            let direction;
+            if (emaDiff > 0 && rsi < 70) {
+                direction = 'BUY';
+            } else if (emaDiff < 0 && rsi > 30) {
+                direction = 'SELL';
+            } else {
+                // Use RSI extremes for counter-trend signals
+                if (rsi < 25) direction = 'BUY';
+                else if (rsi > 75) direction = 'SELL';
+                else return null; // No clear signal
+            }
             
             // Calculate signal strength
             const emaDistance = Math.abs(emaDiff) / currentPrice;
-            const baseStrength = 60 + (emaDistance * 10000);
-            const rsiStrength = (direction === 'BUY' && rsi < 40) || (direction === 'SELL' && rsi > 60) ? 25 : 0;
+            let baseStrength = 60 + (emaDistance * 10000);
+            
+            // RSI strength adjustment
+            let rsiStrength = 0;
+            if ((direction === 'BUY' && rsi < 30) || (direction === 'SELL' && rsi > 70)) {
+                rsiStrength = 25;
+            } else if ((direction === 'BUY' && rsi < 40) || (direction === 'SELL' && rsi > 60)) {
+                rsiStrength = 15;
+            }
+            
             const signalStrength = Math.min(95, baseStrength + rsiStrength);
             
             const indicatorAlignment = Math.max(2, Math.min(5, Math.round(signalStrength / 20)));
@@ -740,7 +779,7 @@
             // Simulate API call delay
             await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 400));
             
-            // Enhanced validation logic
+            // Enhanced validation logic with balanced thresholds
             let chatGPTConfidence = 65;
             let deepSeekConfidence = 70;
             
@@ -759,8 +798,9 @@
                 deepSeekConfidence += 10;
             }
             
-            const chatGPTValid = chatGPTConfidence >= 70;
-            const deepSeekValid = deepSeekConfidence >= 68;
+            // More balanced approval criteria
+            const chatGPTValid = chatGPTConfidence >= 65;
+            const deepSeekValid = deepSeekConfidence >= 63;
             const approved = chatGPTValid && deepSeekValid;
             const avgConfidence = Math.round((chatGPTConfidence + deepSeekConfidence) / 2);
             
@@ -846,10 +886,26 @@
                 });
             }, 1000);
             
-            // Continuous signal generation
+            // Continuous signal generation with balanced selection
             setInterval(() => {
+                // Select symbols more strategically to get both buy and sell signals
                 const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
                 processSymbolCandidate(randomSymbol.name);
+                
+                // Occasionally force a buy signal by selecting bullish symbols
+                if (Math.random() > 0.7) {
+                    const bullishSymbols = symbols.filter(s => 
+                        minuteCandles[s.name] && 
+                        minuteCandles[s.name].length > 0 && 
+                        minuteCandles[s.name][minuteCandles[s.name].length - 1].close > 
+                        minuteCandles[s.name][minuteCandles[s.name].length - 2].close
+                    );
+                    
+                    if (bullishSymbols.length > 0) {
+                        const bullishSymbol = bullishSymbols[Math.floor(Math.random() * bullishSymbols.length)];
+                        processSymbolCandidate(bullishSymbol.name);
+                    }
+                }
             }, 4000);
         }
 
@@ -860,14 +916,16 @@
             }, 3000);
         }
 
-        // Update all symbol prices
+        // Update all symbol prices with more balanced movements
         function updateAllPrices() {
             symbols.forEach(symbol => {
                 const candles = minuteCandles[symbol.name];
                 if (!candles || candles.length === 0) return;
                 
                 const lastCandle = candles[candles.length - 1];
-                const trend = Math.random() > 0.6 ? (Math.random() - 0.5) * 0.01 : 0;
+                
+                // More balanced price movements (not always bearish)
+                const trend = Math.random() > 0.5 ? (Math.random() - 0.3) * 0.01 : (Math.random() - 0.7) * 0.01;
                 const volatility = (Math.random() - 0.5) * 0.003;
                 const newPrice = lastCandle.close * (1 + trend + volatility);
                 
@@ -904,7 +962,7 @@
                         <div class="direction ${signal.direction.toLowerCase()}">${signal.direction}</div>
                     </div>
                     <div class="signal-meta">
-                        <div>Price: ${signal.currentPrice.toFixed(5)}</div>
+                        <div>Price: ${signal.currentPrice.toFixed(signal.symbol.includes('GOLD') || signal.symbol.includes('OIL') ? 2 : 5)}</div>
                         <div>RSI: ${signal.rsi}</div>
                     </div>
                     <div class="signal-strength">
@@ -976,6 +1034,7 @@
             symbolsList.innerHTML = symbols.map(symbol => {
                 const changeClass = symbol.change >= 0 ? 'positive' : 'negative';
                 const changeSign = symbol.change >= 0 ? '+' : '';
+                const pricePrecision = symbol.type === 'Commodity' || symbol.type === 'Index' ? 2 : 5;
                 
                 return `
                     <div class="symbol-item">
@@ -984,7 +1043,7 @@
                             <div style="font-size: 11px; color: var(--text-muted);">${symbol.type}</div>
                         </div>
                         <div class="price-change ${changeClass}">
-                            ${changeSign}${symbol.change.toFixed(4)}<br>
+                            ${changeSign}${symbol.change.toFixed(pricePrecision)}<br>
                             <small>(${changeSign}${symbol.changePercent.toFixed(2)}%)</small>
                         </div>
                     </div>
@@ -1000,13 +1059,14 @@
             watchlistEl.innerHTML = watchlistSymbols.map(symbol => {
                 const changeClass = symbol.change >= 0 ? 'positive' : 'negative';
                 const changeSign = symbol.change >= 0 ? '+' : '';
+                const pricePrecision = symbol.type === 'Commodity' || symbol.type === 'Index' ? 2 : 5;
                 
                 return `
                     <div class="watchlist-item">
                         <div class="watchlist-symbol">${symbol.name}</div>
-                        <div class="watchlist-price">${symbol.price.toFixed(5)}</div>
+                        <div class="watchlist-price">${symbol.price.toFixed(pricePrecision)}</div>
                         <div class="watchlist-change ${changeClass}">
-                            ${changeSign}${symbol.change.toFixed(4)}
+                            ${changeSign}${symbol.change.toFixed(pricePrecision)}
                         </div>
                     </div>
                 `;
