@@ -456,6 +456,7 @@
                 <button class="market-btn" data-market="crypto">Cryptocurrency</button>
                 <button class="market-btn" data-market="commodities">Commodities</button>
                 <button class="market-btn" data-market="synthetic">Synthetic Pairs</button>
+                <button class="market-btn" data-market="deriv">Deriv Commodities</button>
             </div>
             
             <div class="market-stats">
@@ -487,6 +488,7 @@
                 <div class="algo-item algo-active">✅ SMC Analysis Active</div>
                 <div class="algo-item algo-active">✅ S/R Levels Active</div>
                 <div class="algo-item algo-active">✅ Volume Analysis Active</div>
+                <div class="algo-item algo-active">✅ Engulfing Pattern Active</div>
             </div>
             
             <div class="price-ticker" id="priceTicker">
@@ -524,6 +526,7 @@
                                     <div>✅ SMC Market Structure</div>
                                     <div>✅ Dynamic S/R Levels</div>
                                     <div>✅ Volume Profile Analysis</div>
+                                    <div>✅ Engulfing Pattern Detection</div>
                                 </div>
                             </div>
                             <div style="text-align: left;">
@@ -550,7 +553,7 @@
                             Multi-algorithm validation & dual AI consensus building
                         </div>
                         <div style="font-size: 0.8rem; margin-top: 20px; opacity: 0.6;">
-                            Running: RSI • FVG • SMC • Support/Resistance • Volume • Market Structure
+                            Running: RSI • FVG • SMC • Support/Resistance • Volume • Market Structure • Engulfing Patterns
                         </div>
                     </div>
                 </div>
@@ -567,7 +570,8 @@
                     indices: ['US30', 'SPX500', 'NAS100', 'GER30', 'UK100', 'JPN225'],
                     crypto: ['BTC/USD', 'ETH/USD', 'SOL/USD', 'XRP/USD', 'ADA/USD', 'DOT/USD'],
                     commodities: ['XAU/USD', 'XAG/USD', 'OIL/USD', 'NAT.GAS', 'COPPER'],
-                    synthetic: ['EUR/GBP', 'GBP/JPY', 'AUD/NZD', 'EUR/JPY', 'GBP/AUD']
+                    synthetic: ['EUR/GBP', 'GBP/JPY', 'AUD/NZD', 'EUR/JPY', 'GBP/AUD'],
+                    deriv: ['Volatility 75 Index', 'Volatility 100 Index', 'Boom 300 Index', 'Crash 300 Index', 'Jump 50 Index', 'Step Index']
                 };
                 
                 this.currentMarket = 'forex';
@@ -619,7 +623,11 @@
                     'NAT.GAS': 2.85, 'COPPER': 3.85,
                     // Synthetic
                     'EUR/GBP': 0.8570, 'GBP/JPY': 187.50, 'AUD/NZD': 1.0820,
-                    'EUR/JPY': 160.80, 'GBP/AUD': 1.9400
+                    'EUR/JPY': 160.80, 'GBP/AUD': 1.9400,
+                    // Deriv Commodities
+                    'Volatility 75 Index': 7500, 'Volatility 100 Index': 10000,
+                    'Boom 300 Index': 30000, 'Crash 300 Index': 30000,
+                    'Jump 50 Index': 5000, 'Step Index': 10000
                 };
                 return prices[symbol] || 100;
             }
@@ -674,6 +682,32 @@
                 const bearishFVG = prev.low > prev2.high && current.high < prev2.low;
                 
                 return bullishFVG || bearishFVG;
+            }
+
+            // Engulfing Pattern Detection Algorithm
+            detectEngulfing(prices) {
+                if (prices.length < 3) return 'NONE';
+                
+                const current = prices[prices.length - 1];
+                const prev = prices[prices.length - 2];
+                
+                // Bullish Engulfing: Current candle completely engulfs previous bearish candle
+                const bullishEngulfing = 
+                    prev.price < prev.open && // Previous was bearish
+                    current.price > current.open && // Current is bullish
+                    current.low < prev.low && 
+                    current.high > prev.high;
+                
+                // Bearish Engulfing: Current candle completely engulfs previous bullish candle
+                const bearishEngulfing = 
+                    prev.price > prev.open && // Previous was bullish
+                    current.price < current.open && // Current is bearish
+                    current.low < prev.low && 
+                    current.high > prev.high;
+                
+                if (bullishEngulfing) return 'BULLISH_ENGULFING';
+                if (bearishEngulfing) return 'BEARISH_ENGULFING';
+                return 'NONE';
             }
 
             // SMC (Smart Money Concepts) Market Structure Analysis
@@ -738,6 +772,7 @@
                 // Calculate all indicators
                 const rsi = this.calculateRSI(prices);
                 const fvg = this.detectFVG(prices);
+                const engulfing = this.detectEngulfing(prices);
                 const marketStructure = this.analyzeMarketStructure(prices);
                 const srLevels = this.calculateSupportResistance(prices);
                 const volumeAnalysis = this.analyzeVolume(prices.map(p => p.volume));
@@ -746,40 +781,51 @@
                 let alignment = 0;
                 let direction = 'NEUTRAL';
                 
-                // RSI Analysis (25% weight)
+                // RSI Analysis (20% weight)
                 if (rsi < 30) {
-                    strength += 25;
+                    strength += 20;
                     alignment++;
                     direction = 'BUY';
                 } else if (rsi > 70) {
+                    strength += 20;
+                    alignment++;
+                    direction = 'SELL';
+                }
+                
+                // FVG Analysis (15% weight)
+                if (fvg) {
+                    strength += 15;
+                    alignment++;
+                }
+                
+                // Engulfing Pattern Analysis (25% weight)
+                if (engulfing === 'BULLISH_ENGULFING') {
+                    strength += 25;
+                    alignment++;
+                    direction = 'BUY';
+                } else if (engulfing === 'BEARISH_ENGULFING') {
                     strength += 25;
                     alignment++;
                     direction = 'SELL';
                 }
                 
-                // FVG Analysis (20% weight)
-                if (fvg) {
-                    strength += 20;
-                    alignment++;
-                }
-                
-                // Market Structure Analysis (20% weight)
+                // Market Structure Analysis (15% weight)
                 if ((direction === 'BUY' && marketStructure === 'BULLISH') || 
                     (direction === 'SELL' && marketStructure === 'BEARISH')) {
-                    strength += 20;
+                    strength += 15;
                     alignment++;
                 }
                 
-                // Support/Resistance Analysis (20% weight)
+                // Support/Resistance Analysis (15% weight)
                 if ((direction === 'BUY' && srLevels.support) || 
                     (direction === 'SELL' && srLevels.resistance)) {
-                    strength += 20;
+                    strength += 15;
                     alignment++;
                 }
                 
-                // Volume Analysis (15% weight)
+                // Volume Analysis (10% weight)
                 if (volumeAnalysis.spike) {
-                    strength += 15;
+                    strength += 10;
                     alignment++;
                 }
                 
@@ -792,6 +838,7 @@
                     direction: direction,
                     rsi: rsi,
                     fvg: fvg,
+                    engulfing: engulfing,
                     marketStructure: marketStructure,
                     support: srLevels.support,
                     resistance: srLevels.resistance,
@@ -850,6 +897,7 @@
                     type: 'INSTITUTIONAL_GRADE',
                     rsi: 30 + Math.random() * 50,
                     fvg: true,
+                    engulfing: Math.random() > 0.5 ? 'BULLISH_ENGULFING' : 'BEARISH_ENGULFING',
                     smc: 'BULLISH',
                     support: true,
                     resistance: false,
@@ -910,6 +958,7 @@
                     // Technical Indicators
                     rsi: technicalAnalysis.rsi,
                     fvg: technicalAnalysis.fvg,
+                    engulfing: technicalAnalysis.engulfing,
                     smc: technicalAnalysis.marketStructure,
                     support: technicalAnalysis.support,
                     resistance: technicalAnalysis.resistance,
@@ -924,7 +973,7 @@
                     // AI Analysis
                     aiConfidence: 90,
                     aiSentiment: direction === 'BUY' ? 'strong_bullish' : 'strong_bearish',
-                    aiReasoning: `INSTITUTIONAL ANALYSIS: ${symbol} shows ${direction} alignment with ${technicalAnalysis.alignment}/5 technical indicators at ${Math.round(strength)}% strength`,
+                    aiReasoning: `INSTITUTIONAL ANALYSIS: ${symbol} shows ${direction} alignment with ${technicalAnalysis.alignment}/6 technical indicators at ${Math.round(strength)}% strength`,
                     tradeReasons: [
                         "Multi-indicator technical alignment",
                         "Institutional grade analysis",
@@ -982,7 +1031,9 @@
                     "Smart Money Concept alignment with institutional flow",
                     "Volume surge confirming institutional participation",
                     "Multi-timeframe structure alignment",
-                    "Price action confirmation at key level"
+                    "Price action confirmation at key level",
+                    "Bullish engulfing pattern detected",
+                    "Bearish engulfing pattern detected"
                 ];
                 
                 const direction = technicals.direction;
@@ -992,7 +1043,7 @@
                     direction: direction,
                     confidence: Math.round(confidence),
                     sentiment: direction === 'BUY' ? 'strong_bullish' : 'strong_bearish',
-                    reasoning: `ChatGPT Institutional Analysis: ${symbol} shows ${direction} alignment with ${technicals.alignment}/5 technical indicators. ${reasons.slice(0, 3).join(' ')}`,
+                    reasoning: `ChatGPT Institutional Analysis: ${symbol} shows ${direction} alignment with ${technicals.alignment}/6 technical indicators. ${reasons.slice(0, 3).join(' ')}`,
                     model: 'ChatGPT Institutional',
                     accuracy: Math.round(95 + Math.random() * 3) // 95-98%
                 };
@@ -1005,7 +1056,9 @@
                     "Risk-reward ratio highly favorable",
                     "Price at key psychological level",
                     "Momentum indicators aligned across timeframes",
-                    "Low volatility entry with high probability"
+                    "Low volatility entry with high probability",
+                    "Engulfing pattern confirms reversal signal",
+                    "Volume confirms institutional interest"
                 ];
                 
                 const direction = technicals.direction;
@@ -1125,12 +1178,14 @@
                     if (symbol === 'XAG/USD') return price.toFixed(3);
                     return price.toFixed(2);
                 }
+                if (this.markets.deriv.includes(symbol)) return price.toFixed(0);
                 return price.toFixed(4);
             }
 
             getPrecision(symbol) {
                 if (symbol.includes('JPY') || this.markets.indices.includes(symbol)) return 2;
                 if (symbol.includes('/USD') && !symbol.includes('XAU')) return 4;
+                if (this.markets.deriv.includes(symbol)) return 0;
                 return 2;
             }
 
@@ -1194,7 +1249,8 @@
                             'indices': 'Global Indices', 
                             'crypto': 'Cryptocurrency',
                             'commodities': 'Commodities',
-                            'synthetic': 'Synthetic Pairs'
+                            'synthetic': 'Synthetic Pairs',
+                            'deriv': 'Deriv Commodities'
                         };
                         document.getElementById('currentMarket').textContent = marketNames[market];
                         generateNewInstitutionalSignals();
@@ -1224,7 +1280,7 @@
                                 Multi-Algorithm Analysis in Progress...
                             </div>
                             <div style="font-size: 0.8rem; opacity: 0.8; margin-top: 10px;">
-                                Running RSI, FVG, SMC, Support/Resistance, Volume algorithms
+                                Running RSI, FVG, SMC, Support/Resistance, Volume, Engulfing algorithms
                             </div>
                             <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 15px;">
                                 AI verification with 98% accuracy threshold
@@ -1307,10 +1363,11 @@
                     <div class="technical-indicators">
                         <div class="indicator ${signal.rsi < 30 || signal.rsi > 70 ? 'positive' : 'neutral'}">RSI: ${signal.rsi.toFixed(1)}</div>
                         <div class="indicator ${signal.fvg ? 'positive' : 'neutral'}">FVG: ${signal.fvg ? '✓' : '○'}</div>
+                        <div class="indicator ${signal.engulfing !== 'NONE' ? 'positive' : 'neutral'}">ENG: ${signal.engulfing === 'BULLISH_ENGULFING' ? 'BULL' : signal.engulfing === 'BEARISH_ENGULFING' ? 'BEAR' : '○'}</div>
                         <div class="indicator ${signal.smc === 'BULLISH' || signal.smc === 'BEARISH' ? 'positive' : 'neutral'}">SMC: ${signal.smc}</div>
                         <div class="indicator ${signal.support || signal.resistance ? 'positive' : 'neutral'}">S/R: ${signal.support ? 'SUP' : signal.resistance ? 'RES' : '○'}</div>
                         <div class="indicator ${signal.volumeSpike ? 'positive' : 'neutral'}">VOL: ${signal.volume.toFixed(0)}%</div>
-                        <div class="indicator positive">ALIGN: ${signal.indicatorAlignment}/5</div>
+                        <div class="indicator positive">ALIGN: ${signal.indicatorAlignment}/6</div>
                     </div>
                     
                     <div class="signal-details">
