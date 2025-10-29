@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forex & Synthetic Trading Dashboard</title>
     <style>
-        /* [Previous CSS remains the same] */
         :root {
             --bg: #0a0e17;
             --card: #131a2a;
@@ -516,7 +515,7 @@
             
             <div class="sidebar">
                 <div class="panel">
-                    <div class="panel-title">📈 Forex & Synthetic Symbols</div>
+                    <div class="panel-title">📈 Selected Trading Pairs</div>
                     <div class="symbols-list" id="symbolsList">
                         <!-- Symbols populated by JavaScript -->
                     </div>
@@ -570,39 +569,29 @@
             EMA_LONG: 20,
             RSI_PERIOD: 14,
             STABILITY: 2,
-            CACHE_KEY: 'trading_dashboard_v5',
+            CACHE_KEY: 'trading_dashboard_focused',
             MAX_SIGNALS: 15
         };
 
-        // Enhanced Forex, Commodities, and Synthetic symbols
+        // Focused trading pairs as requested
         const symbols = [
-            // Forex Major Pairs
+            // Forex Pairs
             { name: "EUR/USD", type: "Forex", price: 1.08542, change: 0.0012, changePercent: 0.11 },
             { name: "GBP/USD", type: "Forex", price: 1.26789, change: -0.0023, changePercent: -0.18 },
             { name: "USD/JPY", type: "Forex", price: 151.234, change: 0.456, changePercent: 0.30 },
             { name: "AUD/USD", type: "Forex", price: 0.65731, change: 0.0008, changePercent: 0.12 },
-            { name: "USD/CAD", type: "Forex", price: 1.35467, change: -0.0011, changePercent: -0.08 },
-            { name: "USD/CHF", type: "Forex", price: 0.89765, change: 0.0005, changePercent: 0.06 },
-            { name: "NZD/USD", type: "Forex", price: 0.61234, change: -0.0015, changePercent: -0.24 },
-            { name: "EUR/GBP", type: "Forex", price: 0.85678, change: 0.0009, changePercent: 0.11 },
-            
-            // Commodities
-            { name: "GOLD", type: "Commodity", price: 1987.65, change: 12.34, changePercent: 0.62 },
-            { name: "SILVER", type: "Commodity", price: 23.456, change: -0.123, changePercent: -0.52 },
-            { name: "OIL", type: "Commodity", price: 78.901, change: 1.234, changePercent: 1.59 },
-            { name: "COPPER", type: "Commodity", price: 3.8765, change: 0.0456, changePercent: 1.19 },
-            
-            // Indices
-            { name: "US30", type: "Index", price: 34567.89, change: 123.45, changePercent: 0.36 },
-            { name: "SPX500", type: "Index", price: 4567.89, change: -23.45, changePercent: -0.51 },
-            { name: "NAS100", type: "Index", price: 15678.90, change: 67.89, changePercent: 0.43 },
-            { name: "GER40", type: "Index", price: 16789.01, change: -45.67, changePercent: -0.27 },
             
             // Synthetic Indices
             { name: "BOOM 1000", type: "Synthetic", price: 543.21, change: 12.34, changePercent: 2.32 },
-            { name: "CRASH 1000", type: "Synthetic", price: 456.78, change: -8.76, changePercent: -1.88 },
-            { name: "R_100", type: "Synthetic", price: 123.45, change: 3.21, changePercent: 2.67 },
-            { name: "STEP_INDEX", type: "Synthetic", price: 345.67, change: 7.89, changePercent: 2.34 }
+            { name: "BOOM 500", type: "Synthetic", price: 456.78, change: 8.76, changePercent: 1.95 },
+            { name: "CRASH 1000", type: "Synthetic", price: 345.67, change: -15.43, changePercent: -4.27 },
+            { name: "CRASH 500", type: "Synthetic", price: 234.56, change: -9.87, changePercent: -4.04 },
+            { name: "JUMP 100", type: "Synthetic", price: 123.45, change: 3.21, changePercent: 2.67 },
+            { name: "JUMP 50", type: "Synthetic", price: 89.01, change: 2.34, changePercent: 2.70 },
+            
+            // Indices & Commodities
+            { name: "US30", type: "Index", price: 34567.89, change: 123.45, changePercent: 0.36 },
+            { name: "XAU/USD", type: "Commodity", price: 1987.65, change: 12.34, changePercent: 0.62 }
         ];
 
         // Global variables
@@ -629,17 +618,17 @@
             console.log('✅ Dashboard initialized successfully');
         });
 
-        // Initialize price data for all symbols
+        // Initialize price data for all symbols with balanced trends
         function initializePriceData() {
             symbols.forEach(symbol => {
                 minuteCandles[symbol.name] = [];
                 let basePrice = symbol.price;
                 
-                // Generate historical data with more balanced trends
+                // Generate historical data with balanced trends
                 for (let i = 0; i < CONFIG.PRICE_HISTORY_LEN; i++) {
-                    // Create more balanced trends (not always bearish)
-                    const trend = Math.sin(i / 20 + Math.random() * 2) * 0.02;
-                    const volatility = (Math.random() - 0.5) * 0.01;
+                    // Create balanced trends (both bullish and bearish)
+                    const trend = Math.sin(i / 15 + Math.random() * 3) * 0.015;
+                    const volatility = (Math.random() - 0.5) * 0.008;
                     basePrice = basePrice * (1 + trend + volatility);
                     const timestamp = Date.now() - (CONFIG.PRICE_HISTORY_LEN - i) * 60000;
                     
@@ -731,17 +720,24 @@
             const rsi = calcRSI(closes);
             const emaDiff = emaShort - emaLong;
             
-            // Enhanced direction logic with RSI consideration
+            // Enhanced direction logic with balanced RSI consideration
             let direction;
-            if (emaDiff > 0 && rsi < 70) {
+            
+            // Buy signals: EMA crossover up AND RSI not overbought
+            if (emaDiff > 0 && rsi < 65) {
                 direction = 'BUY';
-            } else if (emaDiff < 0 && rsi > 30) {
+            } 
+            // Sell signals: EMA crossover down AND RSI not oversold
+            else if (emaDiff < 0 && rsi > 35) {
+                direction = 'SELL';
+            } 
+            // Counter-trend signals based on RSI extremes
+            else if (rsi < 25) {
+                direction = 'BUY';
+            } else if (rsi > 75) {
                 direction = 'SELL';
             } else {
-                // Use RSI extremes for counter-trend signals
-                if (rsi < 25) direction = 'BUY';
-                else if (rsi > 75) direction = 'SELL';
-                else return null; // No clear signal
+                return null; // No clear signal
             }
             
             // Calculate signal strength
@@ -875,7 +871,7 @@
             }
         }
 
-        // Start signal generation
+        // Start signal generation with balanced buy/sell distribution
         function startSignalGeneration() {
             // Initial batch of signals
             setTimeout(() => {
@@ -892,31 +888,52 @@
                 const randomSymbol = symbols[Math.floor(Math.random() * symbols.length)];
                 processSymbolCandidate(randomSymbol.name);
                 
-                // Occasionally force a buy signal by selecting bullish symbols
+                // Occasionally force a specific direction to ensure balance
                 if (Math.random() > 0.7) {
-                    const bullishSymbols = symbols.filter(s => 
-                        minuteCandles[s.name] && 
-                        minuteCandles[s.name].length > 0 && 
-                        minuteCandles[s.name][minuteCandles[s.name].length - 1].close > 
-                        minuteCandles[s.name][minuteCandles[s.name].length - 2].close
-                    );
+                    // Check current signal balance
+                    const buySignals = signals.filter(s => s.direction === 'BUY').length;
+                    const sellSignals = signals.filter(s => s.direction === 'SELL').length;
                     
-                    if (bullishSymbols.length > 0) {
-                        const bullishSymbol = bullishSymbols[Math.floor(Math.random() * bullishSymbols.length)];
-                        processSymbolCandidate(bullishSymbol.name);
+                    let targetDirection;
+                    if (buySignals > sellSignals + 2) {
+                        targetDirection = 'SELL';
+                    } else if (sellSignals > buySignals + 2) {
+                        targetDirection = 'BUY';
+                    } else {
+                        targetDirection = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                    }
+                    
+                    // Find a symbol that might generate the target direction
+                    const potentialSymbols = symbols.filter(s => {
+                        const mins = minuteCandles[s.name];
+                        if (!mins || mins.length < 30) return false;
+                        
+                        const closes = mins.map(m => m.close);
+                        const rsi = calcRSI(closes);
+                        
+                        if (targetDirection === 'BUY') {
+                            return rsi < 60; // More likely to generate buy
+                        } else {
+                            return rsi > 40; // More likely to generate sell
+                        }
+                    });
+                    
+                    if (potentialSymbols.length > 0) {
+                        const selectedSymbol = potentialSymbols[Math.floor(Math.random() * potentialSymbols.length)];
+                        processSymbolCandidate(selectedSymbol.name);
                     }
                 }
             }, 4000);
         }
 
-        // Start price updates
+        // Start price updates with balanced movements
         function startPriceUpdates() {
             setInterval(() => {
                 updateAllPrices();
             }, 3000);
         }
 
-        // Update all symbol prices with more balanced movements
+        // Update all symbol prices with balanced movements
         function updateAllPrices() {
             symbols.forEach(symbol => {
                 const candles = minuteCandles[symbol.name];
@@ -925,7 +942,10 @@
                 const lastCandle = candles[candles.length - 1];
                 
                 // More balanced price movements (not always bearish)
-                const trend = Math.random() > 0.5 ? (Math.random() - 0.3) * 0.01 : (Math.random() - 0.7) * 0.01;
+                // Create a mix of bullish and bearish trends
+                const trendDirection = Math.random() > 0.5 ? 1 : -1;
+                const trendStrength = 0.005 + Math.random() * 0.01;
+                const trend = trendDirection * trendStrength;
                 const volatility = (Math.random() - 0.5) * 0.003;
                 const newPrice = lastCandle.close * (1 + trend + volatility);
                 
@@ -962,7 +982,7 @@
                         <div class="direction ${signal.direction.toLowerCase()}">${signal.direction}</div>
                     </div>
                     <div class="signal-meta">
-                        <div>Price: ${signal.currentPrice.toFixed(signal.symbol.includes('GOLD') || signal.symbol.includes('OIL') ? 2 : 5)}</div>
+                        <div>Price: ${signal.currentPrice.toFixed(signal.symbol.includes('XAU') || signal.symbol.includes('US30') ? 2 : 5)}</div>
                         <div>RSI: ${signal.rsi}</div>
                     </div>
                     <div class="signal-strength">
