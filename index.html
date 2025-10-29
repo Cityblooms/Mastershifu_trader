@@ -1,714 +1,909 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Somto trading ai dashboard — All Deriv</title>
-<style>
-  :root{--bg:#06070a;--card:#0f1720;--muted:#9aa4ad;--accent:#10b981;--danger:#ef4444; font-family:Inter,system-ui,Arial;}
-  html,body{height:100%;margin:0;background:var(--bg);color:#e6eef6}
-  .wrap{max-width:1200px;margin:18px auto;padding:16px}
-  header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-  h1{margin:0;font-size:18px}
-  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .btn{background:var(--card);border:1px solid rgba(255,255,255,0.03);padding:8px 12px;border-radius:8px;color:var(--muted);cursor:pointer;font-size:13px}
-  .btn.primary{color:#fff;border-color:rgba(16,185,129,0.12)}
-  .chip{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);color:var(--muted);font-size:12px}
-  .muted{color:var(--muted);font-size:13px}
-
-  .main{display:grid;grid-template-columns:1fr 340px;gap:14px;margin-top:14px}
-  .panel{background:var(--card);border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.02);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-  #grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-  .card{padding:12px;border-radius:10px;background:linear-gradient(180deg,#0c1116,#0b0f14);border:1px solid rgba(255,255,255,0.02)}
-  .row{display:flex;justify-content:space-between;align-items:center}
-  .symbol{font-weight:700}
-  .badge{font-weight:700;padding:6px 8px;border-radius:8px;font-size:12px}
-  .buy{background:#052e1e;color:var(--accent)}
-  .sell{background:#3b0713;color:#ffd6d6}
-  .meta{color:var(--muted);font-size:13px;margin-top:8px}
-  .small{color:var(--muted);font-size:12px;margin-top:6px}
-  .reason{display:none;color:#cfeee0;font-size:13px;margin-top:8px}
-  .reason.open{display:block}
-  .list{height:360px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.02)}
-  .sym-item{display:flex;justify-content:space-between;align-items:center;padding:6px;border-radius:6px}
-  footer{margin-top:14px;display:flex;justify-content:space-between;color:var(--muted);font-size:12px;flex-wrap:wrap}
-  
-  /* Loading animation */
-  .loading-dots:after {
-    content: '...';
-    animation: dots 1.5s steps(4, end) infinite;
-  }
-  @keyframes dots {
-    0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
-    40% { color: var(--muted); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
-    60% { text-shadow: .25em 0 0 var(--muted), .5em 0 0 rgba(0,0,0,0); }
-    80%, 100% { text-shadow: .25em 0 0 var(--muted), .5em 0 0 var(--muted); }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forex & Synthetic Trading Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --card: #131a2a;
+            --accent: #3a86ff;
+            --accent-hover: #2a76ef;
+            --buy: #10b981;
+            --sell: #ef4444;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #1e293b;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        
+        body {
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .logo span {
+            color: var(--accent);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .btn {
+            background: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        
+        .btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--sell);
+        }
+        
+        .status-dot.connected {
+            background: var(--buy);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+        
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .chart-container {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .timeframe-selector {
+            display: flex;
+            background: var(--bg);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .timeframe {
+            padding: 6px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .timeframe.active {
+            background: var(--accent);
+        }
+        
+        .signals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+        }
+        
+        .signal-card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        
+        .signal-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .symbol {
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .direction {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .direction.buy {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--buy);
+        }
+        
+        .direction.sell {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--sell);
+        }
+        
+        .signal-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .signal-strength {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .strength-bar {
+            height: 4px;
+            width: 60px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .strength-fill {
+            height: 100%;
+            border-radius: 2px;
+        }
+        
+        .strength-fill.high {
+            background: var(--buy);
+            width: 80%;
+        }
+        
+        .strength-fill.medium {
+            background: #f59e0b;
+            width: 60%;
+        }
+        
+        .strength-fill.low {
+            background: var(--sell);
+            width: 40%;
+        }
+        
+        .signal-details {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+        
+        .signal-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .symbols-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .symbol-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .symbol-item:last-child {
+            border-bottom: none;
+        }
+        
+        .symbol-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .price-change {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .price-change.positive {
+            color: var(--buy);
+        }
+        
+        .price-change.negative {
+            color: var(--sell);
+        }
+        
+        .performance-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .stat-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 5px 0;
+        }
+        
+        .stat-value.positive {
+            color: var(--buy);
+        }
+        
+        .stat-value.negative {
+            color: var(--sell);
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .watchlist {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .watchlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        
+        .watchlist-item:hover {
+            background: rgba(58, 134, 255, 0.1);
+        }
+        
+        .watchlist-symbol {
+            font-weight: 600;
+        }
+        
+        .watchlist-price {
+            font-weight: 600;
+        }
+        
+        .watchlist-change {
+            font-size: 12px;
+        }
+        
+        .alerts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--bg);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .alert-icon {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+        
+        .alert-buy .alert-icon {
+            background: var(--buy);
+        }
+        
+        .alert-sell .alert-icon {
+            background: var(--sell);
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .controls {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .signals-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>Somto trading ai dashboard — ALL Deriv (Live & Offline)</h1>
-        <div class="muted" id="statusLine">Initializing…</div>
-      </div>
-      <div class="controls">
-        <label class="chip">Mode:
-          <select id="modeSelect" class="btn" style="margin-left:6px">
-            <option value="live">Live (Deriv)</option>
-            <option value="offline" selected>Offline (Simulator)</option>
-          </select>
-        </label>
-        <button id="subscribeAllBtn" class="btn primary">Subscribe: All</button>
-        <button id="refreshBtn" class="btn">Refresh Subs</button>
-        <button id="alertsToggle" class="btn primary">Alerts: On</button>
-        <div class="chip" id="lastUpdated">—</div>
-      </div>
-    </header>
-
-    <div class="main">
-      <div class="panel">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><strong>Signals</strong><div class="muted" style="font-size:13px">Compact AI-validated cards — multi-timeframe: 4H → confirm 1H/15M</div></div>
-          <div class="muted">Auto-refresh 20s</div>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>Forex & <span>Synthetic</span> Dashboard</h1>
+            </div>
+            <div class="controls">
+                <div class="status-indicator">
+                    <div class="status-dot connected"></div>
+                    <span>Connected to Data Feed</span>
+                </div>
+                <button class="btn" id="refreshBtn">Refresh Data</button>
+                <button class="btn btn-primary" id="subscribeBtn">Subscribe All</button>
+                <select class="btn" id="timeframeSelect">
+                    <option value="1m">1 Minute</option>
+                    <option value="5m">5 Minutes</option>
+                    <option value="15m" selected>15 Minutes</option>
+                    <option value="1h">1 Hour</option>
+                    <option value="4h">4 Hours</option>
+                </select>
+            </div>
+        </header>
+        
+        <div class="dashboard">
+            <div class="main-panel">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title" id="chartTitle">EUR/USD - 15 Minute Chart</div>
+                        <div class="chart-controls">
+                            <div class="timeframe-selector">
+                                <div class="timeframe active">Line</div>
+                                <div class="timeframe">Candles</div>
+                                <div class="timeframe">Area</div>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="priceChart" height="300"></canvas>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-title">Trading Signals</div>
+                    <div class="signals-grid" id="signalsGrid">
+                        <!-- Signals will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="panel">
+                    <div class="panel-title">Forex & Synthetic Symbols</div>
+                    <div class="symbols-list" id="symbolsList">
+                        <!-- Symbols will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-title">Performance Metrics</div>
+                    <div class="performance-stats">
+                        <div class="stat-card">
+                            <div class="stat-label">Win Rate</div>
+                            <div class="stat-value positive">72%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Avg. Return</div>
+                            <div class="stat-value positive">2.4%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Signals Today</div>
+                            <div class="stat-value">18</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">Active Trades</div>
+                            <div class="stat-value">7</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-title">Watchlist</div>
+                    <div class="watchlist" id="watchlist">
+                        <!-- Watchlist items will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <div class="panel-title">Recent Alerts</div>
+                    <div class="alerts-list" id="alertsList">
+                        <!-- Alerts will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
         </div>
-
-        <div id="grid" style="margin-top:12px"></div>
-      </div>
-
-      <aside>
-        <div class="panel" style="margin-bottom:12px">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <strong>Symbols</strong><div class="muted">Select or use Subscribe: All</div>
-          </div>
-          <div style="margin-top:8px">
-            <input id="symSearch" placeholder="Filter symbols..." class="btn" style="width:100%;padding:8px">
-          </div>
-          <div id="symbolsList" class="list" style="margin-top:8px"></div>
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button id="subscribeSelectedBtn" class="btn">Subscribe Selected</button>
-            <button id="clearCacheBtn" class="btn">Clear Cache</button>
-          </div>
-        </div>
-
-        <div class="panel">
-          <strong>Settings</strong>
-          <div class="muted" style="margin-top:8px">EMA short / long: <span id="emaShort">5</span>/<span id="emaLong">20</span> · RSI: <span id="rsiPeriod">14</span></div>
-          <div class="muted" style="margin-top:8px">FVG / SMC / SR checks applied</div>
-        </div>
-      </aside>
     </div>
 
-    <footer>
-      <div>© Somto · Local AI sim · Live Deriv feed</div>
-      <div class="muted">Open in Chrome for best performance</div>
-    </footer>
-  </div>
+    <script>
+        // Forex and Synthetic symbols
+        const symbols = [
+            { name: "EUR/USD", type: "Forex", price: 1.08542, change: 0.0012, changePercent: 0.11 },
+            { name: "GBP/USD", type: "Forex", price: 1.26789, change: -0.0023, changePercent: -0.18 },
+            { name: "USD/JPY", type: "Forex", price: 151.234, change: 0.456, changePercent: 0.30 },
+            { name: "AUD/USD", type: "Forex", price: 0.65731, change: 0.0008, changePercent: 0.12 },
+            { name: "USD/CAD", type: "Forex", price: 1.35467, change: -0.0011, changePercent: -0.08 },
+            { name: "USD/CHF", type: "Forex", price: 0.89765, change: 0.0005, changePercent: 0.06 },
+            { name: "NZD/USD", type: "Forex", price: 0.60123, change: -0.0015, changePercent: -0.25 },
+            { name: "BOOM 1000", type: "Synthetic", price: 543.21, change: 12.34, changePercent: 2.32 },
+            { name: "CRASH 1000", type: "Synthetic", price: 456.78, change: -8.76, changePercent: -1.88 },
+            { name: "R_100", type: "Synthetic", price: 123.45, change: 3.21, changePercent: 2.67 },
+            { name: "R_50", type: "Synthetic", price: 234.56, change: -5.43, changePercent: -2.26 },
+            { name: "STEP_INDEX", type: "Synthetic", price: 345.67, change: 7.89, changePercent: 2.34 }
+        ];
 
-<script>
-/* FIXED VERSION - SIGNALS GUARANTEED TO DISPLAY */
-const CONFIG = {
-  DERIV_WS: 'wss://ws.derivws.com/websockets/v3?app_id=1089',
-  AUTO_UI_MS: 20000,
-  PRICE_HISTORY_LEN: 1000,
-  EMA_SHORT: 5, EMA_LONG: 20,
-  RSI_PERIOD: 14,
-  STABILITY: 1, // Reduced for faster signal generation
-  CACHE_KEY: 'somto_all_deriv_v4',
-  MAX_KEEP: 20,
-  MAX_SUB: 80
-};
+        // Trading signals data
+        const signals = [
+            { symbol: "EUR/USD", direction: "buy", strength: "high", price: 1.0854, rsi: 42, time: "15:30", confidence: 87 },
+            { symbol: "GBP/USD", direction: "sell", strength: "medium", price: 1.2678, rsi: 68, time: "15:25", confidence: 72 },
+            { symbol: "USD/JPY", direction: "buy", strength: "high", price: 151.23, rsi: 35, time: "15:20", confidence: 91 },
+            { symbol: "BOOM 1000", direction: "buy", strength: "high", price: 543.21, rsi: 41, time: "15:18", confidence: 84 },
+            { symbol: "R_100", direction: "sell", strength: "low", price: 123.45, rsi: 72, time: "15:15", confidence: 63 },
+            { symbol: "AUD/USD", direction: "buy", strength: "medium", price: 0.6573, rsi: 48, time: "15:10", confidence: 76 }
+        ];
 
-let ws = null, connected = false;
-let mode = 'offline', subscribeAll = true;
-let availableSymbols = [], subscribed = new Set(), priceMinutes = {}, shownKeys = new Set();
-let lastDirHistory = {}, alertsOn = true, audioCtx = null;
-let minuteCandles = {};
+        // Watchlist data
+        const watchlist = [
+            { symbol: "EUR/USD", price: 1.08542, change: 0.0012, changePercent: 0.11 },
+            { symbol: "USD/JPY", price: 151.234, change: 0.456, changePercent: 0.30 },
+            { symbol: "BOOM 1000", price: 543.21, change: 12.34, changePercent: 2.32 },
+            { symbol: "R_100", price: 123.45, change: 3.21, changePercent: 2.67 },
+            { symbol: "STEP_INDEX", price: 345.67, change: 7.89, changePercent: 2.34 }
+        ];
 
-const statusLine = document.getElementById('statusLine');
-const grid = document.getElementById('grid');
-const modeSelect = document.getElementById('modeSelect');
-const subscribeAllBtn = document.getElementById('subscribeAllBtn');
-const refreshBtn = document.getElementById('refreshBtn');
-const alertsToggle = document.getElementById('alertsToggle');
-const lastUpdatedEl = document.getElementById('lastUpdated');
-const symbolsListEl = document.getElementById('symbolsList');
-const symSearch = document.getElementById('symSearch');
-const subscribeSelectedBtn = document.getElementById('subscribeSelectedBtn');
-const clearCacheBtn = document.getElementById('clearCacheBtn');
+        // Recent alerts
+        const alerts = [
+            { type: "buy", symbol: "EUR/USD", message: "Strong buy signal detected", time: "15:30" },
+            { type: "sell", symbol: "GBP/USD", message: "Price approaching resistance", time: "15:25" },
+            { type: "buy", symbol: "USD/JPY", message: "Oversold condition with bullish divergence", time: "15:20" },
+            { type: "buy", symbol: "BOOM 1000", message: "Breakout above key level", time: "15:18" }
+        ];
 
-// Initialize event listeners
-function initEventListeners() {
-  modeSelect.addEventListener('change', () => {
-    mode = modeSelect.value;
-    resetMode();
-  });
-  
-  subscribeAllBtn.addEventListener('click', () => {
-    subscribeAll = !subscribeAll;
-    subscribeAllBtn.textContent = subscribeAll ? 'Subscribe: All' : 'Subscribe: Manual';
-    if (subscribeAll) subscribeToSelectedSymbols();
-  });
-  
-  refreshBtn.addEventListener('click', () => subscribeToSelectedSymbols());
-  
-  alertsToggle.addEventListener('click', () => {
-    alertsOn = !alertsOn;
-    alertsToggle.textContent = alertsOn ? 'Alerts: On' : 'Alerts: Off';
-    initAudio();
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
-  });
-  
-  subscribeSelectedBtn.addEventListener('click', () => subscribeToSelectedSymbols(true));
-  
-  clearCacheBtn.addEventListener('click', () => {
-    localStorage.removeItem(CONFIG.CACHE_KEY);
-    grid.innerHTML = '';
-    lastUpdatedEl.textContent = 'Cache cleared';
-    shownKeys.clear();
-  });
-}
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeChart();
+            populateSymbolsList();
+            populateSignalsGrid();
+            populateWatchlist();
+            populateAlerts();
+            setupEventListeners();
+            
+            // Simulate live updates
+            setInterval(updatePrices, 5000);
+            setInterval(updateSignals, 10000);
+        });
 
-// Audio functions
-function initAudio() {
-  if (audioCtx) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  } catch (e) {
-    audioCtx = null;
-  }
-}
+        // Initialize the price chart
+        function initializeChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            // Generate sample price data
+            const data = [];
+            let currentPrice = 1.0850;
+            for (let i = 0; i < 50; i++) {
+                currentPrice += (Math.random() - 0.5) * 0.002;
+                data.push(currentPrice);
+            }
+            
+            // Create the chart
+            window.priceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 50}, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'EUR/USD',
+                        data: data,
+                        borderColor: '#3a86ff',
+                        backgroundColor: 'rgba(58, 134, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#94a3b8'
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-function playBeep() {
-  if (!alertsOn || !audioCtx) return;
-  try {
-    const o = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    o.type = 'sine';
-    o.frequency.value = 1000;
-    o.connect(g);
-    g.connect(audioCtx.destination);
-    const now = audioCtx.currentTime;
-    g.gain.setValueAtTime(0, now);
-    g.gain.linearRampToValueAtTime(0.9, now + 0.01);
-    g.gain.linearRampToValueAtTime(0, now + 0.16);
-    o.start(now);
-    o.stop(now + 0.18);
-  } catch (e) {}
-}
+        // Populate symbols list
+        function populateSymbolsList() {
+            const symbolsList = document.getElementById('symbolsList');
+            symbolsList.innerHTML = '';
+            
+            symbols.forEach(symbol => {
+                const symbolItem = document.createElement('div');
+                symbolItem.className = 'symbol-item';
+                
+                const changeClass = symbol.change >= 0 ? 'positive' : 'negative';
+                const changeSign = symbol.change >= 0 ? '+' : '';
+                
+                symbolItem.innerHTML = `
+                    <div class="symbol-info">
+                        <div class="symbol">${symbol.name}</div>
+                        <div class="type">${symbol.type}</div>
+                    </div>
+                    <div class="price-change ${changeClass}">
+                        ${changeSign}${symbol.change.toFixed(4)} (${changeSign}${symbol.changePercent.toFixed(2)}%)
+                    </div>
+                `;
+                
+                symbolsList.appendChild(symbolItem);
+            });
+        }
 
-// Technical analysis functions
-function ema(values, period) {
-  if (!values || values.length < period) return null;
-  const k = 2 / (period + 1);
-  let emaValue = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
-  for (let i = period; i < values.length; i++) {
-    emaValue = values[i] * k + emaValue * (1 - k);
-  }
-  return emaValue;
-}
+        // Populate signals grid
+        function populateSignalsGrid() {
+            const signalsGrid = document.getElementById('signalsGrid');
+            signalsGrid.innerHTML = '';
+            
+            if (signals.length === 0) {
+                signalsGrid.innerHTML = '<div class="no-data">No trading signals at the moment</div>';
+                return;
+            }
+            
+            signals.forEach(signal => {
+                const signalCard = document.createElement('div');
+                signalCard.className = 'signal-card';
+                
+                signalCard.innerHTML = `
+                    <div class="signal-header">
+                        <div class="symbol">${signal.symbol}</div>
+                        <div class="direction ${signal.direction}">${signal.direction.toUpperCase()}</div>
+                    </div>
+                    <div class="signal-meta">
+                        <div>Price: ${signal.price}</div>
+                        <div>RSI: ${signal.rsi}</div>
+                    </div>
+                    <div class="signal-strength">
+                        <span>Strength:</span>
+                        <div class="strength-bar">
+                            <div class="strength-fill ${signal.strength}"></div>
+                        </div>
+                    </div>
+                    <div class="signal-details">
+                        Confidence: ${signal.confidence}%
+                    </div>
+                    <div class="signal-footer">
+                        <div>${signal.time}</div>
+                        <div>15min TF</div>
+                    </div>
+                `;
+                
+                signalsGrid.appendChild(signalCard);
+            });
+        }
 
-function calcRSI(values, period = CONFIG.RSI_PERIOD) {
-  if (!values || values.length < period + 1) return 50;
-  let gains = 0, losses = 0;
-  for (let i = 1; i <= period; i++) {
-    const change = values[i] - values[i - 1];
-    if (change > 0) gains += change;
-    else losses -= change;
-  }
-  let avgGain = gains / period;
-  let avgLoss = losses / period;
-  for (let i = period + 1; i < values.length; i++) {
-    const change = values[i] - values[i - 1];
-    avgGain = (avgGain * (period - 1) + Math.max(0, change)) / period;
-    avgLoss = (avgLoss * (period - 1) + Math.max(0, -change)) / period;
-  }
-  if (avgLoss === 0) return 100;
-  const rs = avgGain / avgLoss;
-  return 100 - (100 / (1 + rs));
-}
+        // Populate watchlist
+        function populateWatchlist() {
+            const watchlistEl = document.getElementById('watchlist');
+            watchlistEl.innerHTML = '';
+            
+            watchlist.forEach(item => {
+                const watchlistItem = document.createElement('div');
+                watchlistItem.className = 'watchlist-item';
+                
+                const changeClass = item.change >= 0 ? 'positive' : 'negative';
+                const changeSign = item.change >= 0 ? '+' : '';
+                
+                watchlistItem.innerHTML = `
+                    <div class="watchlist-symbol">${item.symbol}</div>
+                    <div class="watchlist-price">${item.price}</div>
+                    <div class="watchlist-change ${changeClass}">
+                        ${changeSign}${item.change.toFixed(4)} (${changeSign}${item.changePercent.toFixed(2)}%)
+                    </div>
+                `;
+                
+                watchlistEl.appendChild(watchlistItem);
+            });
+        }
 
-// Candle management
-function addMinuteTick(symbol, price, ts = Date.now()) {
-  if (!minuteCandles[symbol]) minuteCandles[symbol] = [];
-  const mins = minuteCandles[symbol];
-  const minuteKey = Math.floor(ts / 60000) * 60000;
-  const last = mins[mins.length - 1];
-  
-  if (!last || last.ts !== minuteKey) {
-    mins.push({ open: price, high: price, low: price, close: price, ts: minuteKey });
-  } else {
-    last.high = Math.max(last.high, price);
-    last.low = Math.min(last.low, price);
-    last.close = price;
-  }
-  
-  if (mins.length > CONFIG.PRICE_HISTORY_LEN) mins.shift();
-}
+        // Populate alerts
+        function populateAlerts() {
+            const alertsList = document.getElementById('alertsList');
+            alertsList.innerHTML = '';
+            
+            alerts.forEach(alert => {
+                const alertItem = document.createElement('div');
+                alertItem.className = `alert-item alert-${alert.type}`;
+                
+                alertItem.innerHTML = `
+                    <div class="alert-icon"></div>
+                    <div class="alert-content">
+                        <strong>${alert.symbol}</strong>: ${alert.message}
+                    </div>
+                    <div class="alert-time">${alert.time}</div>
+                `;
+                
+                alertsList.appendChild(alertItem);
+            });
+        }
 
-// Pattern detection - SIMPLIFIED FOR BETTER SIGNAL GENERATION
-function detectFVG(symbol) {
-  const mins = minuteCandles[symbol];
-  if (!mins || mins.length < 3) return { fvg: false, type: null };
-  
-  // Simplified FVG detection - more likely to return positive
-  const lastCandle = mins[mins.length - 1];
-  const prevCandle = mins[mins.length - 2];
-  
-  if (lastCandle.low > prevCandle.high) return { fvg: true, type: 'BULL' };
-  if (lastCandle.high < prevCandle.low) return { fvg: true, type: 'BEAR' };
-  
-  return { fvg: false, type: null };
-}
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                updatePrices();
+                updateSignals();
+                
+                // Show refresh feedback
+                this.textContent = 'Refreshing...';
+                setTimeout(() => {
+                    this.textContent = 'Refresh Data';
+                }, 1000);
+            });
+            
+            document.getElementById('subscribeBtn').addEventListener('click', function() {
+                alert('Subscribed to all Forex & Synthetic symbols');
+            });
+            
+            document.getElementById('timeframeSelect').addEventListener('change', function() {
+                const selectedTimeframe = this.options[this.selectedIndex].text;
+                document.getElementById('chartTitle').textContent = `EUR/USD - ${selectedTimeframe} Chart`;
+            });
+            
+            // Timeframe selector
+            const timeframes = document.querySelectorAll('.timeframe');
+            timeframes.forEach(timeframe => {
+                timeframe.addEventListener('click', function() {
+                    timeframes.forEach(tf => tf.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
 
-function analyzeSMC(symbol) {
-  const mins = minuteCandles[symbol];
-  if (!mins || mins.length < 5) return 'RANGING';
-  
-  // Simplified market structure - more likely to detect trends
-  const recentCloses = mins.slice(-5).map(m => m.close);
-  const isUptrend = recentCloses[4] > recentCloses[0];
-  
-  return isUptrend ? 'BULLISH' : 'BEARISH';
-}
+        // Simulate price updates
+        function updatePrices() {
+            // Update symbols with random price changes
+            symbols.forEach(symbol => {
+                const change = (Math.random() - 0.5) * 0.01;
+                symbol.price += change;
+                symbol.change = change;
+                symbol.changePercent = (change / symbol.price) * 100;
+            });
+            
+            // Update watchlist with random price changes
+            watchlist.forEach(item => {
+                const symbol = symbols.find(s => s.name === item.symbol);
+                if (symbol) {
+                    item.price = symbol.price;
+                    item.change = symbol.change;
+                    item.changePercent = symbol.changePercent;
+                }
+            });
+            
+            // Update the UI
+            populateSymbolsList();
+            populateWatchlist();
+            
+            // Update chart with new data point
+            if (window.priceChart) {
+                const dataset = window.priceChart.data.datasets[0];
+                const lastPrice = dataset.data[dataset.data.length - 1];
+                const newPrice = lastPrice + (Math.random() - 0.5) * 0.002;
+                
+                // Add new data point and remove the first one
+                dataset.data.push(newPrice);
+                dataset.data.shift();
+                
+                window.priceChart.update('none');
+            }
+        }
 
-function calcSR(symbol) {
-  const mins = minuteCandles[symbol];
-  if (!mins || mins.length < 10) return { supports: [], resistances: [] };
-  
-  // Simplified support/resistance
-  const recentHigh = Math.max(...mins.slice(-10).map(m => m.high));
-  const recentLow = Math.min(...mins.slice(-10).map(m => m.low));
-  const currentPrice = mins[mins.length - 1].close;
-  
-  return {
-    resistances: [recentHigh * 1.001],
-    supports: [recentLow * 0.999]
-  };
-}
-
-// AI Simulation - SIMPLIFIED TO APPROVE MORE SIGNALS
-async function chatGPTSim(signal) {
-  await new Promise(r => setTimeout(r, 50 + Math.random() * 100));
-  
-  // Much more lenient approval criteria
-  let confidence = 75; // Start higher
-  
-  if ((signal.direction === 'BUY' && signal.rsi < 40) || (signal.direction === 'SELL' && signal.rsi > 60)) {
-    confidence += 15;
-  }
-  
-  confidence += Math.min(20, signal.signalStrength * 0.2);
-  confidence += signal.indicatorAlignment * 6;
-  
-  // Approve most signals
-  const valid = confidence >= 70; // Lower threshold
-  const reason = valid ? 
-    `Strong technical convergence (RSI: ${signal.rsi}, Alignment: ${signal.indicatorAlignment}/4)` :
-    'Moderate technical alignment';
-    
-  return { model: 'ChatGPT', valid, confidence: Math.min(95, Math.round(confidence)), reason };
-}
-
-async function deepSeekSim(signal) {
-  await new Promise(r => setTimeout(r, 50 + Math.random() * 100));
-  
-  // More lenient approval
-  let probability = 75; // Start higher
-  
-  probability += signal.indicatorAlignment * 6;
-  probability += Math.min(20, signal.signalStrength * 0.18);
-  
-  if ((signal.marketStructure === 'BULLISH' && signal.direction === 'BUY') || 
-      (signal.marketStructure === 'BEARISH' && signal.direction === 'SELL')) {
-    probability += 12;
-  }
-  
-  // Approve most signals
-  const valid = probability >= 70; // Lower threshold
-  const reason = valid ?
-    `Favorable market structure with ${signal.indicatorAlignment}/4 timeframe alignment` :
-    'Acceptable market conditions';
-    
-  return { model: 'DeepSeek', valid, confidence: Math.min(95, Math.round(probability)), reason };
-}
-
-async function dualAIConfirm(signal) {
-  const [gpt, deepseek] = await Promise.all([chatGPTSim(signal), deepSeekSim(signal)]);
-  
-  // More lenient: Only one AI needs to approve
-  const approved = gpt.valid || deepseek.valid;
-  const avgConfidence = Math.round((gpt.confidence + deepseek.confidence) / 2);
-  
-  return { approved, avgConfidence, chatGPT: gpt, deepSeek: deepseek };
-}
-
-// Multi-timeframe analysis - SIMPLIFIED FOR BETTER SIGNAL GENERATION
-function analyzeMultiTF(symbol) {
-  const mins = minuteCandles[symbol];
-  if (!mins || mins.length < 20) return null; // Reduced minimum data requirement
-  
-  const closes = mins.map(m => m.close);
-  const currentPrice = closes[closes.length - 1];
-  
-  // Calculate EMAs
-  const emaShort = ema(closes, CONFIG.EMA_SHORT);
-  const emaLong = ema(closes, CONFIG.EMA_LONG);
-  if (!emaShort || !emaLong) return null;
-  
-  // Determine direction - more dynamic
-  const emaDiff = emaShort - emaLong;
-  const direction = emaDiff > 0 ? 'BUY' : 'SELL';
-  
-  // Calculate other indicators
-  const rsi = calcRSI(closes);
-  const fvg = detectFVG(symbol);
-  const marketStructure = analyzeSMC(symbol);
-  const sr = calcSR(symbol);
-  
-  // Enhanced signal strength calculation - more generous
-  const emaDistance = Math.abs(emaDiff) / emaLong;
-  const baseStrength = 75 + (emaDistance * 1500); // Higher base strength
-  const rsiStrength = (direction === 'BUY' && rsi < 45) || (direction === 'SELL' && rsi > 55) ? 20 : 10;
-  const fvgStrength = fvg.fvg ? 15 : 0;
-  const signalStrength = Math.min(95, baseStrength + rsiStrength + fvgStrength);
-  
-  const indicatorAlignment = Math.max(3, Math.min(5, Math.round(signalStrength / 18))); // Higher alignment
-  
-  return {
-    symbol,
-    direction,
-    confirmedOn: '15M/1H/4H',
-    trend4: direction,
-    rsi: Math.round(rsi * 10) / 10,
-    fvg: fvg.fvg,
-    fvgType: fvg.type,
-    marketStructure,
-    supports: sr.supports,
-    resistances: sr.resistances,
-    currentPrice,
-    signalStrength: Math.round(signalStrength),
-    indicatorAlignment,
-    timestamp: new Date().toLocaleTimeString()
-  };
-}
-
-// UI Rendering
-function makeCard(signal) {
-  const card = document.createElement('div');
-  card.className = 'card';
-  
-  const row = document.createElement('div');
-  row.className = 'row';
-  
-  const left = document.createElement('div');
-  left.className = 'symbol';
-  left.textContent = signal.symbol;
-  
-  const right = document.createElement('div');
-  right.innerHTML = `<span class="badge ${signal.direction === 'BUY' ? 'buy' : 'sell'}">${signal.direction}</span>`;
-  
-  row.appendChild(left);
-  row.appendChild(right);
-  
-  const confidence = document.createElement('div');
-  confidence.className = 'meta';
-  confidence.innerHTML = `<strong>AI Confidence:</strong> ${signal.aiConfidence}% · <strong>TF:</strong> ${signal.confirmedOn}`;
-  
-  const meta = document.createElement('div');
-  meta.className = 'meta';
-  meta.textContent = `Price: ${signal.currentPrice.toFixed(5)} · RSI: ${signal.rsi} · Strength: ${signal.signalStrength}`;
-  
-  const toggle = document.createElement('button');
-  toggle.className = 'btn';
-  toggle.style.fontSize = '12px';
-  toggle.style.marginTop = '8px';
-  toggle.textContent = 'Show AI reasoning';
-  
-  const reason = document.createElement('div');
-  reason.className = 'reason';
-  reason.innerHTML = `
-    <div style="margin-bottom: 6px;"><strong>ChatGPT:</strong> ${signal.aiValidation.chatGPT.reason} (${signal.aiValidation.chatGPT.confidence}%)</div>
-    <div><strong>DeepSeek:</strong> ${signal.aiValidation.deepSeek.reason} (${signal.aiValidation.deepSeek.confidence}%)</div>
-  `;
-  
-  toggle.addEventListener('click', () => {
-    reason.classList.toggle('open');
-    toggle.textContent = reason.classList.contains('open') ? 'Hide AI reasoning' : 'Show AI reasoning';
-  });
-  
-  const timestamp = document.createElement('div');
-  timestamp.className = 'small';
-  timestamp.textContent = signal.timestamp;
-  
-  card.appendChild(row);
-  card.appendChild(confidence);
-  card.appendChild(meta);
-  card.appendChild(toggle);
-  card.appendChild(reason);
-  card.appendChild(timestamp);
-  
-  return card;
-}
-
-function renderAndCache(signals) {
-  if (!signals || signals.length === 0) return;
-  
-  const existing = JSON.parse(localStorage.getItem(CONFIG.CACHE_KEY) || '[]');
-  const combined = [...signals, ...existing];
-  const unique = [];
-  const seen = new Set();
-  
-  for (const signal of combined) {
-    const id = `${signal.symbol}_${signal.direction}_${Math.round(signal.currentPrice * 1000)}`;
-    if (!seen.has(id)) {
-      seen.add(id);
-      unique.push(signal);
-    }
-  }
-  
-  // Keep more signals
-  const signalsToKeep = unique.slice(0, CONFIG.MAX_KEEP * 2);
-  
-  localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(signalsToKeep));
-  grid.innerHTML = '';
-  signalsToKeep.forEach(signal => {
-    grid.appendChild(makeCard(signal));
-  });
-  
-  lastUpdatedEl.textContent = `Updated: ${new Date().toLocaleTimeString()} (${signals.length} new)`;
-}
-
-// Symbol management
-function buildSymbolsList() {
-  symbolsListEl.innerHTML = '';
-  availableSymbols.forEach(symbol => {
-    const item = document.createElement('div');
-    item.className = 'sym-item';
-    
-    const left = document.createElement('div');
-    left.textContent = symbol;
-    
-    const right = document.createElement('div');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.className = 'sym-check';
-    checkbox.dataset.sym = symbol;
-    checkbox.checked = subscribeAll;
-    
-    right.appendChild(checkbox);
-    item.appendChild(left);
-    item.appendChild(right);
-    symbolsListEl.appendChild(item);
-  });
-  
-  symSearch.addEventListener('input', () => {
-    const query = symSearch.value.trim().toUpperCase();
-    Array.from(symbolsListEl.children).forEach(item => {
-      item.style.display = !query || item.textContent.toUpperCase().includes(query) ? 'flex' : 'none';
-    });
-  });
-}
-
-function subscribeToSelectedSymbols(manual = false) {
-  if (mode === 'offline') {
-    if (subscribeAll) {
-      subscribed = new Set(availableSymbols);
-    } else {
-      subscribed = new Set(Array.from(document.querySelectorAll('.sym-check:checked')).map(cb => cb.dataset.sym));
-    }
-    statusLine.textContent = `Subscribed to ${subscribed.size} symbols`;
-    return;
-  }
-  
-  statusLine.textContent = 'Live mode subscription updated';
-}
-
-// Signal processing - GUARANTEED TO GENERATE SIGNALS
-async function processSymbolCandidate(symbol) {
-  try {
-    const signal = analyzeMultiTF(symbol);
-    if (!signal) return;
-    
-    // Simplified stability check
-    lastDirHistory[symbol] = lastDirHistory[symbol] || [];
-    lastDirHistory[symbol].push(signal.direction);
-    if (lastDirHistory[symbol].length > CONFIG.STABILITY) {
-      lastDirHistory[symbol].shift();
-    }
-    
-    // Less strict stability requirement
-    const stable = lastDirHistory[symbol].length >= 1; // Only need 1 consistent direction
-    
-    if (!stable) return;
-    
-    // Less strict deduplication
-    const signalKey = `${signal.symbol}_${signal.direction}_${Math.floor(Date.now() / 30000)}`; // 30-second window
-    if (shownKeys.has(signalKey)) return;
-    
-    // AI Validation
-    statusLine.textContent = `AI validating ${signal.symbol} ${signal.direction}…`;
-    const aiResult = await dualAIConfirm(signal);
-    
-    if (aiResult.approved) {
-      signal.aiValidated = true;
-      signal.aiValidation = aiResult;
-      signal.aiConfidence = aiResult.avgConfidence;
-      
-      shownKeys.add(signalKey);
-      playBeep();
-      renderAndCache([signal]);
-      statusLine.textContent = `✅ AI approved ${signal.symbol} ${signal.direction} (${aiResult.avgConfidence}%)`;
-    } else {
-      statusLine.textContent = `⏳ ${signal.symbol} monitoring conditions`;
-    }
-  } catch (error) {
-    console.error('Error processing symbol:', symbol, error);
-  }
-}
-
-// Offline simulator - ENHANCED FOR BETTER SIGNAL GENERATION
-function populateSimulator() {
-  availableSymbols = [
-    'EURUSD', 'GBPUSD', 'USDJPY', 'AUDUSD', 'USDCAD', 'USDCHF', 'NZDUSD',
-    'BTCUSD', 'ETHUSD', 'XAUUSD', 'XAGUSD', 'OILUSD', 'BRENT',
-    'R_100', 'R_50', 'R_25', 'V_VOLATILITY_75', 'BOOM1000', 'CRASH1000', 'STEP_INDEX'
-  ];
-  
-  buildSymbolsList();
-  
-  // Initialize price data for all symbols with more variation
-  availableSymbols.forEach(symbol => {
-    minuteCandles[symbol] = minuteCandles[symbol] || [];
-    if (minuteCandles[symbol].length < 50) {
-      let basePrice = symbol.includes('BTC') ? 50000 : 
-                     symbol.includes('ETH') ? 3000 :
-                     symbol.includes('XAU') ? 1800 :
-                     symbol.includes('XAG') ? 22 :
-                     symbol.includes('OIL') ? 75 : 
-                     symbol.includes('BRENT') ? 78 : 1.0;
-      
-      // Create more realistic price movement with trends
-      let currentPrice = basePrice;
-      for (let i = 0; i < 100; i++) {
-        // Add some trend behavior
-        const trend = Math.sin(i / 10) * 0.02;
-        const volatility = (Math.random() - 0.5) * 0.01;
-        currentPrice = currentPrice * (1 + trend + volatility);
-        const timestamp = Date.now() - (100 - i) * 60000;
-        addMinuteTick(symbol, currentPrice, timestamp);
-      }
-    }
-  });
-  
-  statusLine.textContent = `Simulator ready with ${availableSymbols.length} symbols - Generating signals...`;
-}
-
-function startOfflineSimulator() {
-  if (window.simulatorInterval) clearInterval(window.simulatorInterval);
-  
-  // Generate initial signals immediately
-  setTimeout(() => {
-    availableSymbols.forEach(symbol => {
-      if (subscribed.has(symbol) || subscribeAll) {
-        processSymbolCandidate(symbol);
-      }
-    });
-  }, 1000);
-  
-  window.simulatorInterval = setInterval(() => {
-    availableSymbols.forEach(symbol => {
-      if (!subscribed.has(symbol) && !subscribeAll) return;
-      
-      const candles = minuteCandles[symbol];
-      if (!candles || candles.length === 0) return;
-      
-      const lastCandle = candles[candles.length - 1];
-      // More realistic price movement with occasional trends
-      const trend = Math.random() > 0.7 ? (Math.random() - 0.5) * 0.01 : 0;
-      const volatility = (Math.random() - 0.5) * 0.003;
-      const newPrice = lastCandle.close * (1 + trend + volatility);
-      
-      addMinuteTick(symbol, newPrice, Date.now());
-      
-      // Process for signals more frequently
-      if (Math.random() > 0.3) {
-        processSymbolCandidate(symbol);
-      }
-    });
-  }, 2000); // Faster updates for more signals
-}
-
-// Deriv WebSocket (for future live implementation)
-function connectDeriv() {
-  statusLine.textContent = 'Live mode not fully implemented - using offline simulator';
-  setTimeout(() => {
-    mode = 'offline';
-    modeSelect.value = 'offline';
-    resetMode();
-  }, 2000);
-}
-
-function resetMode() {
-  // Cleanup
-  if (ws) {
-    try {
-      ws.close();
-    } catch (e) {}
-    ws = null;
-  }
-  
-  if (window.simulatorInterval) {
-    clearInterval(window.simulatorInterval);
-    window.simulatorInterval = null;
-  }
-  
-  connected = false;
-  minuteCandles = {};
-  lastDirHistory = {};
-  shownKeys.clear();
-  grid.innerHTML = '<div class="muted">Generating signals...</div>';
-  
-  if (mode === 'live') {
-    connectDeriv();
-  } else {
-    populateSimulator();
-    startOfflineSimulator();
-    subscribeToSelectedSymbols();
-  }
-}
-
-// Initialize cache
-function initCache() {
-  const cached = JSON.parse(localStorage.getItem(CONFIG.CACHE_KEY) || '[]');
-  if (cached.length > 0) {
-    renderAndCache(cached);
-    lastUpdatedEl.textContent = `Loaded ${cached.length} cached signals`;
-    statusLine.textContent = `Ready - ${cached.length} signals displayed`;
-  } else {
-    lastUpdatedEl.textContent = 'No cached signals - generating new ones...';
-    statusLine.textContent = 'Initializing signal generation...';
-  }
-}
-
-// Main initialization
-function init() {
-  initEventListeners();
-  initAudio();
-  initCache();
-  resetMode();
-  
-  // Auto-refresh UI
-  setInterval(() => {
-    if (!lastUpdatedEl.textContent.includes('Updated')) {
-      lastUpdatedEl.textContent = `Active: ${new Date().toLocaleTimeString()}`;
-    }
-  }, CONFIG.AUTO_UI_MS);
-}
-
-// Start everything
-init();
-</script>
+        // Simulate signal updates
+        function updateSignals() {
+            // Occasionally add a new signal
+            if (Math.random() > 0.7 && signals.length < 8) {
+                const availableSymbols = symbols.filter(s => 
+                    !signals.find(sig => sig.symbol === s.name)
+                );
+                
+                if (availableSymbols.length > 0) {
+                    const randomSymbol = availableSymbols[Math.floor(Math.random() * availableSymbols.length)];
+                    const direction = Math.random() > 0.5 ? 'buy' : 'sell';
+                    const strength = ['low', 'medium', 'high'][Math.floor(Math.random() * 3)];
+                    const confidence = 60 + Math.floor(Math.random() * 35);
+                    const rsi = direction === 'buy' ? 
+                        30 + Math.floor(Math.random() * 20) : 
+                        60 + Math.floor(Math.random() * 20);
+                    
+                    const now = new Date();
+                    const time = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+                    
+                    signals.unshift({
+                        symbol: randomSymbol.name,
+                        direction,
+                        strength,
+                        price: randomSymbol.price,
+                        rsi,
+                        time,
+                        confidence
+                    });
+                }
+            }
+            
+            // Occasionally remove an old signal
+            if (signals.length > 0 && Math.random() > 0.8) {
+                signals.pop();
+            }
+            
+            // Update the UI
+            populateSignalsGrid();
+            
+            // Add a new alert if we have a new signal
+            if (signals.length > 0 && Math.random() > 0.7) {
+                const signal = signals[0];
+                const now = new Date();
+                const time = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                alerts.unshift({
+                    type: signal.direction,
+                    symbol: signal.symbol,
+                    message: `New ${signal.direction} signal with ${signal.confidence}% confidence`,
+                    time
+                });
+                
+                // Keep only recent alerts
+                if (alerts.length > 5) {
+                    alerts.pop();
+                }
+                
+                populateAlerts();
+            }
+        }
+    </script>
 </body>
 </html>
