@@ -1,1446 +1,766 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced AI Trading Bot Strategy Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.3.1/dist/chartjs-adapter-luxon.min.js"></script>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #8b5cf6;
-            --dark: #1f2937;
-            --light: #f9fafb;
-            --bg: #0a0e17;
-            --card: #131a2a;
-            --accent: #3a86ff;
-            --text: #e2e8f0;
-            --text-muted: #94a3b8;
-            --border: #1e293b;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        h1 {
-            color: var(--text);
-            margin-bottom: 10px;
-            font-size: 2.5rem;
-        }
-        
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 1.2rem;
-        }
-        
-        .dashboard {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        @media (max-width: 1024px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .card {
-            background-color: var(--card);
-            border-radius: 10px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--border);
-            position: relative;
-        }
-        
-        .card h2 {
-            color: var(--text);
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .regime-indicator {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-        }
-        
-        .regime {
-            text-align: center;
-            padding: 15px;
-            border-radius: 8px;
-            flex: 1;
-            margin: 0 5px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 2px solid transparent;
-            outline: none;
-            background: var(--card);
-        }
-        
-        .regime:focus {
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.5);
-        }
-        
-        .regime.active {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(58, 134, 255, 0.5);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-        
-        .trending {
-            background: linear-gradient(135deg, #3b82f6, #1e40af);
-        }
-        
-        .ranging {
-            background: linear-gradient(135deg, #10b981, #047857);
-        }
-        
-        .transition {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .stat {
-            background-color: #334155;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .stat h4 {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin-bottom: 5px;
-        }
-        
-        .stat p {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--text);
-        }
-        
-        .positive {
-            color: var(--success) !important;
-        }
-        
-        .negative {
-            color: var(--danger) !important;
-        }
-        
-        .chart-container {
-            height: 300px;
-            margin-top: 15px;
-            position: relative;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-        
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            outline: none;
-            background: var(--card);
-            color: var(--text);
-            border: 1px solid var(--border);
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            background: var(--accent);
-            color: white;
-        }
-        
-        button:focus {
-            box-shadow: 0 0 0 3px rgba(58, 134, 255, 0.5);
-        }
-        
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-        }
-        
-        .btn-success {
-            background: var(--success);
-            color: white;
-        }
-        
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-        
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-        
-        .btn-info {
-            background: var(--info);
-            color: white;
-        }
-        
-        .signal {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-        
-        .signal.buy {
-            background-color: var(--success);
-            color: white;
-        }
-        
-        .signal.sell {
-            background-color: var(--danger);
-            color: white;
-        }
-        
-        .signal.hold {
-            background-color: #6b7280;
-            color: white;
-        }
-        
-        .signal.ml-buy {
-            background-color: var(--info);
-            color: white;
-        }
-        
-        .trades-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        
-        .trades-table th, .trades-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        .trades-table th {
-            background-color: #374151;
-            color: var(--text);
-        }
-        
-        .trades-table tr:hover {
-            background-color: #374151;
-        }
-        
-        .ml-confidence {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .confidence-bar {
-            flex: 1;
-            height: 8px;
-            background-color: var(--border);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-        
-        .confidence-level {
-            height: 100%;
-            background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
-            border-radius: 4px;
-            transition: width 0.5s ease;
-        }
-        
-        .forex-pairs {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
-        .pair-card {
-            background: var(--card);
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid var(--border);
-            transition: transform 0.2s;
-        }
-        
-        .pair-card:hover {
-            transform: translateY(-2px);
-        }
-        
-        .pair-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .pair-symbol {
-            font-weight: 700;
-            font-size: 16px;
-        }
-        
-        .pair-price {
-            font-weight: 600;
-        }
-        
-        .pair-change {
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .pair-change.positive {
-            color: var(--success);
-        }
-        
-        .pair-change.negative {
-            color: var(--danger);
-        }
-        
-        .signal-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .signal-card {
-            background: var(--card);
-            border-radius: 10px;
-            padding: 15px;
-            border: 1px solid var(--border);
-            transition: transform 0.2s;
-        }
-        
-        .signal-card:hover {
-            transform: translateY(-2px);
-        }
-        
-        .signal-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        
-        .signal-symbol {
-            font-weight: 700;
-            font-size: 16px;
-        }
-        
-        .signal-direction {
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .signal-direction.buy {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-        
-        .signal-direction.sell {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-        
-        .signal-meta {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-        
-        .signal-strength {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            margin-bottom: 10px;
-        }
-        
-        .strength-bar {
-            height: 4px;
-            width: 60px;
-            background: var(--border);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        
-        .strength-fill {
-            height: 100%;
-            border-radius: 2px;
-        }
-        
-        .strength-fill.high {
-            background: var(--success);
-            width: 80%;
-        }
-        
-        .strength-fill.medium {
-            background: var(--warning);
-            width: 60%;
-        }
-        
-        .strength-fill.low {
-            background: var(--danger);
-            width: 40%;
-        }
-        
-        .signal-reason {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 8px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-            border-left: 3px solid var(--accent);
-        }
-        
-        .double-signal {
-            border: 2px solid var(--info);
-            box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
-        }
-        
-        .countdown {
-            font-size: 12px;
-            color: var(--warning);
-            font-weight: bold;
-            margin-left: 10px;
-        }
-        
-        .ai-validation {
-            display: flex;
-            gap: 10px;
-            margin-top: 8px;
-            font-size: 11px;
-        }
-        
-        .ai-model {
-            padding: 2px 6px;
-            border-radius: 4px;
-            background: rgba(139, 92, 246, 0.2);
-            color: var(--info);
-        }
-        
-        .ai-confirmed {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-        }
-        
-        .status-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .status-connected {
-            background-color: var(--success);
-        }
-        
-        .status-disconnected {
-            background-color: var(--danger);
-        }
-        
-        .status-connecting {
-            background-color: var(--warning);
-        }
-        
-        .data-source {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-        
-        .tab-container {
-            margin-top: 20px;
-        }
-        
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 15px;
-        }
-        
-        .tab {
-            padding: 10px 20px;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            outline: none;
-        }
-        
-        .tab:focus {
-            box-shadow: 0 0 0 2px rgba(58, 134, 255, 0.5);
-        }
-        
-        .tab.active {
-            border-bottom: 2px solid var(--accent);
-            color: var(--accent);
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .error-message {
-            background-color: var(--danger);
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 10px 0;
-            display: none;
-            border-left: 4px solid #dc2626;
-        }
-        
-        @media (max-width: 768px) {
-            .controls {
-                flex-direction: column;
-            }
-            
-            .regime-indicator {
-                flex-direction: column;
-                gap: 10px;
-            }
-            
-            .stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            
-            .signal-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .forex-pairs {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-        
-        .sr-only {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
-        }
-    </style>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Bekenet-style AI Signals — Robust (Dark)</title>
+<style>
+:root{
+  --bg:#071426; --panel:#0b1524; --muted:#93a5bf; --accent:#60a5fa; --good:#22c55e; --bad:#ef4444;
+  --card: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  --radius:12px;
+}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,#021028 0%,#04142a 100%);font-family:Inter,system-ui,Roboto,Arial;color:#e6eef8}
+.wrap{max-width:1150px;margin:12px auto;padding:12px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.hleft{display:flex;flex-direction:column}
+.hleft h1{margin:0;font-size:18px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card{background:var(--card);padding:12px;border-radius:var(--radius);box-shadow:0 8px 24px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+.row{display:flex;gap:12px}
+.col{display:flex;flex-direction:column;gap:12px}
+.param-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.param-grid input, .param-grid select {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 6px;
+    border-radius: 8px;
+    color: #e6eef8;
+}
+.small{font-size:12px;color:var(--muted)}
+.muted{color:var(--muted)}
+.btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px;border-radius:8px;color:#e6eef8;cursor:pointer}
+.canvasWrap{height:120px;border-radius:8px;overflow:hidden;background:linear-gradient(180deg,#04172b,#031827)}
+.canvas{width:100%;height:100%;display:block}
+.pairsList{display:flex;flex-direction:column;gap:8px}
+.pairRow{display:flex;justify-content:space-between;align-items:center;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
+.badge{padding:6px 10px;border-radius:999px;font-weight:700}
+.buy{background:rgba(34,197,94,0.12);color:var(--good)}
+.sell{background:rgba(239,68,68,0.12);color:var(--bad)}
+.wait{background:rgba(148,163,184,0.06);color:var(--muted)}
+.explain{font-size:12px;color:var(--muted);margin-top:6px}
+.log{max-height:220px;overflow:auto;padding:8px;border-radius:8px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);font-family:monospace;font-size:12px}
+@media(max-width:980px){ .row{flex-direction:column} .param-grid{grid-template-columns:1fr} .canvasWrap{height:160px}}
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Advanced AI Trading Bot Strategy Dashboard</h1>
-            <p class="subtitle">Hybrid Strategy with Forex & Synthetic Pairs + AI Confirmation</p>
-            <div class="data-source">
-                <span class="status-indicator status-connected" id="connection-status"></span>
-                <span id="connection-text">Connected to Market Data</span>
-            </div>
-        </header>
-        
-        <div id="error-message" class="error-message" role="alert" aria-live="assertive"></div>
-        
-        <div class="dashboard">
-            <div class="card">
-                <h2>📈 Market Regime Detection</h2>
-                <div class="regime-indicator">
-                    <div class="regime trending" id="trending-regime" role="button" tabindex="0" aria-label="Trending Market Regime">
-                        <h3>Trending Market</h3>
-                        <p>ADX > 25, High Volatility</p>
-                    </div>
-                    <div class="regime ranging" id="ranging-regime" role="button" tabindex="0" aria-label="Ranging Market Regime">
-                        <h3>Ranging Market</h3>
-                        <p>ADX < 20, Low Volatility</p>
-                    </div>
-                    <div class="regime transition" id="transition-regime" role="button" tabindex="0" aria-label="Transition Market Regime">
-                        <h3>Transition</h3>
-                        <p>Regime Changing</p>
-                    </div>
-                </div>
-                
-                <div class="stats">
-                    <div class="stat">
-                        <h4>Current Regime</h4>
-                        <p id="current-regime">Trending</p>
-                    </div>
-                    <div class="stat">
-                        <h4>Active Strategy</h4>
-                        <p id="active-strategy">Trend Following</p>
-                    </div>
-                    <div class="stat">
-                        <h4>ADX Strength</h4>
-                        <p id="adx-value">42.5</p>
-                    </div>
-                    <div class="stat">
-                        <h4>Volatility (ATR)</h4>
-                        <p id="atr-value">2.3%</p>
-                    </div>
-                </div>
-                
-                <div class="ml-confidence">
-                    <span>AI Confidence:</span>
-                    <div class="confidence-bar">
-                        <div class="confidence-level" id="ml-confidence-level" style="width: 78%" aria-valuenow="78" aria-valuemin="0" aria-valuemax="100" role="progressbar" aria-label="AI Confidence Level"></div>
-                    </div>
-                    <span id="ml-confidence-value">78%</span>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2>💰 Performance Metrics</h2>
-                <div class="stats">
-                    <div class="stat">
-                        <h4>Total Return</h4>
-                        <p id="total-return" class="positive">+24.7%</p>
-                    </div>
-                    <div class="stat">
-                        <h4>Sharpe Ratio</h4>
-                        <p id="sharpe-ratio">1.82</p>
-                    </div>
-                    <div class="stat">
-                        <h4>Max Drawdown</h4>
-                        <p id="max-drawdown" class="negative">-8.3%</p>
-                    </div>
-                    <div class="stat">
-                        <h4>Win Rate</h4>
-                        <p id="win-rate">68.2%</p>
-                    </div>
-                </div>
-                
-                <div class="chart-container">
-                    <canvas id="performance-chart" aria-label="Portfolio Performance Chart" role="img"></canvas>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2>📊 Trading Pairs & Signals</h2>
-                <div class="controls">
-                    <button class="btn-primary" id="btn-backtest">Run Backtest</button>
-                    <button class="btn-success" id="btn-live">Live Simulation</button>
-                    <button class="btn-warning" id="btn-optimize">Optimize Parameters</button>
-                    <button class="btn-info" id="btn-ml">Generate AI Signals</button>
-                </div>
-                
-                <div class="tab-container">
-                    <div class="tabs" role="tablist" aria-label="Trading Views">
-                        <div class="tab active" data-tab="pairs" role="tab" aria-selected="true" id="pairs-tab" aria-controls="pairs-tab-panel">Forex & Synthetic Pairs</div>
-                        <div class="tab" data-tab="signals" role="tab" aria-selected="false" id="signals-tab" aria-controls="signals-tab-panel">AI Trading Signals</div>
-                        <div class="tab" data-tab="backtest" role="tab" aria-selected="false" id="backtest-tab" aria-controls="backtest-tab-panel">Backtest Results</div>
-                    </div>
-                    
-                    <div class="tab-content active" id="pairs-tab-panel" role="tabpanel" aria-labelledby="pairs-tab">
-                        <div class="forex-pairs" id="forex-pairs-container">
-                            <!-- Forex and Synthetic pairs will be populated here -->
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="signals-tab-panel" role="tabpanel" aria-labelledby="signals-tab" aria-hidden="true">
-                        <div class="signal-grid" id="signal-grid">
-                            <!-- AI trading signals will be populated here -->
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content" id="backtest-tab-panel" role="tabpanel" aria-labelledby="backtest-tab" aria-hidden="true">
-                        <div class="chart-container">
-                            <canvas id="backtest-chart" aria-label="Backtest Results Chart" role="img"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2>🔔 Trading Signals & Alerts</h2>
-                <div id="signals-container">
-                    <div class="signal-item">
-                        <p>Last Signal: <span class="signal ml-buy">AI BUY</span> <span class="signal buy">TREND BUY</span></p>
-                        <p>Entry: $154.32 | Stop: $149.85 | Target: Trail 2x ATR</p>
-                        <p>AI Confidence: 78% | Regime: Trending</p>
-                    </div>
-                    <div class="signal-item">
-                        <p>Current Position: <span id="current-position">Long (1.5% risk)</span></p>
-                        <p>Strategy: Trend Following + AI Confirmation</p>
-                    </div>
-                </div>
-                
-                <h3 style="margin-top: 20px;">Recent Trades</h3>
-                <table class="trades-table" aria-label="Recent Trades">
-                    <thead>
-                        <tr>
-                            <th scope="col">Time</th>
-                            <th scope="col">Action</th>
-                            <th scope="col">Symbol</th>
-                            <th scope="col">Price</th>
-                            <th scope="col">P&L</th>
-                            <th scope="col">AI Conf</th>
-                        </tr>
-                    </thead>
-                    <tbody id="trades-body">
-                        <tr>
-                            <td>10:24 AM</td>
-                            <td><span class="signal ml-buy">AI BUY</span></td>
-                            <td>EUR/USD</td>
-                            <td>1.0854</td>
-                            <td class="positive">+1.8%</td>
-                            <td>78%</td>
-                        </tr>
-                        <tr>
-                            <td>09:45 AM</td>
-                            <td><span class="signal sell">SELL</span></td>
-                            <td>BOOM 1000</td>
-                            <td>543.21</td>
-                            <td class="positive">+2.1%</td>
-                            <td>65%</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+<div class="wrap">
+  <div class="header">
+    <div class="hleft">
+      <h1>Bekenet-style AI Signals — Robust Dashboard</h1>
+      <div class="small muted">Dark • State Persistent • Anti-Noise Trade Management</div>
+    </div>
+    <div class="controls card">
+      <div class="small muted">Update every <b>30s</b></div>
+      <div style="display:flex;gap:6px;align-items:center;margin-left:12px">
+        <label class="small muted">AlphaVantage key (optional for Forex/XAU):</label>
+        <input id="avKey" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px;border-radius:8px;color:#e6eef8" placeholder="paste AV key if you have one"/>
+      </div>
+      <button id="refreshNow" class="btn">Refresh Now</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div style="flex:1" class="col">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="min-width:220px">
+            <div class="small muted">Pairs monitored (state persistent)</div>
+            <div class="small muted">Add or remove pair symbols below.</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <label class="small muted">Add Pair (ex: EUR/USD, XAU/USD, BTC/USD)</label>
+            <input id="addPairInput" placeholder="EUR/USD" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px;border-radius:8px;color:#e6eef8"/>
+            <button id="addPairBtn" class="btn">Add</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="pairsList card" id="pairsContainer"></div>
+
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+          <button id="clearPairs" class="btn">Reset Pairs</button>
+          <div class="small muted">Defaults: EUR/USD, GBP/USD, USD/JPY, XAU/USD, BTC/USD</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div class="canvasWrap">
+          <canvas id="miniChart" class="canvas"></canvas>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div>
+            <div class="small muted">Selected pair</div>
+            <div id="selectedPair" style="font-weight:700">—</div>
+            <div id="selectedPrice" class="small muted">Price: —</div>
+          </div>
+          <div>
+            <div class="small muted">Entry mode</div>
+            <select id="entryMode" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px;border-radius:8px;color:#e6eef8">
+              <option value="smart">Smart (EMA+RSI+S/R)</option>
+              <option value="aggressive">Aggressive (EMA crossover)</option>
+              <option value="conservative">Conservative (RSI+S/R)</option>
+            </select>
+          </div>
+          <div>
+            <div class="small muted">TF (for candle building)</div>
+            <select id="tf" style="background:transparent;border:1px solid rgba(255,255,255,0.06);padding:6px;border-radius:8px;color:#e6eef8">
+              <option value="1m">1m</option><option value="5m">5m</option><option value="15m">15m</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="param-grid" style="margin-top:12px">
+          <div><label class="small muted">EMA fast</label><input id="emaFast" type="number" value="50" /></div>
+          <div><label class="small muted">EMA slow</label><input id="emaSlow" type="number" value="200" /></div>
+          <div><label class="small muted">RSI period</label><input id="rsiPeriod" type="number" value="14" /></div>
+          <div><label class="small muted">RSI buy level</label><input id="rsiBuy" type="number" value="35" /></div>
+          <div><label class="small muted">RSI sell level</label><input id="rsiSell" type="number" value="65" /></div>
+          <div><label class="small muted">S/R lookback bars</label><input id="srLookback" type="number" value="200" /></div>
         </div>
         
-        <footer>
-            <p>Advanced AI Trading Bot Strategy Dashboard | This is a simulation for educational purposes</p>
-            <p>Always backtest strategies thoroughly and use proper risk management</p>
-        </footer>
+        <div style="margin-top: 10px; display: flex; justify-content: flex-end;">
+            <button id="loadDefaults" class="btn">Load Default Settings</button>
+        </div>
+
+        <div class="explain" id="globalExplain">Signals appear only on closed candles. No repaint. ATR-based SL/TP advisory added to Exit Hints.</div>
+      </div>
     </div>
 
-    <script>
-        // Enhanced configuration with Forex & Synthetic pairs
-        const CONFIG = {
-            AUTO_UI_MS: 20000,
-            PRICE_HISTORY_LEN: 100,
-            EMA_SHORT: 5, 
-            EMA_LONG: 20,
-            RSI_PERIOD: 14,
-            STABILITY: 2,
-            CACHE_KEY: 'trading_dashboard_enhanced',
-            MAX_SIGNALS: 15,
-            SIGNAL_DELAY_MS: 10000 // 10-second delay before showing signals
+    <div style="width:380px" class="col">
+      <div class="card">
+        <div style="font-weight:700">Trade Management Panel</div>
+        <div id="exitHints" class="explain">No open trades or selected pair.</div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700">Live Signals</div>
+          <div class="small muted">Updated every 30s</div>
+        </div>
+        <div id="liveList" style="margin-top:8px;display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <div class="card" style="margin-top:12px">
+        <div style="font-weight:700">Log</div>
+        <div id="log" class="log" style="margin-top:8px">Ready.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  Bekenet-style AI Signal — Single-file
+  - Robust (No Repaint, State Persistent)
+  - Non-Noisy (Trade Management Panel)
+*/
+
+// ---------- Utilities ----------
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function nowISO(){ return new Date().toISOString(); }
+function log(msg){ $('log').innerText = nowISO() + ' • ' + msg + '\n' + $('log').innerText; }
+
+// Local Storage Keys
+const PAIRS_KEY = 'bekenet_pairs';
+const STATE_KEY = 'bekenet_state';
+const PARAMS_KEY = 'bekenet_params';
+
+// ---------- Default pairs & State ----------
+const DEFAULT_PAIRS = ['EUR/USD','GBP/USD','USD/JPY','XAU/USD','BTC/USD'];
+const DEFAULT_PARAMS = {
+    emaFast: 50, emaSlow: 200, rsiPeriod: 14, rsiBuy: 35, rsiSell: 65, srLookback: 200,
+    entryMode: 'smart', tf: '1m'
+};
+let pairs = [...DEFAULT_PAIRS];
+const state = {}; // per-pair state and candles
+
+
+// ---------- Persistence Functions 💾 ----------
+function saveParams() {
+    const params = {
+        emaFast: +$('emaFast').value, emaSlow: +$('emaSlow').value, rsiPeriod: +$('rsiPeriod').value,
+        rsiBuy: +$('rsiBuy').value, rsiSell: +$('rsiSell').value, srLookback: +$('srLookback').value,
+        entryMode: $('entryMode').value, tf: $('tf').value
+    };
+    localStorage.setItem(PARAMS_KEY, JSON.stringify(params));
+}
+
+function loadParams() {
+    const savedParams = localStorage.getItem(PARAMS_KEY);
+    const params = savedParams ? JSON.parse(savedParams) : DEFAULT_PARAMS;
+
+    $('emaFast').value = params.emaFast;
+    $('emaSlow').value = params.emaSlow;
+    $('rsiPeriod').value = params.rsiPeriod;
+    $('rsiBuy').value = params.rsiBuy;
+    $('rsiSell').value = params.rsiSell;
+    $('srLookback').value = params.srLookback;
+    $('entryMode').value = params.entryMode;
+    $('tf').value = params.tf;
+}
+
+// Save the current state to localStorage
+function saveState() {
+  localStorage.setItem(PAIRS_KEY, JSON.stringify(pairs));
+  const serializableState = {};
+  for(const p in state){
+    serializableState[p] = {
+      lastSignal: state[p].lastSignal,
+      openPosition: state[p].openPosition,
+      lastEvaluated: state[p].lastEvaluated
+    };
+  }
+  localStorage.setItem(STATE_KEY, JSON.stringify(serializableState));
+  saveParams();
+}
+
+// Load state from localStorage
+function loadState() {
+  loadParams();
+
+  const savedPairs = localStorage.getItem(PAIRS_KEY);
+  if(savedPairs) {
+    try {
+      pairs = JSON.parse(savedPairs);
+      log('Loaded pairs from storage.');
+    } catch (e) { log('Error loading pairs, resetting to defaults.'); pairs = [...DEFAULT_PAIRS]; }
+  }
+
+  const savedState = localStorage.getItem(STATE_KEY);
+  if(savedState) {
+    try {
+      const loadedState = JSON.parse(savedState);
+      for (const p of pairs) {
+        state[p] = state[p] || {candles:[], lastSignal:null, openPosition:null, lastEvaluated:0};
+        if(loadedState[p]) {
+          state[p].lastSignal = loadedState[p].lastSignal;
+          state[p].openPosition = loadedState[p].openPosition;
+          state[p].lastEvaluated = loadedState[p].lastEvaluated;
+        }
+      }
+      log('Loaded trade state from storage.');
+    } catch (e) { log('Error loading trade state, resetting.'); }
+  }
+}
+// ---------------------------------------------
+
+
+// ---------- Config & UI elements ----------
+const refreshInterval = 30 * 1000; // 30s
+const miniCanvas = $('miniChart');
+const miniCtx = miniCanvas.getContext('2d');
+function resizeCanvas(){ miniCanvas.width = miniCanvas.clientWidth * devicePixelRatio; miniCanvas.height = miniCanvas.clientHeight * devicePixelRatio; miniCtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+$('addPairBtn').addEventListener('click', ()=>{ const v=$('addPairInput').value.trim().toUpperCase(); if(v){ addPair(v); $('addPairInput').value=''; }});
+$('clearPairs').addEventListener('click', ()=>{ 
+  pairs = [...DEFAULT_PAIRS]; 
+  initPairs(); 
+  saveState(); 
+});
+$('refreshNow').addEventListener('click', fetchAllOnce);
+
+// Event listeners for saving parameter changes
+['emaFast', 'emaSlow', 'rsiPeriod', 'rsiBuy', 'rsiSell', 'srLookback', 'entryMode', 'tf'].forEach(id => {
+    $(id).addEventListener('change', saveParams);
+});
+
+// Load Defaults button handler
+$('loadDefaults').addEventListener('click', () => {
+    localStorage.removeItem(PARAMS_KEY);
+    loadParams();
+    log('Parameters reset to default values.');
+});
+
+
+// initialize UI
+function renderPairsUI(){
+  const container = $('pairsContainer'); container.innerHTML='';
+  pairs.forEach(p=>{
+    const div = document.createElement('div'); div.className='pairRow';
+    const left = document.createElement('div'); left.innerHTML = `<div style="font-weight:700">${p}</div><div class="small muted" id="p-${p}-info">—</div>`;
+    const right = document.createElement('div');
+    const badge = document.createElement('span'); badge.id = `badge-${p}`; badge.className='badge wait'; badge.innerText='WAIT';
+    const btnSel = document.createElement('button'); btnSel.className='btn'; btnSel.innerText='Select'; btnSel.onclick=()=> selectPair(p);
+    const btnRem = document.createElement('button'); btnRem.className='btn'; btnRem.innerText='Remove'; btnRem.onclick=()=> removePair(p);
+    right.appendChild(badge); right.appendChild(btnSel); right.appendChild(btnRem);
+    div.appendChild(left); div.appendChild(right);
+    container.appendChild(div);
+  });
+}
+function addPair(p){ 
+  if(!pairs.includes(p)){ 
+    pairs.push(p); 
+    initPairs(); 
+    log('Added pair '+p);
+    saveState(); 
+  } 
+}
+function removePair(p){ 
+  pairs = pairs.filter(x=>x!==p); 
+  initPairs(); 
+  log('Removed pair '+p); 
+  saveState(); 
+}
+function selectPair(p){ $('selectedPair').innerText = p; renderMini(p); }
+// initial fill
+function initPairs(){ 
+  renderPairsUI(); 
+  pairs.forEach(p=>{ 
+    state[p] = state[p] || {candles:[], lastSignal:null, openPosition:null, lastEvaluated:0}; 
+  }); 
+  renderLiveList(); 
+  saveState(); 
+}
+
+
+// ---------- Indicator helpers (same as original) ----------
+function ema(values, period){
+  const out = []; const k = 2/(period+1);
+  let prev = null;
+  for(let i=0;i<values.length;i++){
+    if(i===0){ prev = values[0]; out.push(prev); continue; }
+    if(prev===null) prev = values[i];
+    prev = (values[i]-prev)*k + prev;
+    out.push(prev);
+  }
+  return out;
+}
+function sma(values, period){
+  const out=[]; let sum=0;
+  for(let i=0;i<values.length;i++){
+    sum += values[i];
+    if(i>=period) sum -= values[i-period];
+    out.push(i>=period-1 ? sum/period : null);
+  }
+  return out;
+}
+function rsi(values, period){
+  const out=[]; let gains=0, losses=0;
+  for(let i=1;i<values.length;i++){
+    const d = values[i]-values[i-1];
+    if(i<=period){ if(d>0) gains += d; else losses += Math.abs(Math.min(d,0)); if(i===period){ let ag=gains/period, al=losses/period; let rs=ag/(al||1e-9); out[period] = 100 - (100/(1+rs)); var prevGain=ag, prevLoss=al; } else out.push(null); }
+    else{ const gain = Math.max(values[i]-values[i-1],0); const loss = Math.max(values[i-1]-values[i],0); prevGain=(prevGain*(period-1)+gain)/period; prevLoss=(prevLoss*(period-1)+loss)/period; const rs = prevGain/(prevLoss||1e-9); out.push(100 - (100/(1+rs))); }
+  }
+  while(out.length < values.length) out.unshift(null);
+  return out;
+}
+function atr(highs,lows,closes,period){
+  const trs = [];
+  for(let i=0;i<highs.length;i++){
+    if(i===0) trs.push(highs[i]-lows[i]);
+    else trs.push(Math.max(highs[i]-lows[i], Math.abs(highs[i]-closes[i-1]), Math.abs(lows[i]-closes[i-1])));
+  }
+  return sma(trs, period);
+}
+// detect S/R as local peaks/troughs (simple)
+function detectSR(candles, lookback){
+  const sup=[], res=[];
+  const n=candles.length;
+  for(let i=2;i<n-2;i++){
+    if(candles[i].l < candles[i-1].l && candles[i].l < candles[i+1].l) sup.push(candles[i].l);
+    if(candles[i].h > candles[i-1].h && candles[i].h > candles[i+1].h) res.push(candles[i].h);
+  }
+  // cluster
+  const cluster = (arr,tol=0.0025)=>{ arr.sort((a,b)=>a-b); const out=[]; arr.forEach(v=>{ if(out.length===0) out.push(v); else{ const last=out[out.length-1]; if(Math.abs(last-v)/last < tol) out[out.length-1]=(last+v)/2; else out.push(v);} }); return out; };
+  return {supports: cluster(sup), resistances: cluster(res)};
+}
+
+// ---------- Data fetchers (same as original) ----------
+async function fetchBinanceKlines(symbol, interval, limit=200){
+  const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('Binance fetch failed');
+  const j = await r.json();
+  return j.map(x=>({t:x[0],o:+x[1],h:+x[2],l:+x[3],c:+x[4],v:+x[5]}));
+}
+async function fetchAlphaVantageFX(pair, interval, apikey){
+  const [from,to] = pair.split('/').map(x=>x.trim());
+  const url = `https://www.alphavantage.co/query?function=FX_INTRADAY&from_symbol=${from}&to_symbol=${to}&interval=${interval}&outputsize=full&apikey=${apikey}`;
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('AlphaV fetch failed: '+r.status);
+  const j = await r.json();
+  const key = Object.keys(j).find(k=>k.toLowerCase().includes('time series'));
+  if(!key) throw new Error('AlphaV unexpected: ' + JSON.stringify(j));
+  const series = j[key];
+  const out = [];
+  const keys = Object.keys(series);
+  for(let i = Math.max(0, keys.length-500); i<keys.length; i++){
+    const t = keys[i];
+    const v = series[t];
+    out.push({t: new Date(t+' UTC').getTime(), o:+v['1. open'], h:+v['2. high'], l:+v['3. low'], c:+v['4. close'], v:+(v['5. volume']||0)});
+  }
+  return out;
+}
+async function fetchForexQuote(pair){
+  const [a,b] = pair.split('/').map(x=>x.trim());
+  const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(a)}&symbols=${encodeURIComponent(b)}`;
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('Forex quote fetch failed');
+  const j = await r.json();
+  const rate = j.rates && j.rates[b] ? j.rates[b] : null;
+  if(!rate) throw new Error('No rate returned for '+pair);
+  return {t: Date.now(), price: +rate};
+}
+
+// ---------- Candle-builder (same as original) ----------
+function timeframeToMs(tf){
+  if(tf==='1m') return 60*1000;
+  if(tf==='5m') return 5*60*1000;
+  if(tf==='15m') return 15*60*1000;
+  return 60*1000;
+}
+function addQuoteToCandle(store, quote, tf){
+  const ms = timeframeToMs(tf);
+  const t0 = Math.floor(quote.t / ms) * ms;
+  let last = store.candles.length ? store.candles[store.candles.length-1] : null;
+  if(!last || last.t !== t0){
+    const newc = {t:t0,o:quote.price,h:quote.price,l:quote.price,c:quote.price,v:quote.volume||0};
+    store.candles.push(newc);
+    if(store.candles.length > 500) store.candles.shift();
+  } else {
+    last.h = Math.max(last.h, quote.price);
+    last.l = Math.min(last.l, quote.price);
+    last.c = quote.price;
+    last.v = (last.v || 0) + (quote.volume||0);
+  }
+}
+
+// ---------- Decision engine (same as original) ----------
+function evaluateOnClosedCandle(candles, params, mode){
+  if(candles.length < Math.max(params.emaSlow, params.rsiPeriod, 10)) return {side:'WAIT', reason:['insufficient data']};
+  const closes = candles.map(c=>c.c);
+  const highs = candles.map(c=>c.h);
+  const lows = candles.map(c=>c.l);
+  const emaF = ema(closes, params.emaFast);
+  const emaS = ema(closes, params.emaSlow);
+  const rsiArr = rsi(closes, params.rsiPeriod);
+  const atrArr = atr(highs,lows,closes, 14); // ATR period fixed at 14 for consistency
+  const i = candles.length - 1;
+  const price = closes[i];
+  const emaFast = emaF[i], emaSlow = emaS[i], rsiVal = rsiArr[i], atrVal = atrArr[i];
+  const sr = detectSR(candles, params.srLookback);
+  const nearSupport = sr.supports.some(s => Math.abs((price - s)/price) < 0.0035);
+  const nearResist  = sr.resistances.some(s => Math.abs((price - s)/price) < 0.0035);
+  const look = Math.min(60, candles.length-1); // fibLookback fixed at 60
+  const slice = candles.slice(candles.length-1-look);
+  let maxH = -Infinity, minL = Infinity;
+  slice.forEach(x=>{ if(x.h>maxH) maxH=x.h; if(x.l<minL) minL=x.l; });
+  const fib38 = maxH - (maxH-minL)*0.382;
+  const fib61 = maxH - (maxH-minL)*0.618;
+  const nearFib = (price >= Math.min(fib38,fib61) && price <= Math.max(fib38,fib61));
+  const momLen = 8;
+  const mom = (closes[i] - closes[Math.max(0,i-momLen)]) / Math.max(1e-9, closes[Math.max(0,i-momLen)]);
+  const bullish = emaFast > emaSlow;
+  const bearish = emaFast < emaSlow;
+
+  let side='WAIT', reasons=[];
+  if(mode==='aggressive'){
+    if(bullish){ side='BUY'; reasons.push('EMA up'); }
+    if(bearish){ side='SELL'; reasons.push('EMA down'); }
+  } else if(mode==='conservative'){
+    if(rsiVal !== null && rsiVal < params.rsiBuy && nearSupport && mom > 0){ side='BUY'; reasons.push('RSI low + support + momentum'); }
+    if(rsiVal !== null && rsiVal > params.rsiSell && nearResist && mom < 0){ side='SELL'; reasons.push('RSI high + resist + momentum'); }
+  } else { // smart
+    if(bullish && rsiVal !== null && rsiVal < params.rsiBuy && (nearFib || nearSupport) && mom > 0){ side='BUY'; reasons.push('EMA+RSI+Fib/SR+mom'); }
+    else if(bearish && rsiVal !== null && rsiVal > params.rsiSell && (nearFib || nearResist) && mom < 0){ side='SELL'; reasons.push('EMA+RSI+Fib/SR+mom'); }
+    else {
+      if(bullish && (nearSupport || nearFib)) { side='BUY'; reasons.push('EMA up + partial confirm'); }
+      if(bearish && (nearResist || nearFib)) { side='SELL'; reasons.push('EMA down + partial confirm'); }
+    }
+  }
+  if(side==='BUY' && rsiVal !== null && rsiVal > 92){ side='WAIT'; reasons.push('RSI extreme high - pause'); }
+  if(side==='SELL' && rsiVal !== null && rsiVal < 8){ side='WAIT'; reasons.push('RSI extreme low - pause'); }
+
+  return {side, reasons, context:{price, emaFast, emaSlow, rsiVal, atrVal, nearSupport, nearResist, nearFib, mom, fib38, fib61}, sr};
+}
+
+// ---------- UI rendering helpers ----------
+function renderExitHints(pair) {
+    const hintsEl = $('exitHints');
+    const st = state[pair];
+    if (!st || !st.lastSignal || !st.lastSignal.context) {
+        hintsEl.innerHTML = `<div class="explain">Select a pair and wait for the first data fetch.</div>`;
+        return;
+    }
+    
+    const ctx = st.lastSignal.context;
+    const atr = ctx.atrVal ? ctx.atrVal.toFixed(6) : '—';
+    
+    let html = `
+        <div style="font-weight:700; margin-bottom: 4px;">Market Context for ${pair} (${$('tf').value})</div>
+        <div class="small muted">
+            • Current **ATR (14)**: **${atr}**<br>
+            • **RSI**: ${ctx.rsiVal ? ctx.rsiVal.toFixed(2) : '—'}<br>
+            • **S/R Status**: Support Near (${ctx.nearSupport ? 'Yes' : 'No'}), Resistance Near (${ctx.nearResist ? 'Yes' : 'No'})
+        </div>
+    `;
+
+    if (st.openPosition) {
+        const pos = st.openPosition;
+        html += `<div style="margin-top: 10px; padding: 8px; border: 1px dashed rgba(96, 165, 250, 0.4); border-radius: 8px;">
+            <div style="color: ${pos.side === 'BUY' ? 'var(--good)' : 'var(--bad)'}; font-weight: 700; display:flex; justify-content: space-between;">
+                <span>ACTIVE ADVICE: ${pos.side} @ ${pos.entry.toFixed(6)}</span>
+                <span>${st.exitHint ? '⚠️ HINT' : '🟢 OPEN'}</span>
+            </div>
+            <div class="small muted" style="margin-top:4px;">
+                • **Suggested SL**: ${pos.sl ? pos.sl.toFixed(6) : '—'} (1.5x ATR)<br>
+                • **Suggested TP**: ${pos.tp ? pos.tp.toFixed(6) : '—'} (2.5x ATR)
+            </div>
+            ${st.exitHint ? `<div style="color:var(--bad); margin-top: 6px;">**EXIT HINT**: ${st.exitHint}</div>` : ''}
+        </div>`;
+    } else {
+        html += `<div style="margin-top: 10px;" class="small muted">No active trade to manage on this pair.</div>`;
+    }
+    
+    hintsEl.innerHTML = html;
+}
+
+function updateLiveList(){
+  const container = $('liveList'); container.innerHTML='';
+  pairs.forEach(p=>{
+    const st = state[p] || {candles:[], lastSignal:null, openPosition:null, lastEvaluated:0};
+    const badge = document.createElement('div');
+    badge.className = 'pairRow';
+    
+    // Left side: Pair and Price Info
+    const left = document.createElement('div'); 
+    let infoText = 'Price: —';
+    if(st.candles.length > 0) infoText = 'Price: ' + st.candles[st.candles.length-1].c.toFixed(6);
+
+    // Right side: Signal Badge and Action Text
+    const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+    const sig = document.createElement('span'); sig.id='sig-'+p; sig.className='badge wait'; sig.innerText='WAIT';
+    const hint = document.createElement('div'); hint.className='small muted'; hint.id='hint-'+p; hint.innerText='';
+
+    if(st.lastSignal){
+      const side = st.lastSignal.side;
+      sig.className='badge ' + side.toLowerCase(); sig.innerText=side;
+      
+      if(st.openPosition){
+        // Only show open status on the main list (less noisy)
+        hint.innerText = `${st.openPosition.side} open @ ${st.openPosition.entry.toFixed(6)}`;
+      } else {
+        // Show signal reason if no open position
+        hint.innerText = st.lastSignal.reasons ? st.lastSignal.reasons.join('; ') : '';
+      }
+    }
+    
+    left.innerHTML = `<div style="font-weight:700">${p}</div><div class="small muted" id="info-${p}">${infoText}</div>`;
+
+    right.appendChild(sig); right.appendChild(hint);
+    badge.appendChild(left); badge.appendChild(right);
+    container.appendChild(badge);
+  });
+}
+
+// render mini chart for selected pair
+function renderMini(pair){
+  const st = state[pair]; 
+  const currentPair = $('selectedPair').innerText;
+  
+  // Update chart only if the selected pair matches the one being rendered
+  if(pair === currentPair){
+    if(!st || !st.candles || st.candles.length===0) { 
+        miniCtx.clearRect(0,0,miniCanvas.width,miniCanvas.height); 
+        $('selectedPrice').innerText='Price: —'; 
+        renderExitHints(pair);
+        return; 
+    }
+    const candles = st.candles.slice(-120);
+    const w = miniCanvas.clientWidth, h = miniCanvas.clientHeight;
+    miniCtx.clearRect(0,0,miniCanvas.width,miniCanvas.height);
+    let min=Infinity,max=-Infinity; candles.forEach(c=>{ min=Math.min(min,c.l); max=Math.max(max,c.h); });
+    const pad = (max-min)*0.06; min-=pad; max+=pad;
+    const N=candles.length; const cw = Math.max(2, (w / N) * 0.8); const gap=(w - cw*N)/Math.max(1,N-1);
+    for(let i=0;i<N;i++){
+      const c=candles[i]; const x = i*(cw+gap)+4;
+      const yOpen = h - ((c.o-min)/(max-min)*h), yClose = h - ((c.c-min)/(max-min)*h), yHigh = h - ((c.h-min)/(max-min)*h), yLow = h - ((c.l-min)/(max-min)*h);
+      miniCtx.beginPath(); miniCtx.moveTo(x+cw/2,yHigh); miniCtx.lineTo(x+cw/2,yLow); miniCtx.lineWidth=1; miniCtx.strokeStyle='rgba(255,255,255,0.05)'; miniCtx.stroke();
+      const bullish = c.c>=c.o; miniCtx.fillStyle = bullish ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)';
+      miniCtx.fillRect(x, Math.min(yOpen,yClose), cw, Math.max(1, Math.abs(yOpen-yClose)));
+    }
+    const last = candles[candles.length-1]; $('selectedPrice').innerText = 'Price: ' + last.c.toFixed(6);
+  }
+  
+  // Always update Exit Hints panel for the pair requested
+  renderExitHints(pair);
+}
+
+// ---------- Signal lifecycle and exit logic ----------
+function processClosedCandleFor(pair){
+  const st = state[pair]; if(!st) return;
+  const params = {
+    emaFast: +$('emaFast').value,
+    emaSlow: +$('emaSlow').value,
+    rsiPeriod: +$('rsiPeriod').value,
+    rsiBuy: +$('rsiBuy').value,
+    rsiSell: +$('rsiSell').value,
+    atrPeriod: 14,
+    fibLookback: 60,
+    srLookback: +$('srLookback').value,
+    momLen: 8
+  };
+  const mode = $('entryMode').value;
+  const lastCandle = st.candles[st.candles.length-1];
+  if(!lastCandle) return;
+  if(st.lastEvaluated === lastCandle.t) return; 
+  
+  const result = evaluateOnClosedCandle(st.candles, params, mode);
+  st.lastSignal = result;
+  st.lastEvaluated = lastCandle.t;
+
+  if(st.openPosition){
+    const open = st.openPosition;
+    const ctx = result.context;
+    let exitReason = null;
+    if(result.side && result.side !== 'WAIT' && result.side !== open.side){
+      exitReason = 'Opposite signal triggered on closed candle';
+    }
+    if(!exitReason && ((open.side==='BUY' && ctx.emaFast < ctx.emaSlow) || (open.side==='SELL' && ctx.emaFast > ctx.emaSlow))){
+      exitReason = 'EMA crossover reversed';
+    }
+    if(!exitReason){
+      if(open.side==='BUY' && ctx.rsiVal && ctx.rsiVal > 80) exitReason = 'RSI extreme high';
+      if(open.side==='SELL' && ctx.rsiVal && ctx.rsiVal < 20) exitReason = 'RSI extreme low';
+    }
+    if(!exitReason){
+      if(open.side==='BUY' && ctx.nearResist && ctx.price > ctx.fib61) exitReason = 'Price reached nearby resistance';
+      if(open.side==='SELL' && ctx.nearSupport && ctx.price < ctx.fib38) exitReason = 'Price reached nearby support';
+    }
+
+    if(exitReason){
+      st.exitHint = exitReason;
+      log(`Exit hint for ${pair}: ${exitReason}`);
+    } else {
+      st.exitHint = null;
+    }
+
+  } else {
+    if(result.side === 'BUY' || result.side === 'SELL'){
+      if(result.reasons && result.reasons.length > 0){
+        const entry = result.context.price;
+        const side = result.side;
+        const atrVal = result.context.atrVal;
+        
+        // ATR-based SL/TP (Advisory)
+        const atr_multiplier = 0.0001; // Scale ATR if needed, typically 1.5x SL, 2.5x TP
+        const sl_dist = atrVal * 1.5;
+        const tp_dist = atrVal * 2.5;
+        const sl = (side === 'BUY') ? entry - sl_dist : entry + sl_dist;
+        const tp = (side === 'BUY') ? entry + tp_dist : entry - tp_dist;
+
+        st.openPosition = {
+            side, entry, entryIndex: st.candles.length-1, 
+            reason: result.reasons.join('; '), t: Date.now(),
+            atrVal: atrVal, sl: sl, tp: tp
         };
+        log(`Opened advisory ${side} on ${pair} at ${entry.toFixed(6)} — reasons: ${result.reasons.join('; ')}`);
+      }
+    }
+  }
+  
+  updateLiveList();
+  const selected = $('selectedPair').innerText;
+  if(selected === pair) renderMini(pair);
+  
+  saveState(); 
+}
 
-        // Forex & Synthetic pairs configuration
-        const TRADING_PAIRS = [
-            // Forex Pairs
-            { name: "EUR/USD", type: "Forex", price: 1.08542, change: 0.0012, changePercent: 0.11 },
-            { name: "GBP/USD", type: "Forex", price: 1.26789, change: -0.0023, changePercent: -0.18 },
-            { name: "USD/JPY", type: "Forex", price: 151.234, change: 0.456, changePercent: 0.30 },
-            { name: "AUD/USD", type: "Forex", price: 0.65731, change: 0.0008, changePercent: 0.12 },
-            
-            // Synthetic Indices
-            { name: "BOOM 1000", type: "Synthetic", price: 543.21, change: 12.34, changePercent: 2.32 },
-            { name: "BOOM 500", type: "Synthetic", price: 456.78, change: 8.76, changePercent: 1.95 },
-            { name: "CRASH 1000", type: "Synthetic", price: 345.67, change: -15.43, changePercent: -4.27 },
-            { name: "CRASH 500", type: "Synthetic", price: 234.56, change: -9.87, changePercent: -4.04 },
-            { name: "JUMP 100", type: "Synthetic", price: 123.45, change: 3.21, changePercent: 2.67 },
-            { name: "JUMP 50", type: "Synthetic", price: 89.01, change: 2.34, changePercent: 2.70 },
-            
-            // Indices & Commodities
-            { name: "US30", type: "Index", price: 34567.89, change: 123.45, changePercent: 0.36 },
-            { name: "XAU/USD", type: "Commodity", price: 1987.65, change: 12.34, changePercent: 0.62 }
-        ];
+// ---------- Main fetch loop (same as original) ----------
+async function fetchForPair(pair){
+  try {
+    const tf = $('tf').value;
+    const ms = timeframeToMs(tf);
+    const isCrypto = pair.replace('/','').toUpperCase().endsWith('USDT') || pair.toUpperCase().includes('BTC') || pair.toUpperCase().includes('ETH');
+    const avKey = $('avKey').value.trim();
 
-        // Global variables
-        let signals = [];
-        let pendingSignals = [];
-        let minuteCandles = {};
-        let lastDirHistory = {};
-        let shownKeys = new Set();
-        let signalCountdowns = new Map();
+    state[pair] = state[pair] || {candles:[], lastSignal:null, openPosition:null, lastEvaluated:0};
 
-        // Initialize the dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Initializing Enhanced Trading Dashboard...');
-            initializePriceData();
-            populateForexPairs();
-            setupEventListeners();
-            loadCachedSignals();
-            
-            // Start signal generation
-            startSignalGeneration();
-            
-            // Start price updates
-            startPriceUpdates();
-            
-            // Start countdown processor
-            startCountdownProcessor();
-            
-            console.log('✅ Enhanced Dashboard initialized successfully');
-        });
-
-        // Initialize price data for all pairs
-        function initializePriceData() {
-            TRADING_PAIRS.forEach(pair => {
-                minuteCandles[pair.name] = [];
-                let basePrice = pair.price;
-                
-                // Generate historical data with balanced trends
-                for (let i = 0; i < CONFIG.PRICE_HISTORY_LEN; i++) {
-                    const trend = Math.sin(i / 15 + Math.random() * 3) * 0.015;
-                    const volatility = (Math.random() - 0.5) * 0.008;
-                    basePrice = basePrice * (1 + trend + volatility);
-                    const timestamp = Date.now() - (CONFIG.PRICE_HISTORY_LEN - i) * 60000;
-                    
-                    minuteCandles[pair.name].push({
-                        open: basePrice,
-                        high: basePrice * (1 + Math.random() * 0.005),
-                        low: basePrice * (1 - Math.random() * 0.005),
-                        close: basePrice,
-                        ts: timestamp
-                    });
-                }
-            });
+    if(isCrypto){
+      let bsymbol = pair.replace('/','').toUpperCase();
+      if(!bsymbol.endsWith('USDT')) {
+        if(bsymbol.endsWith('USD')) bsymbol = bsymbol.replace('USD','USDT');
+        else bsymbol = bsymbol + 'USDT';
+      }
+      const interval = tf; 
+      const klines = await fetchBinanceKlines(bsymbol, interval, 500);
+      state[pair].candles = klines.map(k=>({t:k.t,o:k.o,h:k.h,l:k.l,c:k.c,v:k.v}));
+    } else {
+      if(avKey){
+        const avInterval = tf === '1m' ? '1min' : tf === '5m' ? '5min' : '15min';
+        try {
+          const av = await fetchAlphaVantageFX(pair, avInterval, avKey);
+          state[pair].candles = av.map(x=>({t:x.t,o:x.o,h:x.h,l:x.l,c:x.c,v:x.v}));
+        } catch(e){
+          log('AlphaV fetch failed for '+pair+': '+e.message+' — falling back to live quotes');
         }
+      }
+      if(!state[pair].candles || state[pair].candles.length < 50){
+        const quote = await fetchForexQuote(pair);
+        addQuoteToCandle(state[pair], {t: quote.t, price: quote.price}, tf);
+      }
+    }
+    
+    const now = Date.now();
+    const ms_tf = timeframeToMs(tf);
+    const lastCandle = state[pair].candles[state[pair].candles.length-1];
+    if(!lastCandle){ log('No candles for '+pair); return; }
+    
+    if(lastCandle.t + ms_tf <= now){
+      processClosedCandleFor(pair);
+    } else {
+      if(state[pair].candles.length>0){
+        const last = state[pair].candles[state[pair].candles.length-1];
+        const infoEl = document.getElementById('p-'+pair+'-info');
+        if(infoEl) infoEl.innerText = 'Price: '+last.c.toFixed(6)+' (intra)';
+      }
+    }
 
-        // Populate Forex & Synthetic pairs
-        function populateForexPairs() {
-            const container = document.getElementById('forex-pairs-container');
-            
-            container.innerHTML = TRADING_PAIRS.map(pair => {
-                const changeClass = pair.change >= 0 ? 'positive' : 'negative';
-                const changeSign = pair.change >= 0 ? '+' : '';
-                const pricePrecision = pair.type === 'Commodity' || pair.type === 'Index' ? 2 : 5;
-                
-                return `
-                    <div class="pair-card">
-                        <div class="pair-header">
-                            <div class="pair-symbol">${pair.name}</div>
-                            <div style="font-size: 11px; color: var(--text-muted);">${pair.type}</div>
-                        </div>
-                        <div class="pair-price">${pair.price.toFixed(pricePrecision)}</div>
-                        <div class="pair-change ${changeClass}">
-                            ${changeSign}${pair.change.toFixed(pricePrecision)} (${changeSign}${pair.changePercent.toFixed(2)}%)
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
+  } catch(err){
+    log('Fetch error for '+pair+': '+err.message);
+    console.error(err);
+  }
+}
 
-        // Technical analysis functions
-        function ema(values, period) {
-            if (!values || values.length < period) return null;
-            const k = 2 / (period + 1);
-            let emaValue = values.slice(0, period).reduce((a, b) => a + b, 0) / period;
-            for (let i = period; i < values.length; i++) {
-                emaValue = values[i] * k + emaValue * (1 - k);
-            }
-            return emaValue;
-        }
+async function fetchAllOnce(){
+  const copy = [...pairs];
+  for(let i=0;i<copy.length;i++){
+    const p = copy[i];
+    await fetchForPair(p);
+    updateLiveList();
+    await sleep(300);
+  }
+  const selected = $('selectedPair').innerText || pairs[0];
+  if(selected) renderMini(selected);
+}
 
-        function calcRSI(values, period = CONFIG.RSI_PERIOD) {
-            if (!values || values.length < period + 1) return 50;
-            
-            let gains = 0;
-            let losses = 0;
-            
-            for (let i = 1; i <= period; i++) {
-                const change = values[i] - values[i - 1];
-                if (change > 0) gains += change;
-                else losses -= change;
-            }
-            
-            let avgGain = gains / period;
-            let avgLoss = losses / period;
-            
-            for (let i = period + 1; i < values.length; i++) {
-                const change = values[i] - values[i - 1];
-                avgGain = (avgGain * (period - 1) + Math.max(0, change)) / period;
-                avgLoss = (avgLoss * (period - 1) + Math.max(0, -change)) / period;
-            }
-            
-            if (avgLoss === 0) return 100;
-            const rs = avgGain / avgLoss;
-            return 100 - (100 / (1 + rs));
-        }
+// continuous loop
+let running = true;
+async function runLoop(){
+  while(running){
+    try {
+      await fetchAllOnce();
+    } catch(e){ console.error(e); }
+    await sleep(refreshInterval);
+  }
+}
 
-        // Enhanced signal generation with non-repainting logic
-        function analyzeMultiTF(symbol) {
-            const mins = minuteCandles[symbol];
-            if (!mins || mins.length < 30) return null;
-            
-            const closes = mins.map(m => m.close);
-            const currentPrice = closes[closes.length - 1];
-            
-            // Calculate indicators
-            const emaShort = ema(closes, CONFIG.EMA_SHORT);
-            const emaLong = ema(closes, CONFIG.EMA_LONG);
-            if (!emaShort || !emaLong) return null;
-            
-            const rsi = calcRSI(closes);
-            const emaDiff = emaShort - emaLong;
-            
-            // Enhanced direction logic
-            let direction;
-            
-            // Buy signals: EMA crossover up AND RSI not overbought
-            if (emaDiff > 0 && rsi < 65) {
-                direction = 'BUY';
-            } 
-            // Sell signals: EMA crossover down AND RSI not oversold
-            else if (emaDiff < 0 && rsi > 35) {
-                direction = 'SELL';
-            } 
-            // Counter-trend signals based on RSI extremes
-            else if (rsi < 25) {
-                direction = 'BUY';
-            } else if (rsi > 75) {
-                direction = 'SELL';
-            } else {
-                return null; // No clear signal
-            }
-            
-            // Calculate signal strength
-            const emaDistance = Math.abs(emaDiff) / currentPrice;
-            let baseStrength = 60 + (emaDistance * 10000);
-            
-            // RSI strength adjustment
-            let rsiStrength = 0;
-            if ((direction === 'BUY' && rsi < 30) || (direction === 'SELL' && rsi > 70)) {
-                rsiStrength = 25;
-            } else if ((direction === 'BUY' && rsi < 40) || (direction === 'SELL' && rsi > 60)) {
-                rsiStrength = 15;
-            }
-            
-            const signalStrength = Math.min(95, baseStrength + rsiStrength);
-            
-            const indicatorAlignment = Math.max(2, Math.min(5, Math.round(signalStrength / 20)));
-            
-            return {
-                symbol,
-                direction,
-                confirmedOn: '15M/1H',
-                rsi: Math.round(rsi * 10) / 10,
-                currentPrice,
-                signalStrength: Math.round(signalStrength),
-                indicatorAlignment,
-                marketStructure: direction === 'BUY' ? 'BULLISH' : 'BEARISH',
-                timestamp: new Date().toLocaleTimeString(),
-                id: `${symbol}_${Date.now()}`,
-                // Non-repainting key - based on completed candle data
-                nonRepaintingKey: `${symbol}_${direction}_${Math.floor(Date.now() / 60000)}`
-            };
-        }
+// ---------- Initialization ----------
+(function init(){
+  loadState();
 
-        // AI Validation Simulation (Double AI Confirmation)
-        async function dualAIConfirm(signal) {
-            // Simulate API call delay
-            await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 400));
-            
-            // Enhanced validation logic
-            let chatGPTConfidence = 65;
-            let deepSeekConfidence = 70;
-            
-            // ChatGPT validation
-            if ((signal.direction === 'BUY' && signal.rsi < 35) || (signal.direction === 'SELL' && signal.rsi > 65)) {
-                chatGPTConfidence += 20;
-            }
-            chatGPTConfidence += Math.min(15, signal.signalStrength * 0.15);
-            chatGPTConfidence += signal.indicatorAlignment * 4;
-            
-            // DeepSeek validation
-            deepSeekConfidence += signal.indicatorAlignment * 5;
-            deepSeekConfidence += Math.min(15, signal.signalStrength * 0.12);
-            if ((signal.marketStructure === 'BULLISH' && signal.direction === 'BUY') || 
-                (signal.marketStructure === 'BEARISH' && signal.direction === 'SELL')) {
-                deepSeekConfidence += 10;
-            }
-            
-            // More balanced approval criteria
-            const chatGPTValid = chatGPTConfidence >= 65;
-            const deepSeekValid = deepSeekConfidence >= 63;
-            const approved = chatGPTValid && deepSeekValid;
-            const avgConfidence = Math.round((chatGPTConfidence + deepSeekConfidence) / 2);
-            
-            return {
-                approved,
-                avgConfidence,
-                chatGPT: {
-                    model: 'ChatGPT',
-                    valid: chatGPTValid,
-                    confidence: Math.min(95, Math.round(chatGPTConfidence)),
-                    reason: chatGPTValid ? 
-                        `Strong technical alignment (RSI: ${signal.rsi}, Strength: ${signal.signalStrength})` :
-                        'Moderate technical convergence'
-                },
-                deepSeek: {
-                    model: 'DeepSeek',
-                    valid: deepSeekValid,
-                    confidence: Math.min(95, Math.round(deepSeekConfidence)),
-                    reason: deepSeekValid ?
-                        `Favorable market structure with ${signal.indicatorAlignment}/5 timeframe alignment` :
-                        'Market conditions not optimal'
-                },
-                // Double signal flag - both AIs agree with high confidence
-                isDoubleSignal: chatGPTConfidence >= 75 && deepSeekConfidence >= 75
-            };
-        }
+  initPairs();
+  const initialPair = pairs.length > 0 ? pairs[0] : 'EUR/USD';
+  selectPair(initialPair); 
+  $('selectedPair').innerText = initialPair;
+  
+  runLoop();
+  log('Started main loop — updates every 30s');
+})();
 
-        // Process symbol for signals with 10-second delay
-        async function processSymbolCandidate(symbol) {
-            try {
-                const signal = analyzeMultiTF(symbol);
-                if (!signal) return;
-                
-                // Stability check (non-repainting)
-                lastDirHistory[symbol] = lastDirHistory[symbol] || [];
-                lastDirHistory[symbol].push(signal.direction);
-                if (lastDirHistory[symbol].length > CONFIG.STABILITY) {
-                    lastDirHistory[symbol].shift();
-                }
-                
-                const stable = lastDirHistory[symbol].length >= CONFIG.STABILITY && 
-                              lastDirHistory[symbol].every(dir => dir === signal.direction);
-                
-                if (!stable) return;
-                
-                // Non-repainting check - ensure signal is based on completed data
-                if (shownKeys.has(signal.nonRepaintingKey)) return;
-                
-                // AI Validation
-                const aiResult = await dualAIConfirm(signal);
-                
-                if (aiResult.approved) {
-                    signal.aiValidated = true;
-                    signal.aiValidation = aiResult;
-                    signal.aiConfidence = aiResult.avgConfidence;
-                    signal.isDoubleSignal = aiResult.isDoubleSignal;
-                    
-                    // Add to pending signals with countdown
-                    const pendingSignal = {
-                        ...signal,
-                        displayTime: Date.now() + CONFIG.SIGNAL_DELAY_MS,
-                        countdown: Math.ceil(CONFIG.SIGNAL_DELAY_MS / 1000)
-                    };
-                    
-                    pendingSignals.push(pendingSignal);
-                    shownKeys.add(signal.nonRepaintingKey);
-                    
-                    // Start countdown for this signal
-                    signalCountdowns.set(signal.id, pendingSignal.countdown);
-                    
-                    console.log(`⏳ Signal queued for ${symbol}, displaying in ${pendingSignal.countdown}s`);
-                }
-            } catch (error) {
-                console.error('Error processing symbol:', symbol, error);
-            }
-        }
-
-        // Process pending signals and move to active when countdown completes
-        function processPendingSignals() {
-            const now = Date.now();
-            let hasNewSignals = false;
-            
-            for (let i = pendingSignals.length - 1; i >= 0; i--) {
-                const pendingSignal = pendingSignals[i];
-                
-                // Update countdown
-                if (signalCountdowns.has(pendingSignal.id)) {
-                    const remaining = Math.ceil((pendingSignal.displayTime - now) / 1000);
-                    signalCountdowns.set(pendingSignal.id, Math.max(0, remaining));
-                }
-                
-                // Check if ready to display
-                if (now >= pendingSignal.displayTime) {
-                    signals.unshift(pendingSignal);
-                    pendingSignals.splice(i, 1);
-                    signalCountdowns.delete(pendingSignal.id);
-                    hasNewSignals = true;
-                    
-                    // Add to trade history
-                    addTradeToHistory(pendingSignal);
-                    
-                    console.log(`✅ Signal displayed for ${pendingSignal.symbol}`);
-                }
-            }
-            
-            if (hasNewSignals) {
-                renderSignals();
-                updateSignalsCount();
-                saveSignalsToCache();
-            }
-        }
-
-        // Start countdown processor
-        function startCountdownProcessor() {
-            setInterval(() => {
-                processPendingSignals();
-                updateSignalDisplay(); // Update countdowns in UI
-            }, 1000);
-        }
-
-        // Render signals to the grid with countdowns
-        function renderSignals() {
-            const signalGrid = document.getElementById('signal-grid');
-            
-            // Combine active and pending signals for display
-            const allSignals = [...pendingSignals, ...signals.slice(0, 8)];
-            
-            if (allSignals.length === 0) {
-                signalGrid.innerHTML = '<div class="no-data">No trading signals at the moment</div>';
-                return;
-            }
-            
-            signalGrid.innerHTML = allSignals.map(signal => {
-                const isPending = pendingSignals.includes(signal);
-                const countdown = signalCountdowns.get(signal.id) || 0;
-                const strengthClass = getStrengthClass(signal.signalStrength);
-                const isDoubleSignal = signal.isDoubleSignal;
-                
-                return `
-                    <div class="signal-card ${isDoubleSignal ? 'double-signal' : ''} ${isPending ? 'pending' : ''}">
-                        <div class="signal-card-header">
-                            <div class="signal-symbol">${signal.symbol}</div>
-                            <div class="signal-direction ${signal.direction.toLowerCase()}">
-                                ${signal.direction}
-                                ${isPending ? `<span class="countdown">${countdown}s</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="signal-meta">
-                            <div>Price: ${signal.currentPrice.toFixed(signal.symbol.includes('XAU') || signal.symbol.includes('US30') ? 2 : 5)}</div>
-                            <div>RSI: ${signal.rsi}</div>
-                        </div>
-                        <div class="signal-strength">
-                            <span>Strength:</span>
-                            <div class="strength-bar">
-                                <div class="strength-fill ${strengthClass}"></div>
-                            </div>
-                            <span>${signal.signalStrength}%</span>
-                        </div>
-                        ${signal.aiValidation ? `
-                        <div class="ai-validation">
-                            <div class="ai-model ${signal.aiValidation.chatGPT.valid ? 'ai-confirmed' : ''}">
-                                ChatGPT: ${signal.aiValidation.chatGPT.confidence}%
-                            </div>
-                            <div class="ai-model ${signal.aiValidation.deepSeek.valid ? 'ai-confirmed' : ''}">
-                                DeepSeek: ${signal.aiValidation.deepSeek.confidence}%
-                            </div>
-                        </div>
-                        ` : ''}
-                        <div class="signal-reason">
-                            ${signal.aiValidation ? signal.aiValidation.chatGPT.reason : 'Processing AI validation...'}
-                        </div>
-                        <div class="signal-footer">
-                            <div>${signal.timestamp}</div>
-                            <div>${isDoubleSignal ? 'DOUBLE SIGNAL' : signal.marketStructure}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // Update signal display with countdowns
-        function updateSignalDisplay() {
-            const signalElements = document.querySelectorAll('.signal-card');
-            
-            signalElements.forEach(element => {
-                const symbolElement = element.querySelector('.signal-symbol');
-                if (symbolElement) {
-                    const symbol = symbolElement.textContent;
-                    const pendingSignal = pendingSignals.find(s => s.symbol === symbol);
-                    
-                    if (pendingSignal) {
-                        const countdownElement = element.querySelector('.countdown');
-                        const countdown = signalCountdowns.get(pendingSignal.id) || 0;
-                        
-                        if (countdownElement && countdown > 0) {
-                            countdownElement.textContent = `${countdown}s`;
-                        } else if (countdownElement && countdown <= 0) {
-                            countdownElement.textContent = 'Live!';
-                        }
-                    }
-                }
-            });
-        }
-
-        // Add trade to history
-        function addTradeToHistory(signal) {
-            const tradesBody = document.getElementById('trades-body');
-            const now = new Date();
-            const time = `${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
-            const pnl = (Math.random() * 4 - 1).toFixed(1);
-            
-            const newRow = document.createElement('tr');
-            newRow.innerHTML = `
-                <td>${time}</td>
-                <td><span class="signal ${signal.isDoubleSignal ? 'ml-buy' : signal.direction.toLowerCase()}">${signal.isDoubleSignal ? 'AI ' : ''}${signal.direction}</span></td>
-                <td>${signal.symbol}</td>
-                <td>${signal.currentPrice.toFixed(signal.symbol.includes('XAU') || signal.symbol.includes('US30') ? 2 : 5)}</td>
-                <td class="${parseFloat(pnl) >= 0 ? 'positive' : 'negative'}">${pnl}%</td>
-                <td>${signal.aiConfidence}%</td>
-            `;
-            
-            tradesBody.insertBefore(newRow, tradesBody.firstChild);
-            
-            // Keep only 10 most recent trades
-            if (tradesBody.children.length > 10) {
-                tradesBody.removeChild(tradesBody.lastChild);
-            }
-        }
-
-        // Get strength class based on percentage
-        function getStrengthClass(strength) {
-            if (strength >= 75) return 'high';
-            if (strength >= 60) return 'medium';
-            return 'low';
-        }
-
-        // Update signals count
-        function updateSignalsCount() {
-            document.getElementById('signalsCount').textContent = signals.length;
-        }
-
-        // Start signal generation with balanced distribution
-        function startSignalGeneration() {
-            // Initial batch of signals
-            setTimeout(() => {
-                TRADING_PAIRS.forEach(pair => {
-                    if (Math.random() > 0.3) {
-                        processSymbolCandidate(pair.name);
-                    }
-                });
-            }, 1000);
-            
-            // Continuous signal generation
-            setInterval(() => {
-                const randomPair = TRADING_PAIRS[Math.floor(Math.random() * TRADING_PAIRS.length)];
-                processSymbolCandidate(randomPair.name);
-            }, 5000);
-        }
-
-        // Start price updates
-        function startPriceUpdates() {
-            setInterval(() => {
-                updateAllPrices();
-            }, 3000);
-        }
-
-        // Update all pair prices
-        function updateAllPrices() {
-            TRADING_PAIRS.forEach(pair => {
-                const candles = minuteCandles[pair.name];
-                if (!candles || candles.length === 0) return;
-                
-                const lastCandle = candles[candles.length - 1];
-                
-                // Balanced price movements
-                const trendDirection = Math.random() > 0.5 ? 1 : -1;
-                const trendStrength = 0.005 + Math.random() * 0.01;
-                const trend = trendDirection * trendStrength;
-                const volatility = (Math.random() - 0.5) * 0.003;
-                const newPrice = lastCandle.close * (1 + trend + volatility);
-                
-                // Update pair price
-                const change = newPrice - pair.price;
-                pair.price = newPrice;
-                pair.change = change;
-                pair.changePercent = (change / pair.price) * 100;
-                
-                // Add minute tick
-                if (!minuteCandles[pair.name]) minuteCandles[pair.name] = [];
-                const mins = minuteCandles[pair.name];
-                const minuteKey = Math.floor(Date.now() / 60000) * 60000;
-                const last = mins[mins.length - 1];
-                
-                if (!last || last.ts !== minuteKey) {
-                    mins.push({ 
-                        open: newPrice, 
-                        high: newPrice, 
-                        low: newPrice, 
-                        close: newPrice, 
-                        ts: minuteKey 
-                    });
-                } else {
-                    last.high = Math.max(last.high, newPrice);
-                    last.low = Math.min(last.low, newPrice);
-                    last.close = newPrice;
-                }
-                
-                if (mins.length > CONFIG.PRICE_HISTORY_LEN) mins.shift();
-            });
-            
-            // Update UI
-            populateForexPairs();
-        }
-
-        // Load cached signals
-        function loadCachedSignals() {
-            try {
-                const cached = localStorage.getItem(CONFIG.CACHE_KEY);
-                if (cached) {
-                    const parsed = JSON.parse(cached);
-                    signals = parsed.slice(0, CONFIG.MAX_SIGNALS);
-                    renderSignals();
-                    updateSignalsCount();
-                }
-            } catch (error) {
-                console.error('Error loading cached signals:', error);
-            }
-        }
-
-        // Save signals to cache
-        function saveSignalsToCache() {
-            try {
-                const signalsToSave = signals.slice(0, CONFIG.MAX_SIGNALS);
-                localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify(signalsToSave));
-            } catch (error) {
-                console.error('Error saving signals to cache:', error);
-            }
-        }
-
-        // Setup event listeners
-        function setupEventListeners() {
-            // Tab functionality
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.addEventListener('click', () => {
-                    activateTab(tab.dataset.tab);
-                });
-            });
-            
-            // Generate AI signals button
-            document.getElementById('btn-ml').addEventListener('click', function() {
-                // Generate 2-4 random signals
-                const numSignals = Math.floor(Math.random() * 3) + 2;
-                
-                for (let i = 0; i < numSignals; i++) {
-                    const randomPair = TRADING_PAIRS[Math.floor(Math.random() * TRADING_PAIRS.length)];
-                    processSymbolCandidate(randomPair.name);
-                }
-            });
-            
-            // Other button handlers
-            document.getElementById('btn-backtest').addEventListener('click', function() {
-                alert('Backtest simulation started');
-            });
-            
-            document.getElementById('btn-live').addEventListener('click', function() {
-                alert('Live simulation activated');
-            });
-            
-            document.getElementById('btn-optimize').addEventListener('click', function() {
-                alert('Parameter optimization started');
-            });
-            
-            // Auto-save signals periodically
-            setInterval(saveSignalsToCache, 10000);
-        }
-
-        // Activate tab
-        function activateTab(tabName) {
-            document.querySelectorAll('.tab').forEach(t => {
-                t.classList.remove('active');
-                t.setAttribute('aria-selected', 'false');
-            });
-            document.querySelectorAll('.tab-content').forEach(c => {
-                c.classList.remove('active');
-                c.setAttribute('aria-hidden', 'true');
-            });
-            
-            const activeTab = document.querySelector(`.tab[data-tab="${tabName}"]`);
-            const activeContent = document.getElementById(`${tabName}-tab-panel`);
-            
-            if (activeTab && activeContent) {
-                activeTab.classList.add('active');
-                activeTab.setAttribute('aria-selected', 'true');
-                activeContent.classList.add('active');
-                activeContent.setAttribute('aria-hidden', 'false');
-            }
-        }
-
-        // Regime detection simulation
-        function simulateRegimeDetection() {
-            const regimes = ['trending', 'ranging', 'transition'];
-            const randomRegime = regimes[Math.floor(Math.random() * regimes.length)];
-            setActiveRegime(randomRegime);
-        }
-
-        function setActiveRegime(regime) {
-            document.getElementById('trending-regime').classList.remove('active');
-            document.getElementById('ranging-regime').classList.remove('active');
-            document.getElementById('transition-regime').classList.remove('active');
-            
-            const activeRegime = document.getElementById(regime + '-regime');
-            activeRegime.classList.add('active');
-            
-            document.getElementById('current-regime').textContent = 
-                regime.charAt(0).toUpperCase() + regime.slice(1);
-            
-            const strategyMap = {
-                'trending': 'Trend Following',
-                'ranging': 'Mean Reversion', 
-                'transition': 'No Trading'
-            };
-            document.getElementById('active-strategy').textContent = strategyMap[regime];
-        }
-
-        // Initialize regime detection
-        setInterval(simulateRegimeDetection, 10000);
-    </script>
+</script>
 </body>
 </html>
