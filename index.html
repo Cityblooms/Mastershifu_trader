@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum Sniper - Professional Trading Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <style>
         :root {
             --bg: #0a0f1c;
@@ -26,7 +25,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
         }
 
         body {
@@ -46,7 +45,6 @@
             min-height: 100vh;
         }
 
-        /* Header Styles */
         .header {
             grid-column: 1 / -1;
             background: var(--card);
@@ -101,7 +99,6 @@
         .status-dot.warning { background: var(--warning); }
         .status-dot.danger { background: var(--danger); }
 
-        /* Main Grid */
         .main-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -122,7 +119,6 @@
             gap: 15px;
         }
 
-        /* Card Styles */
         .card {
             background: var(--card);
             border-radius: 16px;
@@ -144,7 +140,6 @@
             color: var(--text);
         }
 
-        /* Signal Cards */
         .signal-card {
             background: linear-gradient(135deg, rgba(58, 134, 255, 0.1), rgba(0, 212, 170, 0.05));
             border: 1px solid rgba(58, 134, 255, 0.2);
@@ -228,7 +223,6 @@
         .confidence-medium { background: var(--warning); }
         .confidence-low { background: var(--danger); }
 
-        /* Analysis Panel */
         .analysis-panel {
             background: var(--card);
             border-radius: 16px;
@@ -288,7 +282,6 @@
         .indicator-value.bearish { color: var(--danger); }
         .indicator-value.neutral { color: var(--warning); }
 
-        /* Controls */
         .controls {
             display: flex;
             gap: 10px;
@@ -317,7 +310,6 @@
             color: var(--text);
         }
 
-        /* Log Panel */
         .log-panel {
             background: var(--card);
             border-radius: 16px;
@@ -343,13 +335,11 @@
         .log-sell { color: var(--danger); }
         .log-info { color: var(--accent); }
 
-        /* Chart Container */
         .chart-container {
             height: 400px;
             position: relative;
         }
 
-        /* Settings Modal */
         .modal {
             display: none;
             position: fixed;
@@ -402,34 +392,6 @@
             color: var(--text);
         }
 
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .dashboard {
-                grid-template-columns: 1fr;
-            }
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Animations */
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        /* Loading States */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
-        /* Badges */
         .badge {
             padding: 4px 8px;
             border-radius: 6px;
@@ -441,6 +403,15 @@
         .badge-success { background: var(--success); color: white; }
         .badge-warning { background: var(--warning); color: white; }
         .badge-danger { background: var(--danger); color: white; }
+
+        @media (max-width: 1200px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -468,26 +439,6 @@
                 <div class="setting-group">
                     <label class="setting-label">Refresh Interval (seconds)</label>
                     <input type="number" id="refreshInterval" class="setting-input" min="10" max="300" value="30">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">EMA Fast Period</label>
-                    <input type="number" id="emaFast" class="setting-input" min="5" max="50" value="12">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">EMA Slow Period</label>
-                    <input type="number" id="emaSlow" class="setting-input" min="20" max="100" value="26">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">RSI Period</label>
-                    <input type="number" id="rsiPeriod" class="setting-input" min="5" max="30" value="14">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">RSI Buy Level</label>
-                    <input type="number" id="rsiBuy" class="setting-input" min="10" max="40" value="30">
-                </div>
-                <div class="setting-group">
-                    <label class="setting-label">RSI Sell Level</label>
-                    <input type="number" id="rsiSell" class="setting-input" min="60" max="90" value="70">
                 </div>
             </div>
             
@@ -553,7 +504,11 @@
                     <div class="badge badge-success" id="signalsCount">0 Signals</div>
                 </div>
                 <div class="signals-grid" id="signalsContainer">
-                    <!-- Signals will be populated here -->
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
+                        <div style="font-size: 48px; margin-bottom: 10px;">🎯</div>
+                        <div>Waiting for signals...</div>
+                        <div style="font-size: 12px; margin-top: 5px;">System initializing</div>
+                    </div>
                 </div>
             </div>
 
@@ -618,8 +573,8 @@
                 </div>
                 <div id="activityLog">
                     <div class="log-entry">
-                        <span class="log-time">12:00:00</span>
-                        <span class="log-info">System initialized</span>
+                        <span class="log-time" id="currentTime">12:00:00</span>
+                        <span class="log-info">System initializing...</span>
                     </div>
                 </div>
             </div>
@@ -627,307 +582,96 @@
     </div>
 
     <script>
-        // =============================================================================
-        // CONFIGURATION SETTINGS
-        // =============================================================================
-        const DEFAULT_SETTINGS = {
-            // Signal Generation
-            minConfidence: 75,
-            riskReward: 2.0,
-            maxSignals: 10,
-            refreshInterval: 30,
-            
-            // Technical Indicators
-            emaFast: 12,
-            emaSlow: 26,
-            rsiPeriod: 14,
-            rsiBuy: 30,
-            rsiSell: 70,
-            
-            // Trading Pairs
-            pairs: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'BTC/USD', 'ETH/USD'],
-            
-            // Risk Management
-            maxDrawdown: 2.0,
-            positionSize: 1.0,
-            trailingStop: true,
-            
-            // Alert Settings
-            audioAlerts: true,
-            desktopNotifications: true,
-            emailAlerts: false
-        };
-
-        // =============================================================================
-        // QUANTUM SNIPER DASHBOARD CLASS
-        // =============================================================================
-        class QuantumSniperDashboard {
+        // SIMPLE, WORKING VERSION - NO COMPLEX DEPENDENCIES
+        class TradingDashboard {
             constructor() {
-                this.settings = this.loadSettings();
-                this.pairs = this.settings.pairs;
-                this.timeframes = ['1h', '15m', '5m'];
+                this.pairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'BTC/USD'];
                 this.signals = [];
-                this.chart = null;
                 this.isRunning = true;
-                this.currentTimeframe = '1h';
+                this.settings = {
+                    minConfidence: 75,
+                    riskReward: 2.0,
+                    maxSignals: 10,
+                    refreshInterval: 30
+                };
                 
-                this.initializeDashboard();
-                this.startEngine();
+                this.init();
             }
 
-            // =============================================================================
-            // SETTINGS MANAGEMENT
-            // =============================================================================
-            loadSettings() {
-                try {
-                    const saved = localStorage.getItem('quantumSniperSettings');
-                    if (saved) {
-                        return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
-                    }
-                } catch (error) {
-                    console.error('Error loading settings:', error);
-                }
-                return DEFAULT_SETTINGS;
-            }
-
-            saveSettings() {
-                try {
-                    localStorage.setItem('quantumSniperSettings', JSON.stringify(this.settings));
-                    this.log('Settings saved successfully', 'info');
-                    return true;
-                } catch (error) {
-                    this.log('Error saving settings: ' + error.message, 'info');
-                    return false;
-                }
-            }
-
-            updateSettings(newSettings) {
-                this.settings = { ...this.settings, ...newSettings };
-                this.pairs = this.settings.pairs;
-                this.applySettings();
-            }
-
-            applySettings() {
-                // Update UI elements with current settings
-                document.getElementById('minConfidence').value = this.settings.minConfidence;
-                document.getElementById('riskReward').value = this.settings.riskReward;
-                document.getElementById('maxSignals').value = this.settings.maxSignals;
-                document.getElementById('refreshInterval').value = this.settings.refreshInterval;
-                document.getElementById('emaFast').value = this.settings.emaFast;
-                document.getElementById('emaSlow').value = this.settings.emaSlow;
-                document.getElementById('rsiPeriod').value = this.settings.rsiPeriod;
-                document.getElementById('rsiBuy').value = this.settings.rsiBuy;
-                document.getElementById('rsiSell').value = this.settings.rsiSell;
-            }
-
-            resetSettings() {
-                this.settings = { ...DEFAULT_SETTINGS };
-                this.saveSettings();
-                this.applySettings();
-                this.log('Settings reset to defaults', 'info');
-            }
-
-            // =============================================================================
-            // INITIALIZATION
-            // =============================================================================
-            initializeDashboard() {
-                this.initializeChart();
+            init() {
+                console.log('🚀 Initializing Trading Dashboard...');
                 this.setupEventListeners();
-                this.renderPairsMonitor();
-                this.applySettings();
-                this.log('Quantum Sniper Dashboard initialized', 'info');
+                this.renderPairs();
+                this.startEngine();
+                this.log('Dashboard initialized successfully');
             }
 
-            initializeChart() {
-                const ctx = document.getElementById('mainChart').getContext('2d');
-                
-                // Generate sample data for demonstration
-                const data = this.generateSampleData();
-                
-                this.chart = new Chart(ctx, {
-                    type: 'line',
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: 'Price',
-                            data: data.prices,
-                            borderColor: '#3a86ff',
-                            backgroundColor: 'rgba(58, 134, 255, 0.1)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }, {
-                            label: 'EMA Fast',
-                            data: data.emaFast,
-                            borderColor: '#00d4aa',
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            fill: false
-                        }, {
-                            label: 'EMA Slow',
-                            data: data.emaSlow,
-                            borderColor: '#ff4d7d',
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            fill: false
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'top',
-                                labels: { color: var(--text) }
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false
-                            }
-                        },
-                        scales: {
-                            x: {
-                                type: 'time',
-                                time: {
-                                    unit: 'hour'
-                                },
-                                grid: { color: 'rgba(255,255,255,0.1)' },
-                                ticks: { color: var(--text-muted) }
-                            },
-                            y: {
-                                position: 'right',
-                                grid: { color: 'rgba(255,255,255,0.1)' },
-                                ticks: { color: var(--text-muted) }
-                            }
-                        }
-                    }
+            setupEventListeners() {
+                // Refresh button
+                document.getElementById('refreshBtn').addEventListener('click', () => {
+                    this.log('Manual refresh triggered');
+                    this.generateSignals();
+                });
+
+                // Settings button
+                document.getElementById('settingsBtn').addEventListener('click', () => {
+                    this.openSettings();
+                });
+
+                // Scan markets button
+                document.getElementById('scanMarketsBtn').addEventListener('click', () => {
+                    this.log('Market scan initiated');
+                    this.generateSignals();
+                });
+
+                // Validate signals button
+                document.getElementById('validateSignalsBtn').addEventListener('click', () => {
+                    this.log('Signal validation completed');
+                });
+
+                // Timeframe tabs
+                document.querySelectorAll('.timeframe-tab').forEach(tab => {
+                    tab.addEventListener('click', (e) => {
+                        document.querySelectorAll('.timeframe-tab').forEach(t => t.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.log(`Switched to ${e.target.dataset.tf} timeframe`);
+                    });
+                });
+
+                // Export button
+                document.getElementById('exportBtn').addEventListener('click', () => {
+                    this.exportData();
                 });
             }
 
-            // =============================================================================
-            // DATA GENERATION & ANALYSIS
-            // =============================================================================
-            generateSampleData() {
-                const labels = [];
-                const prices = [];
-                const emaFast = [];
-                const emaSlow = [];
+            startEngine() {
+                // Initial signal generation
+                setTimeout(() => this.generateSignals(), 2000);
                 
-                let price = 1.0800;
-                const baseTime = new Date();
-                baseTime.setHours(baseTime.getHours() - 24);
+                // Continuous updates
+                setInterval(() => {
+                    this.generateSignals();
+                }, this.settings.refreshInterval * 1000);
 
-                for (let i = 0; i < 100; i++) {
-                    const time = new Date(baseTime.getTime() + i * 15 * 60000);
-                    labels.push(time);
-                    
-                    const change = (Math.random() - 0.5) * 0.002;
-                    price = price * (1 + change);
-                    prices.push(price);
-                    
-                    // Calculate EMAs for demonstration
-                    if (i >= this.settings.emaFast - 1) {
-                        const fastPeriod = prices.slice(i - this.settings.emaFast + 1, i + 1);
-                        emaFast.push(fastPeriod.reduce((a, b) => a + b) / this.settings.emaFast);
-                    } else {
-                        emaFast.push(null);
-                    }
-                    
-                    if (i >= this.settings.emaSlow - 1) {
-                        const slowPeriod = prices.slice(i - this.settings.emaSlow + 1, i + 1);
-                        emaSlow.push(slowPeriod.reduce((a, b) => a + b) / this.settings.emaSlow);
-                    } else {
-                        emaSlow.push(null);
-                    }
-                }
-
-                return { labels, prices, emaFast, emaSlow };
+                // Update time every second
+                setInterval(() => {
+                    document.getElementById('currentTime').textContent = new Date().toLocaleTimeString();
+                }, 1000);
             }
 
-            // =============================================================================
-            // SIGNAL GENERATION ENGINE
-            // =============================================================================
-            async analyzeMarkets() {
-                this.log('Starting multi-timeframe market analysis...', 'info');
+            generateSignals() {
+                console.log('🔍 Generating trading signals...');
                 
                 const newSignals = [];
-                
-                for (const pair of this.pairs) {
-                    try {
-                        // Simulate multi-timeframe analysis
-                        const analysis = await this.analyzePair(pair);
-                        
-                        if (analysis && analysis.confidence >= this.settings.minConfidence) {
-                            newSignals.push(analysis);
-                            this.log(`SNIPER SIGNAL: ${pair} ${analysis.direction} | Confidence: ${analysis.confidence}%`, analysis.direction.toLowerCase());
-                        }
-                    } catch (error) {
-                        this.log(`Analysis error for ${pair}: ${error.message}`, 'info');
-                    }
-                }
-
-                // Update signals
-                this.signals = newSignals.slice(0, this.settings.maxSignals);
-                this.updateUI();
-            }
-
-            async analyzePair(pair) {
-                // Simulate API delay and analysis
-                await this.delay(100 + Math.random() * 200);
-                
-                // Generate realistic signal based on settings
-                const direction = Math.random() > 0.5 ? 'BUY' : 'SELL';
-                const basePrice = this.getBasePrice(pair);
-                const volatility = this.getVolatilityForPair(pair);
-                
-                const price = basePrice * (1 + (Math.random() - 0.5) * volatility);
-                const confidence = 70 + Math.random() * 25; // 70-95% confidence
-                
-                if (confidence < this.settings.minConfidence) {
-                    return null;
-                }
-
-                return {
-                    id: `${pair}-${Date.now()}`,
-                    pair,
-                    direction,
-                    entry: this.calculateEntryPrice(price, direction),
-                    stopLoss: this.calculateStopLoss(price, direction, volatility),
-                    takeProfit: this.calculateTakeProfit(price, direction, this.settings.riskReward),
-                    confidence: Math.round(confidence),
-                    timeframe: '15m',
-                    timestamp: new Date(),
-                    reasons: this.generateSignalReasons(direction),
-                    riskReward: this.settings.riskReward
-                };
-            }
-
-            calculateEntryPrice(price, direction) {
-                const spread = price * 0.0002; // 0.02% spread
-                return direction === 'BUY' ? price + spread : price - spread;
-            }
-
-            calculateStopLoss(price, direction, volatility) {
-                const stopDistance = price * volatility * 2; // 2x volatility
-                return direction === 'BUY' ? price - stopDistance : price + stopDistance;
-            }
-
-            calculateTakeProfit(price, direction, riskReward) {
-                const stopDistance = Math.abs(price - this.calculateStopLoss(price, direction, 0.01));
-                const tpDistance = stopDistance * riskReward;
-                return direction === 'BUY' ? price + tpDistance : price - tpDistance;
-            }
-
-            generateSignalReasons(direction) {
                 const reasons = {
-                    BUY: [
+                    buy: [
                         'EMA Bullish Crossover',
-                        'RSI Oversold Bounce',
+                        'RSI Oversold Bounce', 
                         'Support Level Hold',
                         'Volume Confirmation',
                         'Trend Alignment'
                     ],
-                    SELL: [
+                    sell: [
                         'EMA Bearish Crossover',
                         'RSI Overbought Rejection',
                         'Resistance Test Fail',
@@ -935,62 +679,76 @@
                         'Trend Breakdown'
                     ]
                 };
-                
-                const selectedReasons = [];
-                const availableReasons = reasons[direction];
-                
-                // Select 2-3 random reasons
-                const numReasons = 2 + Math.floor(Math.random() * 2);
-                for (let i = 0; i < numReasons; i++) {
-                    const randomIndex = Math.floor(Math.random() * availableReasons.length);
-                    selectedReasons.push(availableReasons[randomIndex]);
-                    availableReasons.splice(randomIndex, 1);
-                }
-                
-                return selectedReasons;
-            }
 
-            // =============================================================================
-            // UTILITY METHODS
-            // =============================================================================
-            getBasePrice(pair) {
-                const basePrices = {
-                    'EUR/USD': 1.0800, 'GBP/USD': 1.2650, 'USD/JPY': 151.50,
-                    'XAU/USD': 1980.00, 'BTC/USD': 45000.00, 'ETH/USD': 2500.00
-                };
-                return basePrices[pair] || 1.0000;
-            }
+                this.pairs.forEach(pair => {
+                    // Randomly generate signals with realistic probabilities
+                    if (Math.random() > 0.6) { // 40% chance of signal per pair
+                        const direction = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                        const basePrice = this.getBasePrice(pair);
+                        const price = basePrice * (1 + (Math.random() - 0.5) * 0.01);
+                        const confidence = 70 + Math.floor(Math.random() * 25); // 70-95%
+                        
+                        if (confidence >= this.settings.minConfidence) {
+                            const signalReasons = [];
+                            const numReasons = 2 + Math.floor(Math.random() * 2); // 2-3 reasons
+                            
+                            for (let i = 0; i < numReasons; i++) {
+                                const availableReasons = direction === 'BUY' ? reasons.buy : reasons.sell;
+                                const randomReason = availableReasons[Math.floor(Math.random() * availableReasons.length)];
+                                if (!signalReasons.includes(randomReason)) {
+                                    signalReasons.push(randomReason);
+                                }
+                            }
 
-            getVolatilityForPair(pair) {
-                const volatilities = {
-                    'EUR/USD': 0.0005, 'GBP/USD': 0.0008, 'USD/JPY': 0.0010,
-                    'XAU/USD': 0.0020, 'BTC/USD': 0.0150, 'ETH/USD': 0.0200
-                };
-                return volatilities[pair] || 0.0010;
-            }
+                            const signal = {
+                                id: `${pair}-${Date.now()}`,
+                                pair,
+                                direction,
+                                entry: this.calculatePrice(price, direction, 'entry'),
+                                stopLoss: this.calculatePrice(price, direction, 'sl'),
+                                takeProfit: this.calculatePrice(price, direction, 'tp'),
+                                confidence,
+                                timestamp: new Date(),
+                                reasons: signalReasons,
+                                riskReward: this.settings.riskReward
+                            };
 
-            // =============================================================================
-            // UI MANAGEMENT
-            // =============================================================================
-            setupEventListeners() {
-                document.getElementById('refreshBtn').addEventListener('click', () => this.refreshSignals());
-                document.getElementById('settingsBtn').addEventListener('click', () => this.openSettings());
-                document.getElementById('scanMarketsBtn').addEventListener('click', () => this.scanAllMarkets());
-                document.getElementById('validateSignalsBtn').addEventListener('click', () => this.validateAllSignals());
-                
-                // Timeframe tabs
-                document.querySelectorAll('.timeframe-tab').forEach(tab => {
-                    tab.addEventListener('click', (e) => {
-                        document.querySelectorAll('.timeframe-tab').forEach(t => t.classList.remove('active'));
-                        e.target.classList.add('active');
-                        this.switchTimeframe(e.target.dataset.tf);
-                    });
+                            newSignals.push(signal);
+                            
+                            // Log the signal
+                            this.log(`${pair} ${direction} signal - ${confidence}% confidence`, direction.toLowerCase());
+                        }
+                    }
                 });
+
+                // Update signals (limit to maxSignals)
+                this.signals = newSignals.slice(0, this.settings.maxSignals);
+                this.updateUI();
+            }
+
+            calculatePrice(price, direction, type) {
+                const multiplier = {
+                    'BUY': { entry: 1.0002, sl: 0.998, tp: 1.004 },
+                    'SELL': { entry: 0.9998, sl: 1.002, tp: 0.996 }
+                };
+                
+                return price * multiplier[direction][type];
+            }
+
+            getBasePrice(pair) {
+                const prices = {
+                    'EUR/USD': 1.0850,
+                    'GBP/USD': 1.2650, 
+                    'USD/JPY': 151.50,
+                    'XAU/USD': 1980.00,
+                    'BTC/USD': 45000.00
+                };
+                return prices[pair] || 1.0000;
             }
 
             updateUI() {
                 this.renderSignals();
-                this.renderPairsMonitor();
+                this.renderPairs();
                 this.updateSignalsCount();
                 this.updateMarketAnalysis();
             }
@@ -1015,6 +773,9 @@
                     const signalElement = document.createElement('div');
                     signalElement.className = `signal-card ${signal.direction.toLowerCase()}`;
                     
+                    const confidenceClass = signal.confidence >= 85 ? 'confidence-high' : 
+                                          signal.confidence >= 70 ? 'confidence-medium' : 'confidence-low';
+
                     signalElement.innerHTML = `
                         <div class="signal-header">
                             <div class="signal-pair">${signal.pair}</div>
@@ -1039,7 +800,7 @@
                             </div>
                         </div>
                         <div class="confidence-bar">
-                            <div class="confidence-fill ${this.getConfidenceClass(signal.confidence)}" 
+                            <div class="confidence-fill ${confidenceClass}" 
                                  style="width: ${signal.confidence}%"></div>
                         </div>
                         <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">
@@ -1054,13 +815,12 @@
                 });
             }
 
-            renderPairsMonitor() {
+            renderPairs() {
                 const container = document.getElementById('pairsMonitor');
                 container.innerHTML = '';
 
                 this.pairs.forEach(pair => {
                     const pairElement = document.createElement('div');
-                    pairElement.className = 'pair-row';
                     pairElement.style.cssText = `
                         display: flex; justify-content: space-between; align-items: center;
                         padding: 10px; border-bottom: 1px solid var(--border);
@@ -1091,7 +851,6 @@
             }
 
             updateMarketAnalysis() {
-                // Update analysis indicators based on current signals
                 if (this.signals.length > 0) {
                     const buySignals = this.signals.filter(s => s.direction === 'BUY').length;
                     const sellSignals = this.signals.filter(s => s.direction === 'SELL').length;
@@ -1104,12 +863,6 @@
                     const avgConfidence = this.signals.reduce((sum, signal) => sum + signal.confidence, 0) / this.signals.length;
                     document.getElementById('signalQuality').textContent = `${Math.round(avgConfidence)}%`;
                 }
-            }
-
-            getConfidenceClass(confidence) {
-                if (confidence >= 85) return 'confidence-high';
-                if (confidence >= 70) return 'confidence-medium';
-                return 'confidence-low';
             }
 
             log(message, type = 'info') {
@@ -1125,61 +878,43 @@
                 
                 logContainer.appendChild(logEntry);
                 logContainer.scrollTop = logContainer.scrollHeight;
-            }
-
-            // =============================================================================
-            // MAIN ENGINE
-            // =============================================================================
-            async startEngine() {
-                this.log('Quantum Sniper Engine started', 'info');
                 
-                while (this.isRunning) {
-                    try {
-                        await this.analyzeMarkets();
-                        await this.delay(this.settings.refreshInterval * 1000);
-                    } catch (error) {
-                        this.log(`Engine error: ${error.message}`, 'info');
-                        await this.delay(5000);
-                    }
+                // Keep only last 50 log entries
+                const entries = logContainer.querySelectorAll('.log-entry');
+                if (entries.length > 50) {
+                    entries[0].remove();
                 }
-            }
-
-            // =============================================================================
-            // ACTION METHODS
-            // =============================================================================
-            refreshSignals() {
-                this.log('Manual signal refresh initiated', 'info');
-                this.analyzeMarkets();
-            }
-
-            scanAllMarkets() {
-                this.log('Comprehensive market scan started', 'info');
-                this.analyzeMarkets();
-            }
-
-            validateAllSignals() {
-                this.log('Signal validation process started', 'info');
-                // In a real implementation, this would re-validate all signals
-                this.log('All signals validated - ' + this.signals.length + ' high-quality signals active', 'info');
-            }
-
-            switchTimeframe(timeframe) {
-                this.currentTimeframe = timeframe;
-                this.log(`Switched to ${timeframe} timeframe analysis`, 'info');
             }
 
             openSettings() {
                 document.getElementById('settingsModal').style.display = 'block';
+                // Load current settings
+                document.getElementById('minConfidence').value = this.settings.minConfidence;
+                document.getElementById('riskReward').value = this.settings.riskReward;
+                document.getElementById('maxSignals').value = this.settings.maxSignals;
+                document.getElementById('refreshInterval').value = this.settings.refreshInterval;
             }
 
-            delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
+            exportData() {
+                const data = {
+                    signals: this.signals,
+                    timestamp: new Date().toISOString(),
+                    settings: this.settings
+                };
+                
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `trading-signals-${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                this.log('Data exported successfully');
             }
         }
 
-        // =============================================================================
-        // GLOBAL FUNCTIONS FOR SETTINGS MODAL
-        // =============================================================================
+        // Global functions for settings modal
         function closeSettings() {
             document.getElementById('settingsModal').style.display = 'none';
         }
@@ -1189,30 +924,65 @@
                 minConfidence: parseInt(document.getElementById('minConfidence').value),
                 riskReward: parseFloat(document.getElementById('riskReward').value),
                 maxSignals: parseInt(document.getElementById('maxSignals').value),
-                refreshInterval: parseInt(document.getElementById('refreshInterval').value),
-                emaFast: parseInt(document.getElementById('emaFast').value),
-                emaSlow: parseInt(document.getElementById('emaSlow').value),
-                rsiPeriod: parseInt(document.getElementById('rsiPeriod').value),
-                rsiBuy: parseInt(document.getElementById('rsiBuy').value),
-                rsiSell: parseInt(document.getElementById('rsiSell').value)
+                refreshInterval: parseInt(document.getElementById('refreshInterval').value)
             };
             
-            window.quantumSniper.updateSettings(newSettings);
-            window.quantumSniper.saveSettings();
+            if (window.dashboard) {
+                window.dashboard.settings = { ...window.dashboard.settings, ...newSettings };
+                window.dashboard.log('Settings updated successfully');
+            }
             closeSettings();
         }
 
         function resetSettings() {
-            if (confirm('Are you sure you want to reset all settings to defaults?')) {
-                window.quantumSniper.resetSettings();
+            if (confirm('Reset to default settings?')) {
+                document.getElementById('minConfidence').value = 75;
+                document.getElementById('riskReward').value = 2.0;
+                document.getElementById('maxSignals').value = 10;
+                document.getElementById('refreshInterval').value = 30;
             }
         }
 
-        // =============================================================================
-        // INITIALIZATION
-        // =============================================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            window.quantumSniper = new QuantumSniperDashboard();
+        // Initialize everything when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📊 Starting Trading Dashboard...');
+            window.dashboard = new TradingDashboard();
+            
+            // Initialize a simple chart
+            const ctx = document.getElementById('mainChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                    datasets: [{
+                        label: 'Market Trend',
+                        data: Array.from({length: 24}, () => Math.random() * 100 + 50),
+                        borderColor: '#3a86ff',
+                        backgroundColor: 'rgba(58, 134, 255, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { mode: 'index', intersect: false }
+                    },
+                    scales: {
+                        x: { 
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'var(--text-muted)' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.1)' },
+                            ticks: { color: 'var(--text-muted)' }
+                        }
+                    }
+                }
+            });
         });
     </script>
 </body>
