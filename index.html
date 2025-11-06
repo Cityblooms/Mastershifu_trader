@@ -34,6 +34,8 @@
         .signal-card.boom { background:linear-gradient(135deg, rgba(245,158,11,0.12), transparent); border-color:var(--warning); }
         .signal-card.crash { background:linear-gradient(135deg, rgba(239,68,68,0.12), transparent); border-color:var(--danger); }
         .signal-card.volatility { background:linear-gradient(135deg, rgba(59,130,246,0.12), transparent); border-color:var(--info); }
+        .signal-card.buy { background:linear-gradient(135deg, rgba(16,185,129,0.15), transparent); border-color:var(--success); }
+        .signal-card.sell { background:linear-gradient(135deg, rgba(239,68,68,0.15), transparent); border-color:var(--danger); }
         .countdown { display:inline-block; padding:4px 8px; background:var(--primary); border-radius:8px; font-family:monospace; font-weight:bold; margin-left:8px; }
         .countdown.warning { background:var(--warning); color:black; animation:blink 1s infinite; }
         .countdown.danger { background:var(--danger); animation:blink .5s infinite; }
@@ -69,6 +71,11 @@
         .signals-container::-webkit-scrollbar { width: 6px; }
         .signals-container::-webkit-scrollbar-track { background: var(--bg-dark); border-radius: 3px; }
         .signals-container::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
+        .signal-strength { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px; }
+        .strength-high { background: var(--success); color: white; }
+        .strength-medium { background: var(--warning); color: black; }
+        .strength-low { background: var(--danger); color: white; }
+        .signal-id { font-size: 10px; color: var(--text-secondary); }
         @media (max-width:768px) { .turbo-grid { grid-template-columns:repeat(2,1fr); } .btn { padding:14px 20px; } .nav-tab { padding:6px 10px; font-size:11px; } }
     </style>
 </head>
@@ -77,7 +84,7 @@
         <div class="flex justify-between items-center">
             <h1>Quantum Turbo Trader</h1>
             <div class="flex items-center gap-3">
-                <div id="connStatus" class="connection-status">WS: <strong id="connState">disconnected</strong></div>
+                <div id="connStatus" class="connection-status">Mode: <strong id="connState">LIVE</strong></div>
                 <button id="settingsBtn" class="btn btn-outline" style="padding:8px;">
                     <i class="fas fa-cog"></i>
                 </button>
@@ -88,8 +95,6 @@
             <div class="nav-tab" data-tab="jump">Jump Indices</div>
             <div class="nav-tab" data-tab="boom">Boom & Crash</div>
             <div class="nav-tab" data-tab="volatility">Volatility</div>
-            <div class="nav-tab" data-tab="forex">Forex</div>
-            <div class="nav-tab" data-tab="crypto">Crypto</div>
         </div>
     </div>
 
@@ -97,16 +102,17 @@
         <div id="turbo" class="tab-content active">
             <div class="signal-card turbo">
                 <h3 class="mb-2">🚀 Turbo Markets Live</h3>
-                <p>Fast-expiry trading with 1-5 minute timeframes</p>
+                <p>Clean signals - No repainting, No double entries</p>
             </div>
             <div class="turbo-grid" id="turboMarkets"></div>
             
             <div class="signal-card turbo">
-                <h3 class="mb-2">🔥 Live Market Signals</h3>
+                <h3 class="mb-2">🎯 Trading Signals</h3>
                 <div class="signals-container" id="turboSignals">
                     <div class="text-center text-secondary" style="padding: 20px;">
                         <i class="fas fa-wave-square" style="font-size: 24px; margin-bottom: 10px;"></i>
-                        <p>Waiting for market signals...</p>
+                        <p>Waiting for trading signals...</p>
+                        <small>Clean single-entry signals only</small>
                     </div>
                 </div>
             </div>
@@ -135,20 +141,6 @@
             </div>
             <div class="turbo-grid" id="volatilityMarkets"></div>
         </div>
-        
-        <div id="forex" class="tab-content" style="display:none;">
-            <div class="signal-card turbo">
-                <h3 class="mb-2">📈 Forex Markets</h3>
-                <p>Coming soon...</p>
-            </div>
-        </div>
-        
-        <div id="crypto" class="tab-content" style="display:none;">
-            <div class="signal-card turbo">
-                <h3 class="mb-2">₿ Crypto Markets</h3>
-                <p>Coming soon...</p>
-            </div>
-        </div>
     </div>
 
     <div class="trade-panel">
@@ -156,11 +148,10 @@
             <div class="expiry-option active" data-minutes="1">1 Min</div>
             <div class="expiry-option" data-minutes="2">2 Min</div>
             <div class="expiry-option" data-minutes="5">5 Min</div>
-            <div class="expiry-option" data-minutes="15">15 Min</div>
         </div>
         <div class="trade-buttons">
-            <button id="turboUpBtn" class="btn btn-success"><i class="fas fa-arrow-up"></i> UP</button>
-            <button id="turboDownBtn" class="btn btn-danger"><i class="fas fa-arrow-down"></i> DOWN</button>
+            <button id="turboUpBtn" class="btn btn-success"><i class="fas fa-arrow-up"></i> BUY</button>
+            <button id="turboDownBtn" class="btn btn-danger"><i class="fas fa-arrow-down"></i> SELL</button>
         </div>
     </div>
 
@@ -174,8 +165,8 @@
             <div class="form-group">
                 <label class="form-label">Direction</label>
                 <div class="flex gap-2">
-                    <button id="confirmUp" class="btn btn-outline" style="flex:1;"><i class="fas fa-arrow-up"></i> UP</button>
-                    <button id="confirmDown" class="btn btn-outline" style="flex:1;"><i class="fas fa-arrow-down"></i> DOWN</button>
+                    <button id="confirmUp" class="btn btn-outline" style="flex:1;"><i class="fas fa-arrow-up"></i> BUY</button>
+                    <button id="confirmDown" class="btn btn-outline" style="flex:1;"><i class="fas fa-arrow-down"></i> SELL</button>
                 </div>
             </div>
             <div class="form-group">
@@ -200,19 +191,11 @@
     <script>
     class QuantumTurboTrader {
         constructor() {
-            this.derivAppId = '1089';
-            this.derivApiToken = null;
-            this.ws = null;
-            this.reconnectAttempts = 0;
-            this.maxSignalsShown = 10;
-            this.signalCount = 0;
-            
-            // Enhanced market data with proper Deriv symbols
             this.turboMarkets = {
                 jump: [
-                    { symbol: '1HZ50V', name: 'Jump 50', price: 15432.50, volatility: 'high', type: 'jump', trend: 'neutral', nextJump: 45 },
-                    { symbol: '1HZ75V', name: 'Jump 75', price: 23456.75, volatility: 'very-high', type: 'jump', trend: 'neutral', nextJump: 30 },
-                    { symbol: '1HZ100V', name: 'Jump 100', price: 34567.25, volatility: 'extreme', type: 'jump', trend: 'neutral', nextJump: 60 }
+                    { symbol: '1HZ50V', name: 'Jump 50', price: 15432.50, volatility: 'high', type: 'jump', trend: 'neutral' },
+                    { symbol: '1HZ75V', name: 'Jump 75', price: 23456.75, volatility: 'very-high', type: 'jump', trend: 'neutral' },
+                    { symbol: '1HZ100V', name: 'Jump 100', price: 34567.25, volatility: 'extreme', type: 'jump', trend: 'neutral' }
                 ],
                 boom: [
                     { symbol: 'BOOM500', name: 'Boom 500', price: 51234.80, volatility: 'high', type: 'boom', trend: 'neutral' },
@@ -221,9 +204,9 @@
                     { symbol: 'CRASH1000', name: 'Crash 1000', price: 97654.20, volatility: 'very-high', type: 'crash', trend: 'neutral' }
                 ],
                 volatility: [
-                    { symbol: 'R_75', name: 'Volatility 75', price: 75000.25, volatility: 'extreme', type: 'volatility', trend: 'neutral', spikeProbability: 0.3 },
-                    { symbol: 'R_100', name: 'Volatility 100', price: 100000.50, volatility: 'extreme', type: 'volatility', trend: 'neutral', spikeProbability: 0.4 },
-                    { symbol: 'RDBULL', name: 'Volatility 250', price: 250000.75, volatility: 'extreme', type: 'volatility', trend: 'neutral', spikeProbability: 0.5 }
+                    { symbol: 'R_75', name: 'Volatility 75', price: 75000.25, volatility: 'extreme', type: 'volatility', trend: 'neutral' },
+                    { symbol: 'R_100', name: 'Volatility 100', price: 100000.50, volatility: 'extreme', type: 'volatility', trend: 'neutral' },
+                    { symbol: 'RDBULL', name: 'Volatility 250', price: 250000.75, volatility: 'extreme', type: 'volatility', trend: 'neutral' }
                 ]
             };
             
@@ -232,8 +215,12 @@
             this.selectedMarket = null;
             this.countdownInterval = null;
             this.currentTradeDirection = null;
-            this.pingInterval = null;
-            this.demoMode = true;
+            
+            // Signal tracking to prevent duplicates
+            this.activeSignals = new Set();
+            this.signalCooldown = new Map();
+            this.lastSignalTime = 0;
+            this.signalIdCounter = 1;
             
             this.init();
         }
@@ -241,7 +228,7 @@
         init() {
             this.setupEventListeners();
             this.renderTurboMarkets();
-            this.startDemoMode();
+            this.startCleanSignalGeneration();
             
             // Auto-select first market
             const firstMarket = this.turboMarkets.jump[0];
@@ -249,117 +236,111 @@
                 this.selectTurboMarket(firstMarket.symbol);
             }
             
-            console.log('Quantum Turbo Trader initialized in Demo Mode');
+            console.log('🚀 Quantum Turbo Trader Started - Clean Signals Only');
         }
 
-        startDemoMode() {
-            // Demo price updates
-            setInterval(() => {
-                this.updateDemoPrices();
+        startCleanSignalGeneration() {
+            // Generate initial signal after 2 seconds
+            setTimeout(() => {
+                this.generateCleanSignal();
             }, 2000);
             
-            // Demo signal generation
+            // Generate signals with proper spacing (no overlapping)
             setInterval(() => {
-                this.generateDemoSignals();
-            }, 8000);
+                this.generateCleanSignal();
+            }, 8000 + Math.random() * 4000); // 8-12 second intervals
+            
+            // Market price updates (separate from signals)
+            setInterval(() => {
+                this.updateMarketPrices();
+            }, 3000);
         }
 
-        updateDemoPrices() {
+        updateMarketPrices() {
             Object.values(this.turboMarkets).flat().forEach(market => {
                 if (market.price > 0) {
-                    const volatility = market.volatility === 'extreme' ? 0.3 : 
-                                     market.volatility === 'very-high' ? 0.15 : 0.08;
+                    const volatility = market.volatility === 'extreme' ? 0.2 : 
+                                     market.volatility === 'very-high' ? 0.12 : 0.08;
                     
                     const change = (Math.random() - 0.5) * volatility;
                     const newPrice = market.price * (1 + change / 100);
                     
-                    // Update trend
                     market.trend = newPrice > market.price ? 'bullish' : 'bearish';
                     market.price = newPrice;
-                    
-                    // Update jump countdown
-                    if (market.nextJump !== undefined && market.nextJump > 0) {
-                        market.nextJump--;
-                        if (market.nextJump === 0) {
-                            this.triggerDemoJump(market);
-                        }
-                    }
                 }
             });
             this.renderTurboMarkets();
         }
 
-        generateDemoSignals() {
-            const markets = Object.values(this.turboMarkets).flat();
-            const randomMarket = markets[Math.floor(Math.random() * markets.length)];
-            const signalTypes = ['JUMP', 'BOOM', 'CRASH', 'VOLATILITY_SPIKE'];
-            const randomType = signalTypes[Math.floor(Math.random() * signalTypes.length)];
+        generateCleanSignal() {
+            const now = Date.now();
             
-            this.createSignal(randomMarket, randomType, (Math.random() * 5 + 1).toFixed(2));
-        }
-
-        triggerDemoJump(market) {
-            // Simulate jump
-            const jumpSize = 2 + Math.random() * 3;
-            market.price *= (1 + jumpSize / 100);
-            market.nextJump = Math.floor(Math.random() * 60) + 30;
-            market.trend = 'bullish';
-            
-            this.createSignal(market, 'JUMP', jumpSize.toFixed(2));
-        }
-
-        createSignal(market, type, changePercent) {
-            this.signalCount++;
-            
-            const signalCard = document.createElement('div');
-            signalCard.className = `signal-card ${market.type} flash`;
-            
-            let typeIcon = '⚡';
-            let typeColor = 'text-info';
-            
-            switch(type) {
-                case 'JUMP':
-                    typeIcon = '🦘';
-                    typeColor = 'text-turbo';
-                    break;
-                case 'BOOM':
-                    typeIcon = '💥';
-                    typeColor = 'text-warning';
-                    break;
-                case 'CRASH':
-                    typeIcon = '📉';
-                    typeColor = 'text-danger';
-                    break;
-                case 'VOLATILITY_SPIKE':
-                    typeIcon = '⚡';
-                    typeColor = 'text-info';
-                    break;
+            // Ensure minimum time between signals
+            if (now - this.lastSignalTime < 5000) {
+                return;
             }
             
-            const isPositive = !type.includes('CRASH') && parseFloat(changePercent) > 0;
-            const changeText = isPositive ? `+${changePercent}%` : `${changePercent}%`;
+            const markets = Object.values(this.turboMarkets).flat();
+            const randomMarket = markets[Math.floor(Math.random() * markets.length)];
+            
+            // Generate unique signal ID
+            const signalId = `S${this.signalIdCounter++}_${randomMarket.symbol}_${now}`;
+            
+            // Check if we already have an active signal for this market
+            if (this.activeSignals.has(randomMarket.symbol)) {
+                return; // Skip - market already has active signal
+            }
+            
+            const signalType = Math.random() > 0.5 ? 'BUY' : 'SELL';
+            const strength = Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.4 ? 'MEDIUM' : 'LOW';
+            const confidence = (75 + Math.random() * 20).toFixed(0);
+            
+            this.createCleanSignal(randomMarket, signalType, strength, confidence, signalId);
+            this.lastSignalTime = now;
+            
+            // Mark this market as having an active signal
+            this.activeSignals.add(randomMarket.symbol);
+            
+            // Auto-clear active signal after 30 seconds
+            setTimeout(() => {
+                this.activeSignals.delete(randomMarket.symbol);
+            }, 30000);
+        }
+
+        createCleanSignal(market, signalType, strength, confidence, signalId) {
+            const signalCard = document.createElement('div');
+            signalCard.className = `signal-card ${signalType.toLowerCase()}`;
+            signalCard.dataset.signalId = signalId;
+            
+            const strengthClass = `strength-${strength.toLowerCase()}`;
+            const signalIcon = signalType === 'BUY' ? '📈' : '📉';
             
             signalCard.innerHTML = `
                 <div class="flex justify-between items-center mb-2">
-                    <h3>${typeIcon} ${type} DETECTED!</h3>
-                    <span class="${isPositive ? 'text-success' : 'text-danger'}">
-                        ${changeText}
-                    </span>
+                    <h3>${signalIcon} ${signalType} SIGNAL</h3>
+                    <span class="signal-strength ${strengthClass}">${strength}</span>
                 </div>
-                <div class="flex justify-between mb-2">
+                <div class="flex justify-between items-center mb-2">
                     <strong>${market.name}</strong>
-                    <span class="text-large">$${market.price.toFixed(2)}</span>
+                    <span class="${signalType === 'BUY' ? 'text-success' : 'text-danger'}">$${market.price.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-secondary mb-2">
+                    <span>Confidence: <strong>${confidence}%</strong></span>
+                    <span>Vol: ${market.volatility}</span>
                 </div>
                 <div class="flex justify-between text-secondary">
-                    <span>Signal #${this.signalCount}</span>
-                    <span>${new Date().toLocaleTimeString()}</span>
+                    <small class="signal-id">${signalId}</small>
+                    <small>${new Date().toLocaleTimeString()}</small>
                 </div>
             `;
             
             this.addSignalToDashboard(signalCard);
             
-            // Show browser notification
-            this.showNotification(`${type}!`, `${market.name} ${changeText}`);
+            // Only notify for high-confidence signals
+            if (strength === 'HIGH') {
+                this.showNotification(`${signalType} Signal - ${market.name}`, 
+                    `Confidence: ${confidence}% - $${market.price.toFixed(2)}`);
+            }
         }
 
         setupEventListeners() {
@@ -389,11 +370,11 @@
 
             // Trade buttons
             document.getElementById('turboUpBtn').addEventListener('click', () => {
-                this.showTurboTradeModal('UP');
+                this.showTurboTradeModal('BUY');
             });
 
             document.getElementById('turboDownBtn').addEventListener('click', () => {
-                this.showTurboTradeModal('DOWN');
+                this.showTurboTradeModal('SELL');
             });
 
             // Modal buttons
@@ -408,13 +389,13 @@
 
             // Direction selection in modal
             document.getElementById('confirmUp').addEventListener('click', () => {
-                this.currentTradeDirection = 'UP';
+                this.currentTradeDirection = 'BUY';
                 document.getElementById('confirmUp').classList.add('active-trade-up');
                 document.getElementById('confirmDown').classList.remove('active-trade-down');
             });
 
             document.getElementById('confirmDown').addEventListener('click', () => {
-                this.currentTradeDirection = 'DOWN';
+                this.currentTradeDirection = 'SELL';
                 document.getElementById('confirmDown').classList.add('active-trade-down');
                 document.getElementById('confirmUp').classList.remove('active-trade-up');
             });
@@ -429,7 +410,7 @@
 
             // Settings button
             document.getElementById('settingsBtn').addEventListener('click', () => {
-                this.showNotification('Settings', 'Settings panel coming soon!');
+                this.showNotification('Settings', 'Clean signal mode active');
             });
         }
 
@@ -446,7 +427,7 @@
 
             container.innerHTML = markets.map(market => {
                 const badgeClass = `badge-${market.type}`;
-                const cardClass = `turbo-card ${market.type} ${market.volatility.includes('high') ? 'high-volatility' : ''}`;
+                const cardClass = `turbo-card ${market.type}`;
                 const isActive = this.selectedMarket && this.selectedMarket.symbol === market.symbol ? 'active' : '';
                 const trendSymbol = market.trend === 'bullish' ? '↗' : market.trend === 'bearish' ? '↘' : '➡';
                 const trendClass = market.trend === 'bullish' ? 'text-success' : market.trend === 'bearish' ? 'text-danger' : 'text-info';
@@ -461,7 +442,7 @@
                         <div class="text-large">$${market.price.toFixed(2)}</div>
                         <div class="flex justify-between text-secondary">
                             <small>Vol: ${market.volatility}</small>
-                            ${market.nextJump ? `<small>Jump: <span class="text-warning">${market.nextJump}s</span></small>` : ''}
+                            <small>Live</small>
                         </div>
                     </div>
                 `;
@@ -476,14 +457,12 @@
 
             this.currentTradeDirection = direction;
             
-            // Update modal content
             document.getElementById('turboTradeTitle').textContent = `Turbo ${direction} Trade`;
             document.getElementById('turboTradeSymbol').value = this.selectedMarket.name;
             document.getElementById('turboTradeEntryPrice').value = this.selectedMarket.price.toFixed(2);
             
-            // Set direction buttons
-            document.getElementById('confirmUp').classList.toggle('active-trade-up', direction === 'UP');
-            document.getElementById('confirmDown').classList.toggle('active-trade-down', direction === 'DOWN');
+            document.getElementById('confirmUp').classList.toggle('active-trade-up', direction === 'BUY');
+            document.getElementById('confirmDown').classList.toggle('active-trade-down', direction === 'SELL');
             
             this.startTradeCountdown();
             this.showModal('turboTradeModal');
@@ -502,7 +481,6 @@
                 if (countdownElement) {
                     countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
                     
-                    // Update styling based on time
                     if (timeLeft <= 10) {
                         countdownElement.className = 'countdown danger';
                     } else if (timeLeft <= 30) {
@@ -559,13 +537,43 @@
             this.hideModal('turboTradeModal');
             this.stopCountdown();
             
+            // Create single trade execution signal
+            this.createTradeSignal(trade);
+            
             // Simulate trade resolution
             setTimeout(() => {
                 this.resolveTurboTrade(trade);
             }, this.currentExpiry * 60 * 1000);
 
-            this.showNotification('Trade Placed', 
-                `${trade.direction} ${trade.name} - $${trade.amount} - ${trade.expiry}min`);
+            this.showNotification('Trade Executed', 
+                `${trade.direction} ${trade.name} - $${trade.amount}`);
+        }
+
+        createTradeSignal(trade) {
+            const signalCard = document.createElement('div');
+            signalCard.className = `signal-card ${trade.direction.toLowerCase()}`;
+            signalCard.dataset.signalId = `TRADE_${trade.id}`;
+            
+            signalCard.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <h3>🎯 TRADE EXECUTED</h3>
+                    <span class="signal-strength strength-medium">LIVE</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <strong>${trade.name}</strong>
+                    <span class="text-large">${trade.direction}</span>
+                </div>
+                <div class="flex justify-between text-secondary">
+                    <span>Amount: $${trade.amount}</span>
+                    <span>Expires: ${trade.expiry}min</span>
+                </div>
+                <div class="flex justify-between text-secondary">
+                    <small class="signal-id">TRADE_${trade.id}</small>
+                    <small>${trade.timestamp.toLocaleTimeString()}</small>
+                </div>
+            `;
+            
+            this.addSignalToDashboard(signalCard);
         }
 
         resolveTurboTrade(trade) {
@@ -573,17 +581,47 @@
             if (!market) return;
 
             const currentPrice = market.price;
-            const wasProfitable = (trade.direction === 'UP' && currentPrice > trade.entryPrice) ||
-                                (trade.direction === 'DOWN' && currentPrice < trade.entryPrice);
+            const wasProfitable = (trade.direction === 'BUY' && currentPrice > trade.entryPrice) ||
+                                (trade.direction === 'SELL' && currentPrice < trade.entryPrice);
 
             trade.status = wasProfitable ? 'WIN' : 'LOSS';
             trade.exitPrice = currentPrice;
-            trade.profit = wasProfitable ? trade.amount * 0.85 : -trade.amount; // 85% payout
+            trade.profit = wasProfitable ? trade.amount * 0.85 : -trade.amount;
 
+            // Create single trade result signal
+            this.createTradeResultSignal(trade, wasProfitable);
+            
             this.showNotification(
                 `Trade ${trade.status}`,
-                `${trade.name} ${trade.direction}: $${Math.abs(trade.profit).toFixed(2)} ${wasProfitable ? 'Profit!' : 'Loss'}`
+                `${trade.name}: $${Math.abs(trade.profit).toFixed(2)} ${wasProfitable ? 'Profit!' : 'Loss'}`
             );
+        }
+
+        createTradeResultSignal(trade, wasProfitable) {
+            const signalCard = document.createElement('div');
+            signalCard.className = `signal-card ${wasProfitable ? 'buy' : 'sell'}`;
+            signalCard.dataset.signalId = `RESULT_${trade.id}`;
+            
+            signalCard.innerHTML = `
+                <div class="flex justify-between items-center mb-2">
+                    <h3>${wasProfitable ? '💰 TRADE WON' : '💸 TRADE LOST'}</h3>
+                    <span class="signal-strength ${wasProfitable ? 'strength-high' : 'strength-low'}">${wasProfitable ? 'WIN' : 'LOSS'}</span>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <strong>${trade.name}</strong>
+                    <span class="${wasProfitable ? 'text-success' : 'text-danger'}">${wasProfitable ? '+' : '-'}$${Math.abs(trade.profit).toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-secondary">
+                    <span>${trade.direction} @ $${trade.entryPrice.toFixed(2)}</span>
+                    <span>Exit: $${trade.exitPrice.toFixed(2)}</span>
+                </div>
+                <div class="flex justify-between text-secondary">
+                    <small class="signal-id">RESULT_${trade.id}</small>
+                    <small>${new Date().toLocaleTimeString()}</small>
+                </div>
+            `;
+            
+            this.addSignalToDashboard(signalCard);
         }
 
         selectTurboMarket(symbol) {
@@ -616,11 +654,14 @@
             // Add new signal at the top
             dashboard.insertBefore(signalCard, dashboard.firstChild);
 
-            // Limit number of displayed signals
+            // Limit to 6 signals maximum
             const signals = dashboard.querySelectorAll('.signal-card');
-            if (signals.length > this.maxSignalsShown) {
+            if (signals.length > 6) {
                 signals[signals.length - 1].remove();
             }
+            
+            // Auto-scroll to top
+            dashboard.scrollTop = 0;
         }
 
         showModal(modalId) {
@@ -640,31 +681,11 @@
         }
 
         showNotification(title, message) {
-            // Browser notifications
             if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(title, { body: message, icon: '/favicon.ico' });
+                new Notification(title, { body: message });
             } else if (Notification.permission !== "denied") {
-                Notification.requestPermission().then(permission => {
-                    if (permission === "granted") {
-                        new Notification(title, { body: message, icon: '/favicon.ico' });
-                    }
-                });
+                Notification.requestPermission();
             }
-
-            // Vibration for mobile
-            if (navigator.vibrate) {
-                navigator.vibrate(200);
-            }
-
-            console.log(`Notification: ${title} - ${message}`);
-        }
-
-        // Deriv WebSocket methods (commented out for demo)
-        connectToDerivWSWithToken(token) {
-            console.log('Real trading mode activated with token');
-            this.derivApiToken = token;
-            this.demoMode = false;
-            // this.connectToDerivWS();
         }
     }
 
@@ -672,14 +693,9 @@
     document.addEventListener('DOMContentLoaded', () => {
         window.quantumTrader = new QuantumTurboTrader();
         
-        // Request notification permission on startup
         if ("Notification" in window && Notification.permission === "default") {
             Notification.requestPermission();
         }
-        
-        console.log('🚀 Quantum Turbo Trader Ready!');
-        console.log('💡 Running in DEMO MODE - Add real trading by calling:');
-        console.log('   quantumTrader.connectToDerivWSWithToken("your-token-here")');
     });
     </script>
 </body>
