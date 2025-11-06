@@ -664,18 +664,8 @@
             </div>
         </div>
 
-        <!-- Sidebar -->
+        <!-- Sidebar - Only Log Panel -->
         <div class="sidebar">
-            <!-- Pairs Monitor -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">📈 Market Watch</div>
-                </div>
-                <div id="pairsMonitor">
-                    <!-- Pairs will be populated here -->
-                </div>
-            </div>
-
             <!-- Log Panel -->
             <div class="log-panel">
                 <div class="card-header">
@@ -710,7 +700,7 @@
                     { symbol: 'OIL/USD', type: 'commodities', basePrice: 75.00 },
                     { symbol: 'NGAS/USD', type: 'commodities', basePrice: 2.50 },
                     
-                    // Volatility pairs
+                    // Volatility pairs - now with directional signals
                     { symbol: 'VOLATILITY_75', type: 'volatility', basePrice: 15.00 },
                     { symbol: 'VOLATILITY_100', type: 'volatility', basePrice: 20.00 },
                     { symbol: 'VOLATILITY_250', type: 'volatility', basePrice: 25.00 },
@@ -752,7 +742,6 @@
                 console.log('🚀 Initializing Enhanced Trading Dashboard...');
                 this.setupEventListeners();
                 this.initializePriceHistory();
-                this.renderPairs();
                 this.startEngine();
                 this.log('Enhanced dashboard initialized with deriv pairs');
             }
@@ -844,7 +833,8 @@
                         'Support Level Hold',
                         'Volume Confirmation',
                         'Trend Alignment',
-                        'Breakout Confirmation'
+                        'Breakout Confirmation',
+                        'Volatility Breakout Up'
                     ],
                     sell: [
                         'EMA Bearish Crossover',
@@ -852,14 +842,8 @@
                         'Resistance Test Fail',
                         'Volume Divergence',
                         'Trend Breakdown',
-                        'Breakdown Confirmation'
-                    ],
-                    volatility: [
-                        'High Volatility Regime',
-                        'Volatility Expansion',
-                        'ATR Breakout',
-                        'Bollinger Band Squeeze',
-                        'Volatility Spike'
+                        'Breakdown Confirmation',
+                        'Volatility Breakout Down'
                     ],
                     jump: [
                         'Jump Pattern Detected',
@@ -903,9 +887,9 @@
                             confidence = 70 + Math.floor(Math.random() * 25);
                         }
                     } else if (pair.type === 'volatility') {
-                        // Volatility signals
+                        // Volatility pairs now generate BUY/SELL signals based on volatility direction
                         if (Math.random() > 0.7) {
-                            signalType = 'VOLATILITY';
+                            signalType = Math.random() > 0.5 ? 'BUY' : 'SELL';
                             confidence = 75 + Math.floor(Math.random() * 20);
                         }
                     } else if (pair.type === 'jump') {
@@ -928,9 +912,11 @@
                         
                         for (let i = 0; i < numReasons; i++) {
                             const availableReasons = reasons[signalType.toLowerCase()];
-                            const randomReason = availableReasons[Math.floor(Math.random() * availableReasons.length)];
-                            if (!signalReasons.includes(randomReason)) {
-                                signalReasons.push(randomReason);
+                            if (availableReasons) {
+                                const randomReason = availableReasons[Math.floor(Math.random() * availableReasons.length)];
+                                if (!signalReasons.includes(randomReason)) {
+                                    signalReasons.push(randomReason);
+                                }
                             }
                         }
 
@@ -1049,7 +1035,6 @@
                 const multipliers = {
                     'BUY': { entry: 1.0002, sl: 0.998, tp: 1.004 },
                     'SELL': { entry: 0.9998, sl: 1.002, tp: 0.996 },
-                    'VOLATILITY': { entry: 1.0005, sl: 0.995, tp: 1.008 },
                     'JUMP': { entry: 1.001, sl: 0.992, tp: 1.012 },
                     'BOOM': { entry: 1.002, sl: 0.990, tp: 1.020 },
                     'CRASH': { entry: 0.998, sl: 1.010, tp: 0.980 }
@@ -1061,7 +1046,6 @@
 
             updateUI() {
                 this.renderSignals();
-                this.renderPairs();
                 this.updateSignalsCount();
                 this.updateMarketAnalysis();
                 this.updateSpikeCount();
@@ -1151,46 +1135,6 @@
                 return 3;
             }
 
-            renderPairs() {
-                const container = document.getElementById('pairsMonitor');
-                container.innerHTML = '';
-
-                this.pairs.forEach(pair => {
-                    const pairElement = document.createElement('div');
-                    pairElement.style.cssText = `
-                        display: flex; justify-content: space-between; align-items: center;
-                        padding: 10px; border-bottom: 1px solid var(--border);
-                    `;
-                    
-                    const signal = this.signals.find(s => s.pair === pair.symbol);
-                    const status = signal ? signal.direction : 'NEUTRAL';
-                    let statusColor = 'var(--text-muted)';
-                    
-                    if (status === 'BUY') statusColor = 'var(--success)';
-                    else if (status === 'SELL') statusColor = 'var(--danger)';
-                    else if (status === 'VOLATILITY') statusColor = 'var(--volatility)';
-                    else if (status === 'JUMP') statusColor = 'var(--jump)';
-                    else if (status === 'BOOM') statusColor = 'var(--boom)';
-                    else if (status === 'CRASH') statusColor = 'var(--crash)';
-                    
-                    const currentPrice = this.getCurrentPrice(pair);
-                    
-                    pairElement.innerHTML = `
-                        <div>
-                            <div style="font-weight: 600;">${pair.symbol}</div>
-                            <div style="font-size: 10px; color: var(--text-muted);">${pair.type}</div>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="font-size: 12px; font-weight: 600;">${currentPrice.toFixed(this.getPrecision(pair.symbol))}</div>
-                            <div style="font-size: 10px; color: ${statusColor}">${status}</div>
-                            <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor}"></div>
-                        </div>
-                    `;
-                    
-                    container.appendChild(pairElement);
-                });
-            }
-
             updateSignalsCount() {
                 const count = this.signals.length;
                 const badge = document.getElementById('signalsCount');
@@ -1207,7 +1151,7 @@
                 if (this.signals.length > 0) {
                     const buySignals = this.signals.filter(s => s.direction === 'BUY').length;
                     const sellSignals = this.signals.filter(s => s.direction === 'SELL').length;
-                    const volatilitySignals = this.signals.filter(s => s.direction === 'VOLATILITY').length;
+                    const volatilitySignals = this.signals.filter(s => s.type === 'volatility').length;
                     const jumpSignals = this.signals.filter(s => s.direction === 'JUMP').length;
                     const boomSignals = this.signals.filter(s => s.direction === 'BOOM').length;
                     const crashSignals = this.signals.filter(s => s.direction === 'CRASH').length;
