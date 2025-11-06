@@ -20,20 +20,28 @@
         .nav-tab { padding:8px 12px; border-radius:20px; font-size:12px; font-weight:500; transition:all .3s; white-space:nowrap; cursor:pointer; }
         .nav-tab.active { background:var(--primary); color:white; }
         .turbo-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:12px; margin:15px 0; }
+        .forex-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px; margin:15px 0; }
         .turbo-card { background:var(--bg-card); border-radius:12px; padding:15px; border:1px solid var(--border); transition:all .3s; position:relative; overflow:hidden; cursor:pointer; min-height:90px; }
+        .forex-card { background:var(--bg-card); border-radius:10px; padding:12px; border:1px solid var(--border); transition:all .3s; position:relative; overflow:hidden; cursor:pointer; min-height:80px; }
         .turbo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--primary); }
         .turbo-card.jump::before { background:var(--pink); } .turbo-card.boom::before { background:var(--warning); }
         .turbo-card.crash::before { background:var(--danger); } .turbo-card.volatility::before { background:var(--info); }
+        .forex-card.major::before { background:var(--success); }
+        .forex-card.minor::before { background:var(--info); }
+        .forex-card.exotic::before { background:var(--warning); }
         .turbo-card.active { border-color:var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,.12); }
+        .forex-card.active { border-color:var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,.12); }
         .market-badge { position:absolute; top:8px; right:8px; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; }
         .badge-jump { background:var(--pink); } .badge-boom { background:var(--warning); color:black; }
         .badge-crash { background:var(--danger); } .badge-volatility { background:var(--info); }
+        .badge-major { background:var(--success); } .badge-minor { background:var(--info); } .badge-exotic { background:var(--warning); color:black; }
         .signal-card { background:var(--bg-card); border-radius:16px; padding:20px; margin:15px 0; border:1px solid var(--border); position:relative; overflow:hidden; }
         .signal-card.turbo { background:linear-gradient(135deg, rgba(139,92,246,0.12), transparent); border-color:var(--purple); }
         .signal-card.jump { background:linear-gradient(135deg, rgba(236,72,153,0.12), transparent); border-color:var(--pink); }
         .signal-card.boom { background:linear-gradient(135deg, rgba(245,158,11,0.12), transparent); border-color:var(--warning); }
         .signal-card.crash { background:linear-gradient(135deg, rgba(239,68,68,0.12), transparent); border-color:var(--danger); }
         .signal-card.volatility { background:linear-gradient(135deg, rgba(59,130,246,0.12), transparent); border-color:var(--info); }
+        .signal-card.forex { background:linear-gradient(135deg, rgba(99,102,241,0.12), transparent); border-color:var(--primary); }
         .signal-card.buy { background:linear-gradient(135deg, rgba(16,185,129,0.15), transparent); border-color:var(--success); }
         .signal-card.sell { background:linear-gradient(135deg, rgba(239,68,68,0.15), transparent); border-color:var(--danger); }
         .countdown { display:inline-block; padding:4px 8px; background:var(--primary); border-radius:8px; font-family:monospace; font-weight:bold; margin-left:8px; }
@@ -66,6 +74,7 @@
         .flex { display:flex; } .justify-between { justify-content:space-between; } .items-center { align-items:center; }
         .text-center { text-align:center; } .mb-1 { margin-bottom:8px; } .mb-2 { margin-bottom:16px; } .mt-2 { margin-top:16px; } .gap-2 { gap:16px; }
         .text-large { font-size:20px; font-weight:700; }
+        .text-medium { font-size:16px; font-weight:600; }
         .connection-status { font-size:12px; color:var(--text-secondary); margin-left:8px; }
         .signals-container { max-height: 400px; overflow-y: auto; margin-top: 15px; }
         .signals-container::-webkit-scrollbar { width: 6px; }
@@ -76,7 +85,17 @@
         .strength-medium { background: var(--warning); color: black; }
         .strength-low { background: var(--danger); color: white; }
         .signal-id { font-size: 10px; color: var(--text-secondary); }
-        @media (max-width:768px) { .turbo-grid { grid-template-columns:repeat(2,1fr); } .btn { padding:14px 20px; } .nav-tab { padding:6px 10px; font-size:11px; } }
+        .market-section { margin-bottom: 25px; }
+        .market-section h4 { margin-bottom: 12px; color: var(--text-secondary); font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+        @media (max-width:768px) { 
+            .turbo-grid { grid-template-columns:repeat(2,1fr); } 
+            .forex-grid { grid-template-columns:repeat(2,1fr); }
+            .btn { padding:14px 20px; } 
+            .nav-tab { padding:6px 10px; font-size:11px; } 
+        }
+        @media (max-width:480px) {
+            .forex-grid { grid-template-columns:1fr; }
+        }
     </style>
 </head>
 <body>
@@ -92,6 +111,7 @@
         </div>
         <div class="nav-tabs">
             <div class="nav-tab active" data-tab="turbo">Turbo Markets</div>
+            <div class="nav-tab" data-tab="forex">Forex</div>
             <div class="nav-tab" data-tab="jump">Jump Indices</div>
             <div class="nav-tab" data-tab="boom">Boom & Crash</div>
             <div class="nav-tab" data-tab="volatility">Volatility</div>
@@ -99,6 +119,7 @@
     </div>
 
     <div class="container">
+        <!-- Turbo Markets Tab -->
         <div id="turbo" class="tab-content active">
             <div class="signal-card turbo">
                 <h3 class="mb-2">🚀 Turbo Markets Live</h3>
@@ -118,6 +139,33 @@
             </div>
         </div>
         
+        <!-- Forex Tab -->
+        <div id="forex" class="tab-content" style="display:none;">
+            <div class="signal-card forex">
+                <h3 class="mb-2">💱 Forex Markets</h3>
+                <p>Major, Minor & Exotic currency pairs with real-time pricing</p>
+            </div>
+
+            <!-- Major Pairs -->
+            <div class="market-section">
+                <h4>💰 MAJOR PAIRS</h4>
+                <div class="forex-grid" id="majorPairs"></div>
+            </div>
+
+            <!-- Minor Pairs -->
+            <div class="market-section">
+                <h4>📊 MINOR PAIRS</h4>
+                <div class="forex-grid" id="minorPairs"></div>
+            </div>
+
+            <!-- Exotic Pairs -->
+            <div class="market-section">
+                <h4>🌍 EXOTIC PAIRS</h4>
+                <div class="forex-grid" id="exoticPairs"></div>
+            </div>
+        </div>
+        
+        <!-- Other Tabs -->
         <div id="jump" class="tab-content" style="display:none;">
             <div class="signal-card jump">
                 <h3 class="mb-2">🦘 Jump Indices</h3>
@@ -209,6 +257,36 @@
                     { symbol: 'RDBULL', name: 'Volatility 250', price: 250000.75, volatility: 'extreme', type: 'volatility', trend: 'neutral' }
                 ]
             };
+
+            // Complete Forex Market Data
+            this.forexMarkets = {
+                major: [
+                    { symbol: 'EURUSD', name: 'EUR/USD', price: 1.0985, change: 0.12, type: 'major', trend: 'bullish', spread: 0.0001 },
+                    { symbol: 'GBPUSD', name: 'GBP/USD', price: 1.2750, change: -0.08, type: 'major', trend: 'bearish', spread: 0.0002 },
+                    { symbol: 'USDJPY', name: 'USD/JPY', price: 148.25, change: 0.25, type: 'major', trend: 'bullish', spread: 0.02 },
+                    { symbol: 'USDCHF', name: 'USD/CHF', price: 0.8830, change: -0.15, type: 'major', trend: 'bearish', spread: 0.0003 },
+                    { symbol: 'AUDUSD', name: 'AUD/USD', price: 0.6580, change: 0.18, type: 'major', trend: 'bullish', spread: 0.0003 },
+                    { symbol: 'USDCAD', name: 'USD/CAD', price: 1.3520, change: -0.10, type: 'major', trend: 'bearish', spread: 0.0004 },
+                    { symbol: 'NZDUSD', name: 'NZD/USD', price: 0.6125, change: 0.22, type: 'major', trend: 'bullish', spread: 0.0004 }
+                ],
+                minor: [
+                    { symbol: 'EURGBP', name: 'EUR/GBP', price: 0.8610, change: 0.05, type: 'minor', trend: 'bullish', spread: 0.0003 },
+                    { symbol: 'EURJPY', name: 'EUR/JPY', price: 162.80, change: 0.35, type: 'minor', trend: 'bullish', spread: 0.05 },
+                    { symbol: 'GBPJPY', name: 'GBP/JPY', price: 189.15, change: -0.20, type: 'minor', trend: 'bearish', spread: 0.08 },
+                    { symbol: 'EURCHF', name: 'EUR/CHF', price: 0.9705, change: 0.08, type: 'minor', trend: 'bullish', spread: 0.0004 },
+                    { symbol: 'AUDJPY', name: 'AUD/JPY', price: 97.60, change: 0.42, type: 'minor', trend: 'bullish', spread: 0.06 },
+                    { symbol: 'CADJPY', name: 'CAD/JPY', price: 109.65, change: -0.15, type: 'minor', trend: 'bearish', spread: 0.07 },
+                    { symbol: 'GBPCAD', name: 'GBP/CAD', price: 1.7220, change: 0.12, type: 'minor', trend: 'bullish', spread: 0.0006 }
+                ],
+                exotic: [
+                    { symbol: 'USDTRY', name: 'USD/TRY', price: 32.1500, change: 0.85, type: 'exotic', trend: 'bullish', spread: 0.0200 },
+                    { symbol: 'USDZAR', name: 'USD/ZAR', price: 18.9250, change: -0.45, type: 'exotic', trend: 'bearish', spread: 0.0150 },
+                    { symbol: 'USDMXN', name: 'USD/MXN', price: 17.0800, change: 0.25, type: 'exotic', trend: 'bullish', spread: 0.0080 },
+                    { symbol: 'USDHKD', name: 'USD/HKD', price: 7.8180, change: -0.02, type: 'exotic', trend: 'bearish', spread: 0.0005 },
+                    { symbol: 'USDSGD', name: 'USD/SGD', price: 1.3425, change: 0.08, type: 'exotic', trend: 'bullish', spread: 0.0006 },
+                    { symbol: 'USDNOK', name: 'USD/NOK', price: 10.6520, change: -0.32, type: 'exotic', trend: 'bearish', spread: 0.0120 }
+                ]
+            };
             
             this.activeTurboTrades = [];
             this.currentExpiry = 1;
@@ -218,7 +296,6 @@
             
             // Signal tracking to prevent duplicates
             this.activeSignals = new Set();
-            this.signalCooldown = new Map();
             this.lastSignalTime = 0;
             this.signalIdCounter = 1;
             
@@ -228,6 +305,7 @@
         init() {
             this.setupEventListeners();
             this.renderTurboMarkets();
+            this.renderForexMarkets();
             this.startCleanSignalGeneration();
             
             // Auto-select first market
@@ -236,7 +314,7 @@
                 this.selectTurboMarket(firstMarket.symbol);
             }
             
-            console.log('🚀 Quantum Turbo Trader Started - Clean Signals Only');
+            console.log('🚀 Quantum Turbo Trader Started - Complete Forex Market Added');
         }
 
         startCleanSignalGeneration() {
@@ -253,6 +331,7 @@
             // Market price updates (separate from signals)
             setInterval(() => {
                 this.updateMarketPrices();
+                this.updateForexPrices();
             }, 3000);
         }
 
@@ -272,6 +351,24 @@
             this.renderTurboMarkets();
         }
 
+        updateForexPrices() {
+            Object.values(this.forexMarkets).flat().forEach(pair => {
+                if (pair.price > 0) {
+                    // Realistic forex price movements
+                    const volatility = pair.type === 'exotic' ? 0.08 : 
+                                     pair.type === 'minor' ? 0.04 : 0.02;
+                    
+                    const change = (Math.random() - 0.5) * volatility;
+                    const newPrice = pair.price * (1 + change / 100);
+                    
+                    pair.trend = newPrice > pair.price ? 'bullish' : 'bearish';
+                    pair.price = newPrice;
+                    pair.change = parseFloat((change).toFixed(2));
+                }
+            });
+            this.renderForexMarkets();
+        }
+
         generateCleanSignal() {
             const now = Date.now();
             
@@ -280,8 +377,13 @@
                 return;
             }
             
-            const markets = Object.values(this.turboMarkets).flat();
-            const randomMarket = markets[Math.floor(Math.random() * markets.length)];
+            // Include forex pairs in signal generation
+            const allMarkets = [
+                ...Object.values(this.turboMarkets).flat(),
+                ...Object.values(this.forexMarkets).flat()
+            ];
+            
+            const randomMarket = allMarkets[Math.floor(Math.random() * allMarkets.length)];
             
             // Generate unique signal ID
             const signalId = `S${this.signalIdCounter++}_${randomMarket.symbol}_${now}`;
@@ -314,7 +416,8 @@
             
             const strengthClass = `strength-${strength.toLowerCase()}`;
             const signalIcon = signalType === 'BUY' ? '📈' : '📉';
-            
+            const marketType = market.type === 'major' || market.type === 'minor' || market.type === 'exotic' ? 'forex' : market.type;
+
             signalCard.innerHTML = `
                 <div class="flex justify-between items-center mb-2">
                     <h3>${signalIcon} ${signalType} SIGNAL</h3>
@@ -322,11 +425,13 @@
                 </div>
                 <div class="flex justify-between items-center mb-2">
                     <strong>${market.name}</strong>
-                    <span class="${signalType === 'BUY' ? 'text-success' : 'text-danger'}">$${market.price.toFixed(2)}</span>
+                    <span class="${signalType === 'BUY' ? 'text-success' : 'text-danger'}">
+                        ${market.type === 'major' || market.type === 'minor' || market.type === 'exotic' ? '' : '$'}${market.price.toFixed(market.type === 'major' || market.type === 'minor' || market.type === 'exotic' ? 4 : 2)}
+                    </span>
                 </div>
                 <div class="flex justify-between text-secondary mb-2">
                     <span>Confidence: <strong>${confidence}%</strong></span>
-                    <span>Vol: ${market.volatility}</span>
+                    <span>${marketType.toUpperCase()}</span>
                 </div>
                 <div class="flex justify-between text-secondary">
                     <small class="signal-id">${signalId}</small>
@@ -339,7 +444,7 @@
             // Only notify for high-confidence signals
             if (strength === 'HIGH') {
                 this.showNotification(`${signalType} Signal - ${market.name}`, 
-                    `Confidence: ${confidence}% - $${market.price.toFixed(2)}`);
+                    `Confidence: ${confidence}% - ${market.price.toFixed(market.type === 'major' || market.type === 'minor' || market.type === 'exotic' ? 4 : 2)}`);
             }
         }
 
@@ -402,9 +507,13 @@
 
             // Market selection
             document.addEventListener('click', (e) => {
-                const card = e.target.closest('.turbo-card');
+                const card = e.target.closest('.turbo-card') || e.target.closest('.forex-card');
                 if (card && card.dataset.symbol) {
-                    this.selectTurboMarket(card.dataset.symbol);
+                    if (card.classList.contains('forex-card')) {
+                        this.selectForexMarket(card.dataset.symbol);
+                    } else {
+                        this.selectTurboMarket(card.dataset.symbol);
+                    }
                 }
             });
 
@@ -449,6 +558,76 @@
             }).join('');
         }
 
+        renderForexMarkets() {
+            this.renderForexSection('majorPairs', this.forexMarkets.major);
+            this.renderForexSection('minorPairs', this.forexMarkets.minor);
+            this.renderForexSection('exoticPairs', this.forexMarkets.exotic);
+        }
+
+        renderForexSection(containerId, pairs) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            container.innerHTML = pairs.map(pair => {
+                const badgeClass = `badge-${pair.type}`;
+                const cardClass = `forex-card ${pair.type}`;
+                const isActive = this.selectedMarket && this.selectedMarket.symbol === pair.symbol ? 'active' : '';
+                const trendSymbol = pair.trend === 'bullish' ? '↗' : pair.trend === 'bearish' ? '↘' : '➡';
+                const trendClass = pair.trend === 'bullish' ? 'text-success' : pair.trend === 'bearish' ? 'text-danger' : 'text-info';
+                const changeClass = pair.change >= 0 ? 'text-success' : 'text-danger';
+                const changeSymbol = pair.change >= 0 ? '+' : '';
+
+                return `
+                    <div class="${cardClass} ${isActive}" data-symbol="${pair.symbol}">
+                        <div class="market-badge ${badgeClass}">${pair.type.toUpperCase()}</div>
+                        <div class="flex justify-between items-center mb-1">
+                            <strong class="text-medium">${pair.symbol}</strong>
+                            <span class="${trendClass}">${trendSymbol}</span>
+                        </div>
+                        <div class="text-large">${pair.price.toFixed(4)}</div>
+                        <div class="flex justify-between text-secondary">
+                            <small class="${changeClass}">${changeSymbol}${pair.change}%</small>
+                            <small>Spread: ${pair.spread}</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        selectTurboMarket(symbol) {
+            document.querySelectorAll('.turbo-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            const selectedCard = document.querySelector(`[data-symbol="${symbol}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('active');
+            }
+            
+            this.selectedMarket = this.findMarket(symbol);
+        }
+
+        selectForexMarket(symbol) {
+            document.querySelectorAll('.forex-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            const selectedCard = document.querySelector(`[data-symbol="${symbol}"]`);
+            if (selectedCard) {
+                selectedCard.classList.add('active');
+            }
+            
+            this.selectedMarket = this.findForexMarket(symbol);
+        }
+
+        findMarket(symbol) {
+            return Object.values(this.turboMarkets).flat().find(m => m.symbol === symbol);
+        }
+
+        findForexMarket(symbol) {
+            return Object.values(this.forexMarkets).flat().find(m => m.symbol === symbol);
+        }
+
         showTurboTradeModal(direction) {
             if (!this.selectedMarket) {
                 this.showNotification('Select Market', 'Please select a market first');
@@ -459,7 +638,12 @@
             
             document.getElementById('turboTradeTitle').textContent = `Turbo ${direction} Trade`;
             document.getElementById('turboTradeSymbol').value = this.selectedMarket.name;
-            document.getElementById('turboTradeEntryPrice').value = this.selectedMarket.price.toFixed(2);
+            
+            const price = this.selectedMarket.type === 'major' || this.selectedMarket.type === 'minor' || this.selectedMarket.type === 'exotic' 
+                ? this.selectedMarket.price.toFixed(4) 
+                : this.selectedMarket.price.toFixed(2);
+                
+            document.getElementById('turboTradeEntryPrice').value = price;
             
             document.getElementById('confirmUp').classList.toggle('active-trade-up', direction === 'BUY');
             document.getElementById('confirmDown').classList.toggle('active-trade-down', direction === 'SELL');
@@ -577,7 +761,7 @@
         }
 
         resolveTurboTrade(trade) {
-            const market = this.findMarket(trade.symbol);
+            const market = this.findMarket(trade.symbol) || this.findForexMarket(trade.symbol);
             if (!market) return;
 
             const currentPrice = market.price;
@@ -612,8 +796,8 @@
                     <span class="${wasProfitable ? 'text-success' : 'text-danger'}">${wasProfitable ? '+' : '-'}$${Math.abs(trade.profit).toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between text-secondary">
-                    <span>${trade.direction} @ $${trade.entryPrice.toFixed(2)}</span>
-                    <span>Exit: $${trade.exitPrice.toFixed(2)}</span>
+                    <span>${trade.direction} @ ${trade.entryPrice.toFixed(trade.name.includes('/') ? 4 : 2)}</span>
+                    <span>Exit: ${trade.exitPrice.toFixed(trade.name.includes('/') ? 4 : 2)}</span>
                 </div>
                 <div class="flex justify-between text-secondary">
                     <small class="signal-id">RESULT_${trade.id}</small>
@@ -622,23 +806,6 @@
             `;
             
             this.addSignalToDashboard(signalCard);
-        }
-
-        selectTurboMarket(symbol) {
-            document.querySelectorAll('.turbo-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            const selectedCard = document.querySelector(`[data-symbol="${symbol}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('active');
-            }
-            
-            this.selectedMarket = this.findMarket(symbol);
-        }
-
-        findMarket(symbol) {
-            return Object.values(this.turboMarkets).flat().find(m => m.symbol === symbol);
         }
 
         addSignalToDashboard(signalCard) {
