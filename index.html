@@ -19,6 +19,10 @@
             --border: #1e293b;
             --success: #00d4aa;
             --danger: #ff4d7d;
+            --volatility: #9c27b0;
+            --jump: #ff9800;
+            --boom: #4caf50;
+            --crash: #f44336;
         }
 
         * {
@@ -158,6 +162,26 @@
             border-color: rgba(255, 77, 125, 0.3);
         }
 
+        .signal-card.volatility {
+            background: linear-gradient(135deg, rgba(156, 39, 176, 0.15), rgba(156, 39, 176, 0.05));
+            border-color: rgba(156, 39, 176, 0.3);
+        }
+
+        .signal-card.jump {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.05));
+            border-color: rgba(255, 152, 0, 0.3);
+        }
+
+        .signal-card.boom {
+            background: linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(76, 175, 80, 0.05));
+            border-color: rgba(76, 175, 80, 0.3);
+        }
+
+        .signal-card.crash {
+            background: linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(244, 67, 54, 0.05));
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
         .signal-header {
             display: flex;
             justify-content: space-between;
@@ -185,6 +209,26 @@
 
         .signal-direction.sell {
             background: var(--sell);
+            color: white;
+        }
+
+        .signal-direction.volatility {
+            background: var(--volatility);
+            color: white;
+        }
+
+        .signal-direction.jump {
+            background: var(--jump);
+            color: white;
+        }
+
+        .signal-direction.boom {
+            background: var(--boom);
+            color: white;
+        }
+
+        .signal-direction.crash {
+            background: var(--crash);
             color: white;
         }
 
@@ -281,6 +325,7 @@
         .indicator-value.bullish { color: var(--success); }
         .indicator-value.bearish { color: var(--danger); }
         .indicator-value.neutral { color: var(--warning); }
+        .indicator-value.volatility { color: var(--volatility); }
 
         .controls {
             display: flex;
@@ -334,6 +379,10 @@
         .log-buy { color: var(--success); }
         .log-sell { color: var(--danger); }
         .log-info { color: var(--accent); }
+        .log-volatility { color: var(--volatility); }
+        .log-jump { color: var(--jump); }
+        .log-boom { color: var(--boom); }
+        .log-crash { color: var(--crash); }
 
         .chart-container {
             height: 400px;
@@ -403,6 +452,35 @@
         .badge-success { background: var(--success); color: white; }
         .badge-warning { background: var(--warning); color: white; }
         .badge-danger { background: var(--danger); color: white; }
+        .badge-volatility { background: var(--volatility); color: white; }
+        .badge-jump { background: var(--jump); color: white; }
+        .badge-boom { background: var(--boom); color: white; }
+        .badge-crash { background: var(--crash); color: white; }
+
+        .pairs-filter {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
 
         @media (max-width: 1200px) {
             .dashboard {
@@ -440,6 +518,14 @@
                     <label class="setting-label">Refresh Interval (seconds)</label>
                     <input type="number" id="refreshInterval" class="setting-input" min="10" max="300" value="30">
                 </div>
+                <div class="setting-group">
+                    <label class="setting-label">Volatility Threshold</label>
+                    <input type="number" id="volatilityThreshold" class="setting-input" min="1" max="10" step="0.1" value="3.0">
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Jump Detection Sensitivity</label>
+                    <input type="number" id="jumpSensitivity" class="setting-input" min="1" max="10" step="0.1" value="5.0">
+                </div>
             </div>
             
             <div class="controls">
@@ -471,6 +557,10 @@
                         <div class="status-dot"></div>
                         <span>Multi-TF Analysis</span>
                     </div>
+                    <div class="status-item">
+                        <div class="status-dot"></div>
+                        <span>Spike Detection</span>
+                    </div>
                 </div>
             </div>
             <div class="controls">
@@ -490,6 +580,7 @@
                         <div class="timeframe-tab active" data-tf="1h">1H Analysis</div>
                         <div class="timeframe-tab" data-tf="15m">15M Entry</div>
                         <div class="timeframe-tab" data-tf="5m">5M Sniper</div>
+                        <div class="timeframe-tab" data-tf="1m">1M Spike</div>
                     </div>
                 </div>
                 <div class="chart-container">
@@ -503,6 +594,16 @@
                     <div class="card-title">🎯 Active Sniper Signals</div>
                     <div class="badge badge-success" id="signalsCount">0 Signals</div>
                 </div>
+                
+                <div class="pairs-filter" id="pairsFilter">
+                    <button class="filter-btn active" data-type="all">All</button>
+                    <button class="filter-btn" data-type="forex">Forex</button>
+                    <button class="filter-btn" data-type="commodities">Commodities</button>
+                    <button class="filter-btn" data-type="volatility">Volatility</button>
+                    <button class="filter-btn" data-type="jump">Jump</button>
+                    <button class="filter-btn" data-type="boomcrash">Boom/Crash</button>
+                </div>
+                
                 <div class="signals-grid" id="signalsContainer">
                     <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
                         <div style="font-size: 48px; margin-bottom: 10px;">🎯</div>
@@ -536,11 +637,19 @@
                     </div>
                     <div class="indicator-item">
                         <div class="indicator-label">Volatility</div>
-                        <div class="indicator-value" id="volatility">HIGH</div>
+                        <div class="indicator-value volatility" id="volatility">HIGH</div>
                     </div>
                     <div class="indicator-item">
                         <div class="indicator-label">Signal Quality</div>
                         <div class="indicator-value bullish" id="signalQuality">92%</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="indicator-label">Spike Count</div>
+                        <div class="indicator-value" id="spikeCount">0</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="indicator-label">Jump Alerts</div>
+                        <div class="indicator-value" id="jumpAlerts">0</div>
                     </div>
                 </div>
                 
@@ -550,6 +659,7 @@
                 <div class="controls">
                     <button class="btn" id="scanMarketsBtn">🔍 Scan All Markets</button>
                     <button class="btn btn-outline" id="validateSignalsBtn">✅ Validate Signals</button>
+                    <button class="btn btn-outline" id="spikeAnalysisBtn">📈 Spike Analysis</button>
                 </div>
             </div>
         </div>
@@ -582,28 +692,76 @@
     </div>
 
     <script>
-        // SIMPLE, WORKING VERSION - NO COMPLEX DEPENDENCIES
+        // ENHANCED VERSION WITH DERIV PAIRS AND IMPROVED INDICATORS
         class TradingDashboard {
             constructor() {
-                this.pairs = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'XAU/USD', 'BTC/USD'];
+                // Enhanced pairs list with deriv commodities, jump pairs, boom and crash, and volatility pairs
+                this.pairs = [
+                    // Forex pairs
+                    { symbol: 'EUR/USD', type: 'forex', basePrice: 1.0850 },
+                    { symbol: 'GBP/USD', type: 'forex', basePrice: 1.2650 },
+                    { symbol: 'USD/JPY', type: 'forex', basePrice: 151.50 },
+                    { symbol: 'AUD/USD', type: 'forex', basePrice: 0.6550 },
+                    { symbol: 'USD/CAD', type: 'forex', basePrice: 1.3500 },
+                    
+                    // Commodities
+                    { symbol: 'XAU/USD', type: 'commodities', basePrice: 1980.00 },
+                    { symbol: 'XAG/USD', type: 'commodities', basePrice: 23.50 },
+                    { symbol: 'OIL/USD', type: 'commodities', basePrice: 75.00 },
+                    { symbol: 'NGAS/USD', type: 'commodities', basePrice: 2.50 },
+                    
+                    // Volatility pairs
+                    { symbol: 'VOLATILITY_75', type: 'volatility', basePrice: 15.00 },
+                    { symbol: 'VOLATILITY_100', type: 'volatility', basePrice: 20.00 },
+                    { symbol: 'VOLATILITY_250', type: 'volatility', basePrice: 25.00 },
+                    
+                    // Jump pairs
+                    { symbol: 'JUMP_10', type: 'jump', basePrice: 100.00 },
+                    { symbol: 'JUMP_25', type: 'jump', basePrice: 100.00 },
+                    { symbol: 'JUMP_50', type: 'jump', basePrice: 100.00 },
+                    { symbol: 'JUMP_75', type: 'jump', basePrice: 100.00 },
+                    { symbol: 'JUMP_100', type: 'jump', basePrice: 100.00 },
+                    
+                    // Boom and Crash pairs
+                    { symbol: 'BOOM_500', type: 'boomcrash', basePrice: 1000.00 },
+                    { symbol: 'BOOM_1000', type: 'boomcrash', basePrice: 1000.00 },
+                    { symbol: 'CRASH_500', type: 'boomcrash', basePrice: 1000.00 },
+                    { symbol: 'CRASH_1000', type: 'boomcrash', basePrice: 1000.00 }
+                ];
+                
                 this.signals = [];
                 this.isRunning = true;
+                this.priceHistory = {};
+                this.spikeCount = 0;
+                this.jumpAlerts = 0;
+                this.currentFilter = 'all';
+                
                 this.settings = {
                     minConfidence: 75,
                     riskReward: 2.0,
                     maxSignals: 10,
-                    refreshInterval: 30
+                    refreshInterval: 30,
+                    volatilityThreshold: 3.0,
+                    jumpSensitivity: 5.0
                 };
                 
                 this.init();
             }
 
             init() {
-                console.log('🚀 Initializing Trading Dashboard...');
+                console.log('🚀 Initializing Enhanced Trading Dashboard...');
                 this.setupEventListeners();
+                this.initializePriceHistory();
                 this.renderPairs();
                 this.startEngine();
-                this.log('Dashboard initialized successfully');
+                this.log('Enhanced dashboard initialized with deriv pairs');
+            }
+
+            initializePriceHistory() {
+                // Initialize price history for all pairs
+                this.pairs.forEach(pair => {
+                    this.priceHistory[pair.symbol] = [pair.basePrice];
+                });
             }
 
             setupEventListeners() {
@@ -629,6 +787,12 @@
                     this.log('Signal validation completed');
                 });
 
+                // Spike analysis button
+                document.getElementById('spikeAnalysisBtn').addEventListener('click', () => {
+                    this.log('Spike analysis initiated');
+                    this.detectSpikes();
+                });
+
                 // Timeframe tabs
                 document.querySelectorAll('.timeframe-tab').forEach(tab => {
                     tab.addEventListener('click', (e) => {
@@ -641,6 +805,16 @@
                 // Export button
                 document.getElementById('exportBtn').addEventListener('click', () => {
                     this.exportData();
+                });
+
+                // Filter buttons
+                document.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.currentFilter = e.target.dataset.type;
+                        this.renderSignals();
+                    });
                 });
             }
 
@@ -660,7 +834,7 @@
             }
 
             generateSignals() {
-                console.log('🔍 Generating trading signals...');
+                console.log('🔍 Generating enhanced trading signals...');
                 
                 const newSignals = [];
                 const reasons = {
@@ -669,55 +843,116 @@
                         'RSI Oversold Bounce', 
                         'Support Level Hold',
                         'Volume Confirmation',
-                        'Trend Alignment'
+                        'Trend Alignment',
+                        'Breakout Confirmation'
                     ],
                     sell: [
                         'EMA Bearish Crossover',
                         'RSI Overbought Rejection',
                         'Resistance Test Fail',
                         'Volume Divergence',
-                        'Trend Breakdown'
+                        'Trend Breakdown',
+                        'Breakdown Confirmation'
+                    ],
+                    volatility: [
+                        'High Volatility Regime',
+                        'Volatility Expansion',
+                        'ATR Breakout',
+                        'Bollinger Band Squeeze',
+                        'Volatility Spike'
+                    ],
+                    jump: [
+                        'Jump Pattern Detected',
+                        'Momentum Breakout',
+                        'Gap Detection',
+                        'Price Acceleration',
+                        'Jump Confirmation'
+                    ],
+                    boom: [
+                        'Boom Pattern Initiated',
+                        'Bullish Momentum Spike',
+                        'Volume Surge',
+                        'Breakout Acceleration',
+                        'Boom Confirmed'
+                    ],
+                    crash: [
+                        'Crash Pattern Detected',
+                        'Bearish Momentum Spike',
+                        'Volume Collapse',
+                        'Breakdown Acceleration',
+                        'Crash Confirmed'
                     ]
                 };
 
                 this.pairs.forEach(pair => {
-                    // Randomly generate signals with realistic probabilities
-                    if (Math.random() > 0.6) { // 40% chance of signal per pair
-                        const direction = Math.random() > 0.5 ? 'BUY' : 'SELL';
-                        const basePrice = this.getBasePrice(pair);
-                        const price = basePrice * (1 + (Math.random() - 0.5) * 0.01);
-                        const confidence = 70 + Math.floor(Math.random() * 25); // 70-95%
-                        
-                        if (confidence >= this.settings.minConfidence) {
-                            const signalReasons = [];
-                            const numReasons = 2 + Math.floor(Math.random() * 2); // 2-3 reasons
-                            
-                            for (let i = 0; i < numReasons; i++) {
-                                const availableReasons = direction === 'BUY' ? reasons.buy : reasons.sell;
-                                const randomReason = availableReasons[Math.floor(Math.random() * availableReasons.length)];
-                                if (!signalReasons.includes(randomReason)) {
-                                    signalReasons.push(randomReason);
-                                }
-                            }
-
-                            const signal = {
-                                id: `${pair}-${Date.now()}`,
-                                pair,
-                                direction,
-                                entry: this.calculatePrice(price, direction, 'entry'),
-                                stopLoss: this.calculatePrice(price, direction, 'sl'),
-                                takeProfit: this.calculatePrice(price, direction, 'tp'),
-                                confidence,
-                                timestamp: new Date(),
-                                reasons: signalReasons,
-                                riskReward: this.settings.riskReward
-                            };
-
-                            newSignals.push(signal);
-                            
-                            // Log the signal
-                            this.log(`${pair} ${direction} signal - ${confidence}% confidence`, direction.toLowerCase());
+                    // Update price history
+                    this.updatePriceHistory(pair);
+                    
+                    // Check for spikes and jumps
+                    this.detectSpike(pair);
+                    this.detectJump(pair);
+                    
+                    // Generate signals based on pair type
+                    let signalType = null;
+                    let confidence = 0;
+                    
+                    if (pair.type === 'forex' || pair.type === 'commodities') {
+                        // Standard directional signals for forex and commodities
+                        if (Math.random() > 0.6) {
+                            signalType = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                            confidence = 70 + Math.floor(Math.random() * 25);
                         }
+                    } else if (pair.type === 'volatility') {
+                        // Volatility signals
+                        if (Math.random() > 0.7) {
+                            signalType = 'VOLATILITY';
+                            confidence = 75 + Math.floor(Math.random() * 20);
+                        }
+                    } else if (pair.type === 'jump') {
+                        // Jump signals
+                        if (Math.random() > 0.8) {
+                            signalType = 'JUMP';
+                            confidence = 80 + Math.floor(Math.random() * 15);
+                        }
+                    } else if (pair.type === 'boomcrash') {
+                        // Boom/Crash signals
+                        if (Math.random() > 0.75) {
+                            signalType = pair.symbol.includes('BOOM') ? 'BOOM' : 'CRASH';
+                            confidence = 85 + Math.floor(Math.random() * 10);
+                        }
+                    }
+                    
+                    if (signalType && confidence >= this.settings.minConfidence) {
+                        const signalReasons = [];
+                        const numReasons = 2 + Math.floor(Math.random() * 2); // 2-3 reasons
+                        
+                        for (let i = 0; i < numReasons; i++) {
+                            const availableReasons = reasons[signalType.toLowerCase()];
+                            const randomReason = availableReasons[Math.floor(Math.random() * availableReasons.length)];
+                            if (!signalReasons.includes(randomReason)) {
+                                signalReasons.push(randomReason);
+                            }
+                        }
+
+                        const currentPrice = this.getCurrentPrice(pair);
+                        const signal = {
+                            id: `${pair.symbol}-${Date.now()}`,
+                            pair: pair.symbol,
+                            type: pair.type,
+                            direction: signalType,
+                            entry: this.calculatePrice(currentPrice, signalType, 'entry'),
+                            stopLoss: this.calculatePrice(currentPrice, signalType, 'sl'),
+                            takeProfit: this.calculatePrice(currentPrice, signalType, 'tp'),
+                            confidence,
+                            timestamp: new Date(),
+                            reasons: signalReasons,
+                            riskReward: this.settings.riskReward
+                        };
+
+                        newSignals.push(signal);
+                        
+                        // Log the signal
+                        this.log(`${pair.symbol} ${signalType} signal - ${confidence}% confidence`, signalType.toLowerCase());
                     }
                 });
 
@@ -726,24 +961,102 @@
                 this.updateUI();
             }
 
-            calculatePrice(price, direction, type) {
-                const multiplier = {
-                    'BUY': { entry: 1.0002, sl: 0.998, tp: 1.004 },
-                    'SELL': { entry: 0.9998, sl: 1.002, tp: 0.996 }
-                };
+            updatePriceHistory(pair) {
+                if (!this.priceHistory[pair.symbol]) {
+                    this.priceHistory[pair.symbol] = [pair.basePrice];
+                }
                 
-                return price * multiplier[direction][type];
+                // Add realistic price movement based on pair type
+                let volatility = 0.001; // Default low volatility
+                
+                if (pair.type === 'volatility') volatility = 0.02;
+                if (pair.type === 'jump') volatility = 0.015;
+                if (pair.type === 'boomcrash') volatility = 0.03;
+                
+                const lastPrice = this.priceHistory[pair.symbol][this.priceHistory[pair.symbol].length - 1];
+                const change = (Math.random() - 0.5) * 2 * volatility * lastPrice;
+                const newPrice = lastPrice + change;
+                
+                this.priceHistory[pair.symbol].push(newPrice);
+                
+                // Keep only last 100 prices
+                if (this.priceHistory[pair.symbol].length > 100) {
+                    this.priceHistory[pair.symbol].shift();
+                }
             }
 
-            getBasePrice(pair) {
-                const prices = {
-                    'EUR/USD': 1.0850,
-                    'GBP/USD': 1.2650, 
-                    'USD/JPY': 151.50,
-                    'XAU/USD': 1980.00,
-                    'BTC/USD': 45000.00
+            getCurrentPrice(pair) {
+                if (!this.priceHistory[pair.symbol] || this.priceHistory[pair.symbol].length === 0) {
+                    return pair.basePrice;
+                }
+                return this.priceHistory[pair.symbol][this.priceHistory[pair.symbol].length - 1];
+            }
+
+            detectSpike(pair) {
+                const prices = this.priceHistory[pair.symbol];
+                if (prices.length < 5) return;
+                
+                const recentPrices = prices.slice(-5);
+                const avgPrice = recentPrices.reduce((a, b) => a + b, 0) / recentPrices.length;
+                const currentPrice = recentPrices[recentPrices.length - 1];
+                const priceChange = Math.abs((currentPrice - avgPrice) / avgPrice) * 100;
+                
+                if (priceChange > this.settings.volatilityThreshold) {
+                    this.spikeCount++;
+                    this.log(`Spike detected in ${pair.symbol}: ${priceChange.toFixed(2)}%`, 'volatility');
+                }
+            }
+
+            detectJump(pair) {
+                const prices = this.priceHistory[pair.symbol];
+                if (prices.length < 3) return;
+                
+                const currentPrice = prices[prices.length - 1];
+                const previousPrice = prices[prices.length - 2];
+                const priceChange = Math.abs((currentPrice - previousPrice) / previousPrice) * 100;
+                
+                if (priceChange > this.settings.jumpSensitivity) {
+                    this.jumpAlerts++;
+                    this.log(`Jump detected in ${pair.symbol}: ${priceChange.toFixed(2)}%`, 'jump');
+                }
+            }
+
+            detectSpikes() {
+                // Comprehensive spike detection across all pairs
+                let totalSpikes = 0;
+                
+                this.pairs.forEach(pair => {
+                    const prices = this.priceHistory[pair.symbol];
+                    if (prices.length < 10) return;
+                    
+                    // Calculate standard deviation
+                    const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+                    const squareDiffs = prices.map(price => Math.pow(price - avg, 2));
+                    const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+                    const stdDev = Math.sqrt(avgSquareDiff);
+                    
+                    // Check for spikes (prices beyond 2 standard deviations)
+                    const currentPrice = prices[prices.length - 1];
+                    if (Math.abs(currentPrice - avg) > 2 * stdDev) {
+                        totalSpikes++;
+                    }
+                });
+                
+                this.log(`Spike analysis complete: ${totalSpikes} spikes detected`, 'info');
+            }
+
+            calculatePrice(price, direction, type) {
+                const multipliers = {
+                    'BUY': { entry: 1.0002, sl: 0.998, tp: 1.004 },
+                    'SELL': { entry: 0.9998, sl: 1.002, tp: 0.996 },
+                    'VOLATILITY': { entry: 1.0005, sl: 0.995, tp: 1.008 },
+                    'JUMP': { entry: 1.001, sl: 0.992, tp: 1.012 },
+                    'BOOM': { entry: 1.002, sl: 0.990, tp: 1.020 },
+                    'CRASH': { entry: 0.998, sl: 1.010, tp: 0.980 }
                 };
-                return prices[pair] || 1.0000;
+                
+                const multiplier = multipliers[direction] || multipliers['BUY'];
+                return price * multiplier[type];
             }
 
             updateUI() {
@@ -751,12 +1064,26 @@
                 this.renderPairs();
                 this.updateSignalsCount();
                 this.updateMarketAnalysis();
+                this.updateSpikeCount();
             }
 
             renderSignals() {
                 const container = document.getElementById('signalsContainer');
                 
-                if (this.signals.length === 0) {
+                // Filter signals based on current filter
+                let filteredSignals = this.signals;
+                if (this.currentFilter !== 'all') {
+                    filteredSignals = this.signals.filter(signal => {
+                        if (this.currentFilter === 'forex') return signal.type === 'forex';
+                        if (this.currentFilter === 'commodities') return signal.type === 'commodities';
+                        if (this.currentFilter === 'volatility') return signal.type === 'volatility';
+                        if (this.currentFilter === 'jump') return signal.type === 'jump';
+                        if (this.currentFilter === 'boomcrash') return signal.type === 'boomcrash';
+                        return true;
+                    });
+                }
+                
+                if (filteredSignals.length === 0) {
                     container.innerHTML = `
                         <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-muted);">
                             <div style="font-size: 48px; margin-bottom: 10px;">🎯</div>
@@ -769,7 +1096,7 @@
 
                 container.innerHTML = '';
 
-                this.signals.forEach(signal => {
+                filteredSignals.forEach(signal => {
                     const signalElement = document.createElement('div');
                     signalElement.className = `signal-card ${signal.direction.toLowerCase()}`;
                     
@@ -784,15 +1111,15 @@
                         <div class="signal-meta">
                             <div class="meta-item">
                                 <div>Entry</div>
-                                <div class="meta-value">${signal.entry.toFixed(5)}</div>
+                                <div class="meta-value">${signal.entry.toFixed(this.getPrecision(signal.pair))}</div>
                             </div>
                             <div class="meta-item">
                                 <div>Stop Loss</div>
-                                <div class="meta-value">${signal.stopLoss.toFixed(5)}</div>
+                                <div class="meta-value">${signal.stopLoss.toFixed(this.getPrecision(signal.pair))}</div>
                             </div>
                             <div class="meta-item">
                                 <div>Take Profit</div>
-                                <div class="meta-value">${signal.takeProfit.toFixed(5)}</div>
+                                <div class="meta-value">${signal.takeProfit.toFixed(this.getPrecision(signal.pair))}</div>
                             </div>
                             <div class="meta-item">
                                 <div>R:R</div>
@@ -815,6 +1142,15 @@
                 });
             }
 
+            getPrecision(pairSymbol) {
+                if (pairSymbol.includes('XAU') || pairSymbol.includes('XAG')) return 2;
+                if (pairSymbol.includes('OIL') || pairSymbol.includes('NGAS')) return 2;
+                if (pairSymbol.includes('VOLATILITY') || pairSymbol.includes('JUMP')) return 2;
+                if (pairSymbol.includes('BOOM') || pairSymbol.includes('CRASH')) return 2;
+                if (pairSymbol.includes('/USD') && !pairSymbol.includes('USD/')) return 5;
+                return 3;
+            }
+
             renderPairs() {
                 const container = document.getElementById('pairsMonitor');
                 container.innerHTML = '';
@@ -826,15 +1162,27 @@
                         padding: 10px; border-bottom: 1px solid var(--border);
                     `;
                     
-                    const signal = this.signals.find(s => s.pair === pair);
+                    const signal = this.signals.find(s => s.pair === pair.symbol);
                     const status = signal ? signal.direction : 'NEUTRAL';
-                    const statusColor = status === 'BUY' ? 'var(--success)' : 
-                                      status === 'SELL' ? 'var(--danger)' : 'var(--text-muted)';
+                    let statusColor = 'var(--text-muted)';
+                    
+                    if (status === 'BUY') statusColor = 'var(--success)';
+                    else if (status === 'SELL') statusColor = 'var(--danger)';
+                    else if (status === 'VOLATILITY') statusColor = 'var(--volatility)';
+                    else if (status === 'JUMP') statusColor = 'var(--jump)';
+                    else if (status === 'BOOM') statusColor = 'var(--boom)';
+                    else if (status === 'CRASH') statusColor = 'var(--crash)';
+                    
+                    const currentPrice = this.getCurrentPrice(pair);
                     
                     pairElement.innerHTML = `
-                        <div style="font-weight: 600;">${pair}</div>
+                        <div>
+                            <div style="font-weight: 600;">${pair.symbol}</div>
+                            <div style="font-size: 10px; color: var(--text-muted);">${pair.type}</div>
+                        </div>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <div style="font-size: 12px; color: ${statusColor}">${status}</div>
+                            <div style="font-size: 12px; font-weight: 600;">${currentPrice.toFixed(this.getPrecision(pair.symbol))}</div>
+                            <div style="font-size: 10px; color: ${statusColor}">${status}</div>
                             <div style="width: 8px; height: 8px; border-radius: 50%; background: ${statusColor}"></div>
                         </div>
                     `;
@@ -847,22 +1195,54 @@
                 const count = this.signals.length;
                 const badge = document.getElementById('signalsCount');
                 badge.textContent = `${count} Signal${count !== 1 ? 's' : ''}`;
-                badge.className = `badge ${count > 0 ? 'badge-success' : 'badge-warning'}`;
+                
+                let badgeClass = 'badge-warning';
+                if (count > 5) badgeClass = 'badge-success';
+                if (count > 10) badgeClass = 'badge-volatility';
+                
+                badge.className = `badge ${badgeClass}`;
             }
 
             updateMarketAnalysis() {
                 if (this.signals.length > 0) {
                     const buySignals = this.signals.filter(s => s.direction === 'BUY').length;
                     const sellSignals = this.signals.filter(s => s.direction === 'SELL').length;
+                    const volatilitySignals = this.signals.filter(s => s.direction === 'VOLATILITY').length;
+                    const jumpSignals = this.signals.filter(s => s.direction === 'JUMP').length;
+                    const boomSignals = this.signals.filter(s => s.direction === 'BOOM').length;
+                    const crashSignals = this.signals.filter(s => s.direction === 'CRASH').length;
                     
-                    document.getElementById('trendDirection').textContent = 
-                        buySignals > sellSignals ? 'BULLISH' : buySignals < sellSignals ? 'BEARISH' : 'NEUTRAL';
+                    let trend = 'NEUTRAL';
+                    if (buySignals > sellSignals) trend = 'BULLISH';
+                    if (sellSignals > buySignals) trend = 'BEARISH';
+                    
+                    document.getElementById('trendDirection').textContent = trend;
                     document.getElementById('trendDirection').className = 
-                        `indicator-value ${buySignals > sellSignals ? 'bullish' : buySignals < sellSignals ? 'bearish' : 'neutral'}`;
+                        `indicator-value ${trend.toLowerCase()}`;
+                    
+                    // Determine market regime
+                    let regime = 'RANGING';
+                    if (volatilitySignals > 3) regime = 'VOLATILE';
+                    if (jumpSignals > 2) regime = 'JUMPY';
+                    if (boomSignals + crashSignals > 2) regime = 'BOOM/CRASH';
+                    if (buySignals + sellSignals > 5 && volatilitySignals < 2) regime = 'TRENDING';
+                    
+                    document.getElementById('marketRegime').textContent = regime;
+                    
+                    // Update volatility indicator
+                    const volatilityLevel = volatilitySignals > 2 ? 'HIGH' : volatilitySignals > 0 ? 'MEDIUM' : 'LOW';
+                    document.getElementById('volatility').textContent = volatilityLevel;
+                    document.getElementById('volatility').className = 
+                        `indicator-value ${volatilityLevel === 'HIGH' ? 'volatility' : 'neutral'}`;
                     
                     const avgConfidence = this.signals.reduce((sum, signal) => sum + signal.confidence, 0) / this.signals.length;
                     document.getElementById('signalQuality').textContent = `${Math.round(avgConfidence)}%`;
                 }
+            }
+
+            updateSpikeCount() {
+                document.getElementById('spikeCount').textContent = this.spikeCount;
+                document.getElementById('jumpAlerts').textContent = this.jumpAlerts;
             }
 
             log(message, type = 'info') {
@@ -893,13 +1273,20 @@
                 document.getElementById('riskReward').value = this.settings.riskReward;
                 document.getElementById('maxSignals').value = this.settings.maxSignals;
                 document.getElementById('refreshInterval').value = this.settings.refreshInterval;
+                document.getElementById('volatilityThreshold').value = this.settings.volatilityThreshold;
+                document.getElementById('jumpSensitivity').value = this.settings.jumpSensitivity;
             }
 
             exportData() {
                 const data = {
                     signals: this.signals,
                     timestamp: new Date().toISOString(),
-                    settings: this.settings
+                    settings: this.settings,
+                    priceHistory: this.priceHistory,
+                    metrics: {
+                        spikeCount: this.spikeCount,
+                        jumpAlerts: this.jumpAlerts
+                    }
                 };
                 
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -924,7 +1311,9 @@
                 minConfidence: parseInt(document.getElementById('minConfidence').value),
                 riskReward: parseFloat(document.getElementById('riskReward').value),
                 maxSignals: parseInt(document.getElementById('maxSignals').value),
-                refreshInterval: parseInt(document.getElementById('refreshInterval').value)
+                refreshInterval: parseInt(document.getElementById('refreshInterval').value),
+                volatilityThreshold: parseFloat(document.getElementById('volatilityThreshold').value),
+                jumpSensitivity: parseFloat(document.getElementById('jumpSensitivity').value)
             };
             
             if (window.dashboard) {
@@ -940,12 +1329,14 @@
                 document.getElementById('riskReward').value = 2.0;
                 document.getElementById('maxSignals').value = 10;
                 document.getElementById('refreshInterval').value = 30;
+                document.getElementById('volatilityThreshold').value = 3.0;
+                document.getElementById('jumpSensitivity').value = 5.0;
             }
         }
 
         // Initialize everything when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('📊 Starting Trading Dashboard...');
+            console.log('📊 Starting Enhanced Trading Dashboard...');
             window.dashboard = new TradingDashboard();
             
             // Initialize a simple chart
@@ -953,22 +1344,39 @@
             const chart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: Array.from({length: 24}, (_, i) => `${i}:00`),
-                    datasets: [{
-                        label: 'Market Trend',
-                        data: Array.from({length: 24}, () => Math.random() * 100 + 50),
-                        borderColor: '#3a86ff',
-                        backgroundColor: 'rgba(58, 134, 255, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
+                    labels: Array.from({length: 50}, (_, i) => `${i}`),
+                    datasets: [
+                        {
+                            label: 'Price',
+                            data: Array.from({length: 50}, () => Math.random() * 100 + 50),
+                            borderColor: '#3a86ff',
+                            backgroundColor: 'rgba(58, 134, 255, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Volatility',
+                            data: Array.from({length: 50}, () => Math.random() * 20 + 10),
+                            borderColor: '#9c27b0',
+                            backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
+                        legend: { 
+                            display: true,
+                            labels: {
+                                color: 'var(--text)'
+                            }
+                        },
                         tooltip: { mode: 'index', intersect: false }
                     },
                     scales: {
