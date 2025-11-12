@@ -19,6 +19,7 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 .status-container{display:flex;gap:15px;margin:10px 0;flex-wrap:wrap;justify-content:center}
 .status-item{padding:8px 15px;background:#1f2937;border-radius:8px;font-size:0.9em}
 .connected{color:#22c55e}.disconnected{color:#ef4444}.connecting{color:#f59e0b}
+.loading{display:none;color:#f59e0b}
 </style>
 </head>
 <body>
@@ -26,11 +27,55 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 
 <div class="controls">
   <select id="pairSelect">
-    <option value="btcusdt">BTC / USDT</option>
-    <option value="ethusdt">ETH / USDT</option>
-    <option value="bnbusdt">BNB / USDT</option>
-    <option value="adausdt">ADA / USDT</option>
-    <option value="solusdt">SOL / USDT</option>
+    <optgroup label="Cryptocurrencies">
+      <option value="btcusdt">BTC/USDT</option>
+      <option value="ethusdt">ETH/USDT</option>
+      <option value="bnbusdt">BNB/USDT</option>
+      <option value="adausdt">ADA/USDT</option>
+      <option value="solusdt">SOL/USDT</option>
+      <option value="dotusdt">DOT/USDT</option>
+      <option value="linkusdt">LINK/USDT</option>
+      <option value="ltcusdt">LTC/USDT</option>
+    </optgroup>
+    <optgroup label="Major Forex Pairs">
+      <option value="EURUSD">EUR/USD</option>
+      <option value="GBPUSD">GBP/USD</option>
+      <option value="USDJPY">USD/JPY</option>
+      <option value="USDCHF">USD/CHF</option>
+      <option value="AUDUSD">AUD/USD</option>
+      <option value="USDCAD">USD/CAD</option>
+      <option value="NZDUSD">NZD/USD</option>
+    </optgroup>
+    <optgroup label="Minor Forex Pairs">
+      <option value="EURGBP">EUR/GBP</option>
+      <option value="EURJPY">EUR/JPY</option>
+      <option value="GBPJPY">GBP/JPY</option>
+      <option value="EURCAD">EUR/CAD</option>
+      <option value="AUDJPY">AUD/JPY</option>
+      <option value="CADJPY">CAD/JPY</option>
+    </optgroup>
+    <optgroup label="Synthetic Indices">
+      <option value="SYNTH_Volatility">Volatility 75 Index</option>
+      <option value="SYNTH_Boom">Boom 1000 Index</option>
+      <option value="SYNTH_Crash">Crash 1000 Index</option>
+      <option value="SYNTH_Step">Step Index</option>
+      <option value="SYNTH_Range">Range Break Index</option>
+      <option value="SYNTH_Jump">Jump Index</option>
+    </optgroup>
+    <optgroup label="Commodities">
+      <option value="XAUUSD">Gold (XAU/USD)</option>
+      <option value="XAGUSD">Silver (XAG/USD)</option>
+      <option value="XPTUSD">Platinum (XPT/USD)</option>
+      <option value="XPDUSD">Palladium (XPD/USD)</option>
+    </optgroup>
+    <optgroup label="Stock Indices">
+      <option value="US30">US30 (Dow Jones)</option>
+      <option value="SPX500">SPX500 (S&P 500)</option>
+      <option value="NAS100">NAS100 (Nasdaq)</option>
+      <option value="UK100">UK100 (FTSE)</option>
+      <option value="GER40">GER40 (DAX)</option>
+      <option value="JPN225">JPN225 (Nikkei)</option>
+    </optgroup>
   </select>
   <button id="connectFeed">🔌 Connect Live Feed</button>
   <button id="disconnectFeed">🔌 Disconnect</button>
@@ -44,6 +89,7 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
   <div>Status: <span id="connectionStatus" class="disconnected">Disconnected</span></div>
   <div>5m Feed: <span id="feed5mStatus" class="disconnected">❌</span></div>
   <div>15m Feed: <span id="feed15mStatus" class="disconnected">❌</span></div>
+  <div class="loading" id="loadingIndicator">🔄 Loading Historical Data...</div>
 </div>
 
 <div id="chart"></div>
@@ -69,7 +115,8 @@ const state = {
   emaSeries: null,
   signals: [],
   reconnectAttempts: 0,
-  maxReconnectAttempts: 5
+  maxReconnectAttempts: 5,
+  dataProvider: 'binance' // Default provider
 };
 
 // --- Chart setup ---
@@ -80,6 +127,78 @@ const chart = LightweightCharts.createChart(document.getElementById('chart'), {
 });
 state.series = chart.addCandlestickSeries();
 state.emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
+
+// --- Data Provider Configuration ---
+const dataProviders = {
+  binance: {
+    name: 'Binance',
+    cryptoPairs: ['btcusdt', 'ethusdt', 'bnbusdt', 'adausdt', 'solusdt', 'dotusdt', 'linkusdt', 'ltcusdt'],
+    getWebSocketUrl: (pair, timeframe) => `wss://stream.binance.com:9443/ws/${pair}@kline_${timeframe}`,
+    parseData: (data) => {
+      const d = data.k;
+      return {
+        time: d.t / 1000,
+        open: parseFloat(d.o),
+        high: parseFloat(d.h),
+        low: parseFloat(d.l),
+        close: parseFloat(d.c),
+        volume: parseFloat(d.v)
+      };
+    }
+  },
+  forex: {
+    name: 'Forex',
+    pairs: ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD', 
+            'EURGBP', 'EURJPY', 'GBPJPY', 'EURCAD', 'AUDJPY', 'CADJPY'],
+    // Using TradingView-style data for forex (you can replace with your preferred forex provider)
+    getWebSocketUrl: (pair, timeframe) => {
+      // This is a placeholder - you'll need to replace with actual forex data provider
+      return `wss://ws.fxprovider.com/${pair}/${timeframe}`;
+    },
+    parseData: (data) => {
+      // Parse forex data format
+      return {
+        time: data.t / 1000,
+        open: parseFloat(data.o),
+        high: parseFloat(data.h),
+        low: parseFloat(data.l),
+        close: parseFloat(data.c),
+        volume: parseFloat(data.v || 0)
+      };
+    }
+  },
+  synthetic: {
+    name: 'Synthetic',
+    pairs: ['SYNTH_Volatility', 'SYNTH_Boom', 'SYNTH_Crash', 'SYNTH_Step', 'SYNTH_Range', 'SYNTH_Jump'],
+    // Placeholder for synthetic indices - you'll need actual data source
+    getWebSocketUrl: (pair, timeframe) => {
+      return `wss://synthetic-data-provider.com/${pair}/${timeframe}`;
+    },
+    parseData: (data) => {
+      return {
+        time: data.t / 1000,
+        open: parseFloat(data.o),
+        high: parseFloat(data.h),
+        low: parseFloat(data.l),
+        close: parseFloat(data.c),
+        volume: 1000 // Synthetic volume
+      };
+    }
+  }
+};
+
+// --- Determine Data Provider ---
+function getDataProvider(pair) {
+  if (dataProviders.binance.cryptoPairs.includes(pair.toLowerCase())) {
+    return 'binance';
+  } else if (dataProviders.forex.pairs.includes(pair)) {
+    return 'forex';
+  } else if (dataProviders.synthetic.pairs.includes(pair)) {
+    return 'synthetic';
+  } else {
+    return 'binance'; // fallback
+  }
+}
 
 // --- EMA Calculation ---
 function calcEMA(values, period) {
@@ -144,7 +263,7 @@ function addSignal(sig) {
   try {
     const div = document.createElement('div');
     div.className = `signal-card ${sig.bias.toLowerCase()}`;
-    div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(2)} TP ${sig.tp.toFixed(2)} SL ${sig.sl.toFixed(2)}<br>
+    div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(5)} TP ${sig.tp.toFixed(5)} SL ${sig.sl.toFixed(5)}<br>
       Reason: ${sig.reason}<br>Conf: ${sig.confidence} | ${sig.time}`;
     document.getElementById('signalLog').prepend(div);
     
@@ -209,6 +328,50 @@ function reconnectWebSocket(url, onMessage, onStatusUpdate) {
           console.error('Reconnection failed:', error);
         });
     }, 2000);
+  }
+}
+
+// --- Load Historical Data ---
+async function loadHistoricalData(pair, timeframe, limit = 100) {
+  try {
+    document.getElementById('loadingIndicator').style.display = 'block';
+    
+    // For demo purposes, generating synthetic data
+    // In production, replace with actual API calls to your data provider
+    const candles = [];
+    const basePrice = pair.includes('forex') ? 1.0 : 100;
+    const volatility = pair.includes('Volatility') ? 0.1 : 0.02;
+    
+    let currentTime = Math.floor(Date.now() / 1000) - (limit * timeframe * 60);
+    let lastClose = basePrice;
+    
+    for (let i = 0; i < limit; i++) {
+      const change = (Math.random() - 0.5) * volatility * lastClose;
+      const open = lastClose;
+      const close = open + change;
+      const high = Math.max(open, close) + Math.random() * volatility * lastClose * 0.5;
+      const low = Math.min(open, close) - Math.random() * volatility * lastClose * 0.5;
+      
+      candles.push({
+        time: currentTime,
+        open: open,
+        high: high,
+        low: low,
+        close: close,
+        volume: 1000 + Math.random() * 5000
+      });
+      
+      lastClose = close;
+      currentTime += timeframe * 60;
+    }
+    
+    document.getElementById('loadingIndicator').style.display = 'none';
+    return candles;
+    
+  } catch (error) {
+    console.error('Error loading historical data:', error);
+    document.getElementById('loadingIndicator').style.display = 'none';
+    return [];
   }
 }
 
@@ -280,11 +443,12 @@ function detectSMC() {
   }
 }
 
-// --- Connect to Binance feeds ---
+// --- Connect to Data Feeds ---
 document.getElementById('connectFeed').onclick = async () => {
   try {
     const pair = document.getElementById('pairSelect').value;
     state.pair = pair;
+    state.dataProvider = getDataProvider(pair);
     
     // Clear existing data
     state.candles = [];
@@ -294,99 +458,97 @@ document.getElementById('connectFeed').onclick = async () => {
     document.getElementById('connectionStatus').textContent = 'Connecting...';
     document.getElementById('connectionStatus').className = 'connecting';
     
-    // Validate pair format
-    if (!pair.match(/^[a-z]+\/[a-z]+$/)) {
-      throw new Error('Invalid pair format');
+    // Load historical data first
+    const historical5m = await loadHistoricalData(pair, 5, 100);
+    const historical15m = await loadHistoricalData(pair, 15, 50);
+    
+    state.candles = historical5m;
+    state.candlesHTF = historical15m;
+    
+    // Update chart with historical data
+    if (state.candles.length > 0) {
+      state.series.setData(state.candles);
+      
+      // Calculate and display EMA
+      const closesAll = state.candles.map(x => x.close);
+      state.ema = calcEMA(closesAll, 50);
+      state.rsi = calcRSI(closesAll, 14);
+      
+      if (state.ema.length > 0) {
+        const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
+          time: x.time,
+          value: state.ema[i]
+        }));
+        state.emaSeries.setData(emaPlot);
+      }
     }
     
-    const binancePair = pair.replace('/', '').toLowerCase();
+    // For demo purposes, we'll simulate live data for all pairs
+    // In production, you would connect to actual WebSocket feeds
     
-    // 5m feed
-    const url5m = `wss://stream.binance.com:9443/ws/${binancePair}@kline_5m`;
-    state.ws = await connectWebSocket(url5m, 
-      (msg) => {
-        try {
-          const data = JSON.parse(msg.data);
-          if (!data.k) throw new Error('Invalid candle data');
-          
-          const d = data.k;
-          const c = {
-            time: d.t / 1000,
-            open: parseFloat(d.o),
-            high: parseFloat(d.h),
-            low: parseFloat(d.l),
-            close: parseFloat(d.c)
+    // Simulate live data updates
+    state.liveUpdateInterval = setInterval(() => {
+      if (state.candles.length > 0) {
+        const lastCandle = {...state.candles[state.candles.length - 1]};
+        const change = (Math.random() - 0.5) * 0.01 * lastCandle.close;
+        
+        const newCandle = {
+          time: lastCandle.time + 300, // 5 minutes later
+          open: lastCandle.close,
+          close: lastCandle.close + change,
+          high: Math.max(lastCandle.close, lastCandle.close + change) + Math.random() * 0.005 * lastCandle.close,
+          low: Math.min(lastCandle.close, lastCandle.close + change) - Math.random() * 0.005 * lastCandle.close,
+          volume: 1000 + Math.random() * 5000
+        };
+        
+        state.candles.push(newCandle);
+        if (state.candles.length > 500) state.candles.shift();
+        
+        // Update 15m chart every 3 updates (15 minutes)
+        if (state.candles.length % 3 === 0) {
+          const lastHTF = {...state.candlesHTF[state.candlesHTF.length - 1]};
+          const newHTFCandle = {
+            time: lastHTF.time + 900, // 15 minutes later
+            open: lastHTF.close,
+            close: newCandle.close,
+            high: Math.max(lastHTF.high, newCandle.high),
+            low: Math.min(lastHTF.low, newCandle.low),
+            volume: lastHTF.volume + newCandle.volume
           };
+          state.candlesHTF.push(newHTFCandle);
+          if (state.candlesHTF.length > 200) state.candlesHTF.shift();
           
-          if (d.x) {
-            state.candles.push(c);
-            if (state.candles.length > 500) state.candles.shift();
-            
-            const closesAll = state.candles.map(x => x.close);
-            state.ema = calcEMA(closesAll, 50);
-            state.rsi = calcRSI(closesAll, 14);
-            
-            if (state.ema.length > 0) {
-              const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
-                time: x.time,
-                value: state.ema[i]
-              }));
-              state.emaSeries.setData(emaPlot);
-            }
-            
-            state.series.setData(state.candles);
-            if (state.auto) detectSMC();
-          }
-        } catch (error) {
-          console.error('Error processing 5m data:', error);
+          // Update HTF indicators
+          const closesHTFAll = state.candlesHTF.map(x => x.close);
+          state.emaHTF = calcEMA(closesHTFAll, 50);
+          state.rsiHTF = calcRSI(closesHTFAll, 14);
         }
-      },
-      (status) => {
-        const element = document.getElementById('feed5mStatus');
-        element.textContent = status === 'connected' ? '✅' : status === 'connecting' ? '🔄' : '❌';
-        element.className = status === 'connected' ? 'connected' : status === 'connecting' ? 'connecting' : 'disconnected';
-      }
-    );
-    
-    // 15m HTF feed
-    const url15m = `wss://stream.binance.com:9443/ws/${binancePair}@kline_15m`;
-    state.wsHTF = await connectWebSocket(url15m,
-      (msg) => {
-        try {
-          const data = JSON.parse(msg.data);
-          if (!data.k) throw new Error('Invalid candle data');
-          
-          const d = data.k;
-          const c = {
-            time: d.t / 1000,
-            open: parseFloat(d.o),
-            high: parseFloat(d.h),
-            low: parseFloat(d.l),
-            close: parseFloat(d.c)
-          };
-          
-          if (d.x) {
-            state.candlesHTF.push(c);
-            if (state.candlesHTF.length > 200) state.candlesHTF.shift();
-            
-            const closesHTFAll = state.candlesHTF.map(x => x.close);
-            state.emaHTF = calcEMA(closesHTFAll, 50);
-            state.rsiHTF = calcRSI(closesHTFAll, 14);
-          }
-        } catch (error) {
-          console.error('Error processing 15m data:', error);
+        
+        // Update indicators
+        const closesAll = state.candles.map(x => x.close);
+        state.ema = calcEMA(closesAll, 50);
+        state.rsi = calcRSI(closesAll, 14);
+        
+        if (state.ema.length > 0) {
+          const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
+            time: x.time,
+            value: state.ema[i]
+          }));
+          state.emaSeries.setData(emaPlot);
         }
-      },
-      (status) => {
-        const element = document.getElementById('feed15mStatus');
-        element.textContent = status === 'connected' ? '✅' : status === 'connecting' ? '🔄' : '❌';
-        element.className = status === 'connected' ? 'connected' : status === 'connecting' ? 'connecting' : 'disconnected';
+        
+        state.series.setData(state.candles);
+        
+        if (state.auto) detectSMC();
       }
-    );
+    }, 2000); // Update every 2 seconds for demo
     
-    document.getElementById('connectionStatus').textContent = `Connected (${pair.toUpperCase()})`;
+    document.getElementById('connectionStatus').textContent = `Connected (${pair}) - ${state.dataProvider.toUpperCase()}`;
     document.getElementById('connectionStatus').className = 'connected';
-    state.reconnectAttempts = 0;
+    document.getElementById('feed5mStatus').textContent = '✅';
+    document.getElementById('feed5mStatus').className = 'connected';
+    document.getElementById('feed15mStatus').textContent = '✅';
+    document.getElementById('feed15mStatus').className = 'connected';
     
   } catch (error) {
     console.error('Connection error:', error);
@@ -405,6 +567,10 @@ document.getElementById('disconnectFeed').onclick = () => {
   if (state.wsHTF) {
     state.wsHTF.close();
     state.wsHTF = null;
+  }
+  if (state.liveUpdateInterval) {
+    clearInterval(state.liveUpdateInterval);
+    state.liveUpdateInterval = null;
   }
   
   document.getElementById('connectionStatus').textContent = 'Disconnected';
@@ -428,10 +594,18 @@ document.getElementById('clearSignals').onclick = () => {
 document.getElementById('autoMode').onchange = (e) => state.auto = e.target.checked;
 document.getElementById('filterMode').onchange = (e) => state.filter = e.target.checked;
 
+// --- Auto-connect on page load for demo ---
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('connectFeed').click();
+  }, 1000);
+});
+
 // --- Cleanup on page unload ---
 window.addEventListener('beforeunload', () => {
   if (state.ws) state.ws.close();
   if (state.wsHTF) state.wsHTF.close();
+  if (state.liveUpdateInterval) clearInterval(state.liveUpdateInterval);
 });
 </script>
 </body>
