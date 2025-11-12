@@ -1,869 +1,438 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Quantum Turbo Trader</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --primary: #6366f1; --primary-dark: #4338ca; --success: #10b981; --danger: #ef4444;
-            --warning: #f59e0b; --info: #3b82f6; --purple: #8b5cf6; --pink: #ec4899;
-            --bg-dark: #0f172a; --bg-card: #1e293b; --text-primary: #f1f5f9; --text-secondary: #94a3b8;
-            --border: #334155;
-        }
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg-dark); color: var(--text-primary); line-height:1.6; overflow-x:hidden; padding-bottom:80px; }
-        .container { max-width:100%; padding:0 15px; }
-        .header { background:var(--bg-card); padding:15px; position:sticky; top:0; z-index:100; border-bottom:1px solid var(--border); backdrop-filter: blur(10px); }
-        .nav-tabs { display:flex; justify-content:space-around; margin-top:10px; flex-wrap:wrap; gap:5px; }
-        .nav-tab { padding:8px 12px; border-radius:20px; font-size:12px; font-weight:500; transition:all .3s; white-space:nowrap; cursor:pointer; }
-        .nav-tab.active { background:var(--primary); color:white; }
-        .turbo-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:12px; margin:15px 0; }
-        .forex-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px,1fr)); gap:10px; margin:15px 0; }
-        .turbo-card { background:var(--bg-card); border-radius:12px; padding:15px; border:1px solid var(--border); transition:all .3s; position:relative; overflow:hidden; cursor:pointer; min-height:90px; }
-        .forex-card { background:var(--bg-card); border-radius:10px; padding:12px; border:1px solid var(--border); transition:all .3s; position:relative; overflow:hidden; cursor:pointer; min-height:80px; }
-        .turbo-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--primary); }
-        .turbo-card.jump::before { background:var(--pink); } .turbo-card.boom::before { background:var(--warning); }
-        .turbo-card.crash::before { background:var(--danger); } .turbo-card.volatility::before { background:var(--info); }
-        .forex-card.major::before { background:var(--success); }
-        .forex-card.minor::before { background:var(--info); }
-        .forex-card.exotic::before { background:var(--warning); }
-        .turbo-card.active { border-color:var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,.12); }
-        .forex-card.active { border-color:var(--primary); box-shadow: 0 0 0 2px rgba(99,102,241,.12); }
-        .market-badge { position:absolute; top:8px; right:8px; padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600; }
-        .badge-jump { background:var(--pink); } .badge-boom { background:var(--warning); color:black; }
-        .badge-crash { background:var(--danger); } .badge-volatility { background:var(--info); }
-        .badge-major { background:var(--success); } .badge-minor { background:var(--info); } .badge-exotic { background:var(--warning); color:black; }
-        .signal-card { background:var(--bg-card); border-radius:16px; padding:20px; margin:15px 0; border:1px solid var(--border); position:relative; overflow:hidden; }
-        .signal-card.turbo { background:linear-gradient(135deg, rgba(139,92,246,0.12), transparent); border-color:var(--purple); }
-        .signal-card.jump { background:linear-gradient(135deg, rgba(236,72,153,0.12), transparent); border-color:var(--pink); }
-        .signal-card.boom { background:linear-gradient(135deg, rgba(245,158,11,0.12), transparent); border-color:var(--warning); }
-        .signal-card.crash { background:linear-gradient(135deg, rgba(239,68,68,0.12), transparent); border-color:var(--danger); }
-        .signal-card.volatility { background:linear-gradient(135deg, rgba(59,130,246,0.12), transparent); border-color:var(--info); }
-        .signal-card.forex { background:linear-gradient(135deg, rgba(99,102,241,0.12), transparent); border-color:var(--primary); }
-        .signal-card.buy { background:linear-gradient(135deg, rgba(16,185,129,0.15), transparent); border-color:var(--success); }
-        .signal-card.sell { background:linear-gradient(135deg, rgba(239,68,68,0.15), transparent); border-color:var(--danger); }
-        .countdown { display:inline-block; padding:4px 8px; background:var(--primary); border-radius:8px; font-family:monospace; font-weight:bold; margin-left:8px; }
-        .countdown.warning { background:var(--warning); color:black; animation:blink 1s infinite; }
-        .countdown.danger { background:var(--danger); animation:blink .5s infinite; }
-        .btn { padding:12px 24px; border:none; border-radius:12px; font-weight:600; font-size:16px; cursor:pointer; transition:all .3s; display:flex; align-items:center; justify-content:center; gap:8px; }
-        .btn-primary { background:var(--primary); color:white; } .btn-success { background:var(--success); color:white; }
-        .btn-danger { background:var(--danger); color:white; } .btn-warning { background:var(--warning); color:black; }
-        .btn-turbo { background:var(--purple); color:white; } .btn-outline { background:transparent; border:2px solid var(--border); color:var(--text-primary); }
-        .btn.active-trade-up { background-color:var(--success) !important; color:white !important; }
-        .btn.active-trade-down { background-color:var(--danger) !important; color:white !important; }
-        .trade-panel { position:fixed; bottom:0; left:0; right:0; background:var(--bg-card); border-top:1px solid var(--border); padding:15px; z-index:1000; }
-        .trade-buttons { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-        .expiry-options { display:flex; gap:8px; margin:10px 0; flex-wrap:wrap; }
-        .expiry-option { padding:8px 12px; border:2px solid var(--border); border-radius:8px; cursor:pointer; transition:all .3s; font-size:14px; }
-        .expiry-option.active { border-color:var(--primary); background:var(--primary); color:white; }
-        .modal { display:none; position:fixed; z-index:1001; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.75); backdrop-filter: blur(5px); padding-top:50px; }
-        .modal.active { display:block; }
-        .modal-content { background-color:var(--bg-card); margin:5% auto; padding:20px; border:1px solid var(--border); width:90%; max-width:400px; border-radius:16px; box-shadow: 0 5px 15px rgba(0,0,0,.5); animation:slideIn .3s ease-out; }
-        @keyframes slideIn { from { transform: translateY(-50px); opacity:0; } to { transform: translateY(0); opacity:1; } }
-        .form-group { margin-bottom:15px; } .form-label { display:block; margin-bottom:5px; font-size:14px; color:var(--text-secondary); }
-        .form-input { width:100%; padding:10px; background:var(--bg-dark); border:1px solid var(--border); border-radius:8px; color:var(--text-primary); font-size:16px; }
-        @keyframes pulse { 0% { transform:scale(1); box-shadow:0 0 0 0 rgba(245,158,11,.7); } 50% { transform:scale(1.02); box-shadow:0 0 0 10px rgba(245,158,11,0); } 100% { transform:scale(1); box-shadow:0 0 0 0 rgba(245,158,11,0); } }
-        @keyframes blink { 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
-        @keyframes flash { 0%,100% { background: var(--bg-card); } 50% { background: var(--warning); } }
-        .flash { animation: flash .5s; }
-        .high-volatility { animation: pulse 2s infinite; border-color: var(--warning) !important; }
-        .text-success { color:var(--success); } .text-danger { color:var(--danger); } .text-warning { color:var(--warning); }
-        .text-info { color:var(--info); } .text-turbo { color:var(--purple); }
-        .flex { display:flex; } .justify-between { justify-content:space-between; } .items-center { align-items:center; }
-        .text-center { text-align:center; } .mb-1 { margin-bottom:8px; } .mb-2 { margin-bottom:16px; } .mt-2 { margin-top:16px; } .gap-2 { gap:16px; }
-        .text-large { font-size:20px; font-weight:700; }
-        .text-medium { font-size:16px; font-weight:600; }
-        .connection-status { font-size:12px; color:var(--text-secondary); margin-left:8px; }
-        .signals-container { max-height: 400px; overflow-y: auto; margin-top: 15px; }
-        .signals-container::-webkit-scrollbar { width: 6px; }
-        .signals-container::-webkit-scrollbar-track { background: var(--bg-dark); border-radius: 3px; }
-        .signals-container::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 3px; }
-        .signal-strength { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px; }
-        .strength-high { background: var(--success); color: white; }
-        .strength-medium { background: var(--warning); color: black; }
-        .strength-low { background: var(--danger); color: white; }
-        .signal-id { font-size: 10px; color: var(--text-secondary); }
-        .market-section { margin-bottom: 25px; }
-        .market-section h4 { margin-bottom: 12px; color: var(--text-secondary); font-size: 14px; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
-        @media (max-width:768px) { 
-            .turbo-grid { grid-template-columns:repeat(2,1fr); } 
-            .forex-grid { grid-template-columns:repeat(2,1fr); }
-            .btn { padding:14px 20px; } 
-            .nav-tab { padding:6px 10px; font-size:11px; } 
-        }
-        @media (max-width:480px) {
-            .forex-grid { grid-template-columns:1fr; }
-        }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AI SMC Multi-Timeframe Dashboard</title>
+<script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
+<style>
+body{font-family:'Poppins',sans-serif;background:#0b0b10;color:#eee;margin:0;padding:0;display:flex;flex-direction:column;align-items:center}
+header{background:#111827;width:100%;padding:10px 20px;text-align:center;font-size:1.3em;box-shadow:0 2px 5px rgba(0,0,0,.4)}
+.controls{margin:15px 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+select,button,input[type=checkbox]{background:#1f2937;color:#fff;border:none;padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:600;transition:.3s}
+button:hover,select:hover{background:#4f46e5}
+#chart{width:95%;height:400px;margin-top:10px;border-radius:10px}
+#signalLog{width:95%;margin-top:20px;background:#1e1e2e;border-radius:10px;padding:10px;max-height:250px;overflow-y:auto}
+.signal-card{background:#26263a;margin:5px 0;padding:10px;border-left:5px solid #6366f1;border-radius:8px;font-size:.9em}
+.buy{border-left-color:#22c55e}.sell{border-left-color:#ef4444}
+label{display:flex;align-items:center;gap:6px;font-size:.9em}
+.status-container{display:flex;gap:15px;margin:10px 0;flex-wrap:wrap;justify-content:center}
+.status-item{padding:8px 15px;background:#1f2937;border-radius:8px;font-size:0.9em}
+.connected{color:#22c55e}.disconnected{color:#ef4444}.connecting{color:#f59e0b}
+</style>
 </head>
 <body>
-    <div class="header">
-        <div class="flex justify-between items-center">
-            <h1>Quantum Turbo Trader</h1>
-            <div class="flex items-center gap-3">
-                <div id="connStatus" class="connection-status">Mode: <strong id="connState">LIVE</strong></div>
-                <button id="settingsBtn" class="btn btn-outline" style="padding:8px;">
-                    <i class="fas fa-cog"></i>
-                </button>
-            </div>
-        </div>
-        <div class="nav-tabs">
-            <div class="nav-tab active" data-tab="turbo">Turbo Markets</div>
-            <div class="nav-tab" data-tab="forex">Forex</div>
-            <div class="nav-tab" data-tab="jump">Jump Indices</div>
-            <div class="nav-tab" data-tab="boom">Boom & Crash</div>
-            <div class="nav-tab" data-tab="volatility">Volatility</div>
-        </div>
-    </div>
+<header>AI SMC Multi-Timeframe Dashboard</header>
 
-    <div class="container">
-        <!-- Turbo Markets Tab -->
-        <div id="turbo" class="tab-content active">
-            <div class="signal-card turbo">
-                <h3 class="mb-2">🚀 Turbo Markets Live</h3>
-                <p>Clean signals - No repainting, No double entries</p>
-            </div>
-            <div class="turbo-grid" id="turboMarkets"></div>
-            
-            <div class="signal-card turbo">
-                <h3 class="mb-2">🎯 Trading Signals</h3>
-                <div class="signals-container" id="turboSignals">
-                    <div class="text-center text-secondary" style="padding: 20px;">
-                        <i class="fas fa-wave-square" style="font-size: 24px; margin-bottom: 10px;"></i>
-                        <p>Waiting for trading signals...</p>
-                        <small>Clean single-entry signals only</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Forex Tab -->
-        <div id="forex" class="tab-content" style="display:none;">
-            <div class="signal-card forex">
-                <h3 class="mb-2">💱 Forex Markets</h3>
-                <p>Major, Minor & Exotic currency pairs with real-time pricing</p>
-            </div>
+<div class="controls">
+  <select id="pairSelect">
+    <option value="btcusdt">BTC / USDT</option>
+    <option value="ethusdt">ETH / USDT</option>
+    <option value="bnbusdt">BNB / USDT</option>
+    <option value="adausdt">ADA / USDT</option>
+    <option value="solusdt">SOL / USDT</option>
+  </select>
+  <button id="connectFeed">🔌 Connect Live Feed</button>
+  <button id="disconnectFeed">🔌 Disconnect</button>
+  <button id="generateSignal">⚡ Manual SMC Signal</button>
+  <label><input type="checkbox" id="autoMode"> Auto Signal Mode</label>
+  <label><input type="checkbox" id="filterMode"> EMA + RSI Filter</label>
+  <button id="clearSignals">🧹 Clear</button>
+</div>
 
-            <!-- Major Pairs -->
-            <div class="market-section">
-                <h4>💰 MAJOR PAIRS</h4>
-                <div class="forex-grid" id="majorPairs"></div>
-            </div>
+<div class="status-container">
+  <div>Status: <span id="connectionStatus" class="disconnected">Disconnected</span></div>
+  <div>5m Feed: <span id="feed5mStatus" class="disconnected">❌</span></div>
+  <div>15m Feed: <span id="feed15mStatus" class="disconnected">❌</span></div>
+</div>
 
-            <!-- Minor Pairs -->
-            <div class="market-section">
-                <h4>📊 MINOR PAIRS</h4>
-                <div class="forex-grid" id="minorPairs"></div>
-            </div>
+<div id="chart"></div>
+<h3>📊 Signals</h3>
+<div id="signalLog"></div>
 
-            <!-- Exotic Pairs -->
-            <div class="market-section">
-                <h4>🌍 EXOTIC PAIRS</h4>
-                <div class="forex-grid" id="exoticPairs"></div>
-            </div>
-        </div>
-        
-        <!-- Other Tabs -->
-        <div id="jump" class="tab-content" style="display:none;">
-            <div class="signal-card jump">
-                <h3 class="mb-2">🦘 Jump Indices</h3>
-                <p>Predict sharp upward price movements</p>
-            </div>
-            <div class="turbo-grid" id="jumpMarkets"></div>
-        </div>
-        
-        <div id="boom" class="tab-content" style="display:none;">
-            <div class="signal-card boom">
-                <h3 class="mb-2">💥 Boom & Crash</h3>
-                <p>Trade explosive market movements in both directions</p>
-            </div>
-            <div class="turbo-grid" id="boomMarkets"></div>
-        </div>
-        
-        <div id="volatility" class="tab-content" style="display:none;">
-            <div class="signal-card volatility">
-                <h3 class="mb-2">📊 Volatility Markets</h3>
-                <p>Trade market volatility without directional bias</p>
-            </div>
-            <div class="turbo-grid" id="volatilityMarkets"></div>
-        </div>
-    </div>
+<script>
+// --- Global State ---
+const state = {
+  ws: null,
+  wsHTF: null,
+  pair: "btcusdt",
+  candles: [],
+  candlesHTF: [],
+  ema: [],
+  emaHTF: [],
+  rsi: [],
+  rsiHTF: [],
+  auto: false,
+  filter: false,
+  lastSignalTime: 0,
+  series: null,
+  emaSeries: null,
+  signals: [],
+  reconnectAttempts: 0,
+  maxReconnectAttempts: 5
+};
 
-    <div class="trade-panel">
-        <div class="expiry-options" id="expiryOptions">
-            <div class="expiry-option active" data-minutes="1">1 Min</div>
-            <div class="expiry-option" data-minutes="2">2 Min</div>
-            <div class="expiry-option" data-minutes="5">5 Min</div>
-        </div>
-        <div class="trade-buttons">
-            <button id="turboUpBtn" class="btn btn-success"><i class="fas fa-arrow-up"></i> BUY</button>
-            <button id="turboDownBtn" class="btn btn-danger"><i class="fas fa-arrow-down"></i> SELL</button>
-        </div>
-    </div>
+// --- Chart setup ---
+const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+  layout: { background: { color: "#0b0b10" }, textColor: "#DDD" },
+  grid: { vertLines: { color: "#1e1e2e" }, horzLines: { color: "#1e1e2e" } },
+  timeScale: { timeVisible: true, secondsVisible: false }
+});
+state.series = chart.addCandlestickSeries();
+state.emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
 
-    <div id="turboTradeModal" class="modal" aria-hidden="true">
-        <div class="modal-content">
-            <h3 id="turboTradeTitle" class="mb-2">Turbo Trade</h3>
-            <div class="form-group">
-                <label class="form-label">Market</label>
-                <input class="form-input" id="turboTradeSymbol" readonly>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Direction</label>
-                <div class="flex gap-2">
-                    <button id="confirmUp" class="btn btn-outline" style="flex:1;"><i class="fas fa-arrow-up"></i> BUY</button>
-                    <button id="confirmDown" class="btn btn-outline" style="flex:1;"><i class="fas fa-arrow-down"></i> SELL</button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Entry Price</label>
-                <input class="form-input" id="turboTradeEntryPrice" readonly>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Amount ($)</label>
-                <input class="form-input" id="turboTradeAmount" type="number" value="50" min="5" max="1000">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Expires In</label>
-                <div class="countdown" id="tradeCountdown">01:00</div>
-            </div>
-            <div class="flex gap-2">
-                <button id="confirmTurboTrade" class="btn btn-turbo" style="flex:1;">Confirm Trade</button>
-                <button id="cancelTurboTrade" class="btn btn-outline" style="flex:1;">Cancel</button>
-            </div>
-        </div>
-    </div>
+// --- EMA Calculation ---
+function calcEMA(values, period) {
+  if (!values || values.length < period) return [];
+  try {
+    let k = 2 / (period + 1);
+    let ema = [values[0]];
+    for (let i = 1; i < values.length; i++) {
+      ema.push(values[i] * k + ema[i - 1] * (1 - k));
+    }
+    return ema;
+  } catch (error) {
+    console.error('EMA calculation error:', error);
+    return [];
+  }
+}
 
-    <script>
-    class QuantumTurboTrader {
-        constructor() {
-            this.turboMarkets = {
-                jump: [
-                    { symbol: '1HZ50V', name: 'Jump 50', price: 15432.50, volatility: 'high', type: 'jump', trend: 'neutral' },
-                    { symbol: '1HZ75V', name: 'Jump 75', price: 23456.75, volatility: 'very-high', type: 'jump', trend: 'neutral' },
-                    { symbol: '1HZ100V', name: 'Jump 100', price: 34567.25, volatility: 'extreme', type: 'jump', trend: 'neutral' }
-                ],
-                boom: [
-                    { symbol: 'BOOM500', name: 'Boom 500', price: 51234.80, volatility: 'high', type: 'boom', trend: 'neutral' },
-                    { symbol: 'BOOM1000', name: 'Boom 1000', price: 102345.60, volatility: 'very-high', type: 'boom', trend: 'neutral' },
-                    { symbol: 'CRASH500', name: 'Crash 500', price: 48765.40, volatility: 'high', type: 'crash', trend: 'neutral' },
-                    { symbol: 'CRASH1000', name: 'Crash 1000', price: 97654.20, volatility: 'very-high', type: 'crash', trend: 'neutral' }
-                ],
-                volatility: [
-                    { symbol: 'R_75', name: 'Volatility 75', price: 75000.25, volatility: 'extreme', type: 'volatility', trend: 'neutral' },
-                    { symbol: 'R_100', name: 'Volatility 100', price: 100000.50, volatility: 'extreme', type: 'volatility', trend: 'neutral' },
-                    { symbol: 'RDBULL', name: 'Volatility 250', price: 250000.75, volatility: 'extreme', type: 'volatility', trend: 'neutral' }
-                ]
-            };
+// --- Fixed RSI Calculation ---
+function calcRSI(values, period = 14) {
+  if (!values || values.length <= period) return [];
+  
+  try {
+    let gains = 0;
+    let losses = 0;
 
-            // Complete Forex Market Data
-            this.forexMarkets = {
-                major: [
-                    { symbol: 'EURUSD', name: 'EUR/USD', price: 1.0985, change: 0.12, type: 'major', trend: 'bullish', spread: 0.0001 },
-                    { symbol: 'GBPUSD', name: 'GBP/USD', price: 1.2750, change: -0.08, type: 'major', trend: 'bearish', spread: 0.0002 },
-                    { symbol: 'USDJPY', name: 'USD/JPY', price: 148.25, change: 0.25, type: 'major', trend: 'bullish', spread: 0.02 },
-                    { symbol: 'USDCHF', name: 'USD/CHF', price: 0.8830, change: -0.15, type: 'major', trend: 'bearish', spread: 0.0003 },
-                    { symbol: 'AUDUSD', name: 'AUD/USD', price: 0.6580, change: 0.18, type: 'major', trend: 'bullish', spread: 0.0003 },
-                    { symbol: 'USDCAD', name: 'USD/CAD', price: 1.3520, change: -0.10, type: 'major', trend: 'bearish', spread: 0.0004 },
-                    { symbol: 'NZDUSD', name: 'NZD/USD', price: 0.6125, change: 0.22, type: 'major', trend: 'bullish', spread: 0.0004 }
-                ],
-                minor: [
-                    { symbol: 'EURGBP', name: 'EUR/GBP', price: 0.8610, change: 0.05, type: 'minor', trend: 'bullish', spread: 0.0003 },
-                    { symbol: 'EURJPY', name: 'EUR/JPY', price: 162.80, change: 0.35, type: 'minor', trend: 'bullish', spread: 0.05 },
-                    { symbol: 'GBPJPY', name: 'GBP/JPY', price: 189.15, change: -0.20, type: 'minor', trend: 'bearish', spread: 0.08 },
-                    { symbol: 'EURCHF', name: 'EUR/CHF', price: 0.9705, change: 0.08, type: 'minor', trend: 'bullish', spread: 0.0004 },
-                    { symbol: 'AUDJPY', name: 'AUD/JPY', price: 97.60, change: 0.42, type: 'minor', trend: 'bullish', spread: 0.06 },
-                    { symbol: 'CADJPY', name: 'CAD/JPY', price: 109.65, change: -0.15, type: 'minor', trend: 'bearish', spread: 0.07 },
-                    { symbol: 'GBPCAD', name: 'GBP/CAD', price: 1.7220, change: 0.12, type: 'minor', trend: 'bullish', spread: 0.0006 }
-                ],
-                exotic: [
-                    { symbol: 'USDTRY', name: 'USD/TRY', price: 32.1500, change: 0.85, type: 'exotic', trend: 'bullish', spread: 0.0200 },
-                    { symbol: 'USDZAR', name: 'USD/ZAR', price: 18.9250, change: -0.45, type: 'exotic', trend: 'bearish', spread: 0.0150 },
-                    { symbol: 'USDMXN', name: 'USD/MXN', price: 17.0800, change: 0.25, type: 'exotic', trend: 'bullish', spread: 0.0080 },
-                    { symbol: 'USDHKD', name: 'USD/HKD', price: 7.8180, change: -0.02, type: 'exotic', trend: 'bearish', spread: 0.0005 },
-                    { symbol: 'USDSGD', name: 'USD/SGD', price: 1.3425, change: 0.08, type: 'exotic', trend: 'bullish', spread: 0.0006 },
-                    { symbol: 'USDNOK', name: 'USD/NOK', price: 10.6520, change: -0.32, type: 'exotic', trend: 'bearish', spread: 0.0120 }
-                ]
-            };
-            
-            this.activeTurboTrades = [];
-            this.currentExpiry = 1;
-            this.selectedMarket = null;
-            this.countdownInterval = null;
-            this.currentTradeDirection = null;
-            
-            // Signal tracking to prevent duplicates
-            this.activeSignals = new Set();
-            this.lastSignalTime = 0;
-            this.signalIdCounter = 1;
-            
-            this.init();
-        }
-
-        init() {
-            this.setupEventListeners();
-            this.renderTurboMarkets();
-            this.renderForexMarkets();
-            this.startCleanSignalGeneration();
-            
-            // Auto-select first market
-            const firstMarket = this.turboMarkets.jump[0];
-            if (firstMarket) {
-                this.selectTurboMarket(firstMarket.symbol);
-            }
-            
-            console.log('🚀 Quantum Turbo Trader Started - Complete Forex Market Added');
-        }
-
-        startCleanSignalGeneration() {
-            // Generate initial signal after 2 seconds
-            setTimeout(() => {
-                this.generateCleanSignal();
-            }, 2000);
-            
-            // Generate signals with proper spacing (no overlapping)
-            setInterval(() => {
-                this.generateCleanSignal();
-            }, 8000 + Math.random() * 4000); // 8-12 second intervals
-            
-            // Market price updates (separate from signals)
-            setInterval(() => {
-                this.updateMarketPrices();
-                this.updateForexPrices();
-            }, 3000);
-        }
-
-        updateMarketPrices() {
-            Object.values(this.turboMarkets).flat().forEach(market => {
-                if (market.price > 0) {
-                    const volatility = market.volatility === 'extreme' ? 0.2 : 
-                                     market.volatility === 'very-high' ? 0.12 : 0.08;
-                    
-                    const change = (Math.random() - 0.5) * volatility;
-                    const newPrice = market.price * (1 + change / 100);
-                    
-                    market.trend = newPrice > market.price ? 'bullish' : 'bearish';
-                    market.price = newPrice;
-                }
-            });
-            this.renderTurboMarkets();
-        }
-
-        updateForexPrices() {
-            Object.values(this.forexMarkets).flat().forEach(pair => {
-                if (pair.price > 0) {
-                    // Realistic forex price movements
-                    const volatility = pair.type === 'exotic' ? 0.08 : 
-                                     pair.type === 'minor' ? 0.04 : 0.02;
-                    
-                    const change = (Math.random() - 0.5) * volatility;
-                    const newPrice = pair.price * (1 + change / 100);
-                    
-                    pair.trend = newPrice > pair.price ? 'bullish' : 'bearish';
-                    pair.price = newPrice;
-                    pair.change = parseFloat((change).toFixed(2));
-                }
-            });
-            this.renderForexMarkets();
-        }
-
-        generateCleanSignal() {
-            const now = Date.now();
-            
-            // Ensure minimum time between signals
-            if (now - this.lastSignalTime < 5000) {
-                return;
-            }
-            
-            // Include forex pairs in signal generation
-            const allMarkets = [
-                ...Object.values(this.turboMarkets).flat(),
-                ...Object.values(this.forexMarkets).flat()
-            ];
-            
-            const randomMarket = allMarkets[Math.floor(Math.random() * allMarkets.length)];
-            
-            // Generate unique signal ID
-            const signalId = `S${this.signalIdCounter++}_${randomMarket.symbol}_${now}`;
-            
-            // Check if we already have an active signal for this market
-            if (this.activeSignals.has(randomMarket.symbol)) {
-                return; // Skip - market already has active signal
-            }
-            
-            const signalType = Math.random() > 0.5 ? 'BUY' : 'SELL';
-            const strength = Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.4 ? 'MEDIUM' : 'LOW';
-            const confidence = (75 + Math.random() * 20).toFixed(0);
-            
-            this.createCleanSignal(randomMarket, signalType, strength, confidence, signalId);
-            this.lastSignalTime = now;
-            
-            // Mark this market as having an active signal
-            this.activeSignals.add(randomMarket.symbol);
-            
-            // Auto-clear active signal after 30 seconds
-            setTimeout(() => {
-                this.activeSignals.delete(randomMarket.symbol);
-            }, 30000);
-        }
-
-        createCleanSignal(market, signalType, strength, confidence, signalId) {
-            const signalCard = document.createElement('div');
-            signalCard.className = `signal-card ${signalType.toLowerCase()}`;
-            signalCard.dataset.signalId = signalId;
-            
-            const strengthClass = `strength-${strength.toLowerCase()}`;
-            const signalIcon = signalType === 'BUY' ? '📈' : '📉';
-            const marketType = market.type === 'major' || market.type === 'minor' || market.type === 'exotic' ? 'forex' : market.type;
-
-            signalCard.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <h3>${signalIcon} ${signalType} SIGNAL</h3>
-                    <span class="signal-strength ${strengthClass}">${strength}</span>
-                </div>
-                <div class="flex justify-between items-center mb-2">
-                    <strong>${market.name}</strong>
-                    <span class="${signalType === 'BUY' ? 'text-success' : 'text-danger'}">
-                        ${market.type === 'major' || market.type === 'minor' || market.type === 'exotic' ? '' : '$'}${market.price.toFixed(market.type === 'major' || market.type === 'minor' || market.type === 'exotic' ? 4 : 2)}
-                    </span>
-                </div>
-                <div class="flex justify-between text-secondary mb-2">
-                    <span>Confidence: <strong>${confidence}%</strong></span>
-                    <span>${marketType.toUpperCase()}</span>
-                </div>
-                <div class="flex justify-between text-secondary">
-                    <small class="signal-id">${signalId}</small>
-                    <small>${new Date().toLocaleTimeString()}</small>
-                </div>
-            `;
-            
-            this.addSignalToDashboard(signalCard);
-            
-            // Only notify for high-confidence signals
-            if (strength === 'HIGH') {
-                this.showNotification(`${signalType} Signal - ${market.name}`, 
-                    `Confidence: ${confidence}% - ${market.price.toFixed(market.type === 'major' || market.type === 'minor' || market.type === 'exotic' ? 4 : 2)}`);
-            }
-        }
-
-        setupEventListeners() {
-            // Navigation tabs
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.addEventListener('click', (e) => {
-                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
-                    
-                    e.target.classList.add('active');
-                    const tabId = e.target.dataset.tab;
-                    const tabElement = document.getElementById(tabId);
-                    if (tabElement) {
-                        tabElement.style.display = 'block';
-                    }
-                });
-            });
-
-            // Expiry options
-            document.querySelectorAll('.expiry-option').forEach(option => {
-                option.addEventListener('click', (e) => {
-                    document.querySelectorAll('.expiry-option').forEach(o => o.classList.remove('active'));
-                    e.target.classList.add('active');
-                    this.currentExpiry = parseInt(e.target.dataset.minutes);
-                });
-            });
-
-            // Trade buttons
-            document.getElementById('turboUpBtn').addEventListener('click', () => {
-                this.showTurboTradeModal('BUY');
-            });
-
-            document.getElementById('turboDownBtn').addEventListener('click', () => {
-                this.showTurboTradeModal('SELL');
-            });
-
-            // Modal buttons
-            document.getElementById('cancelTurboTrade').addEventListener('click', () => {
-                this.hideModal('turboTradeModal');
-                this.stopCountdown();
-            });
-
-            document.getElementById('confirmTurboTrade').addEventListener('click', () => {
-                this.placeTurboTrade();
-            });
-
-            // Direction selection in modal
-            document.getElementById('confirmUp').addEventListener('click', () => {
-                this.currentTradeDirection = 'BUY';
-                document.getElementById('confirmUp').classList.add('active-trade-up');
-                document.getElementById('confirmDown').classList.remove('active-trade-down');
-            });
-
-            document.getElementById('confirmDown').addEventListener('click', () => {
-                this.currentTradeDirection = 'SELL';
-                document.getElementById('confirmDown').classList.add('active-trade-down');
-                document.getElementById('confirmUp').classList.remove('active-trade-up');
-            });
-
-            // Market selection
-            document.addEventListener('click', (e) => {
-                const card = e.target.closest('.turbo-card') || e.target.closest('.forex-card');
-                if (card && card.dataset.symbol) {
-                    if (card.classList.contains('forex-card')) {
-                        this.selectForexMarket(card.dataset.symbol);
-                    } else {
-                        this.selectTurboMarket(card.dataset.symbol);
-                    }
-                }
-            });
-
-            // Settings button
-            document.getElementById('settingsBtn').addEventListener('click', () => {
-                this.showNotification('Settings', 'Clean signal mode active');
-            });
-        }
-
-        renderTurboMarkets() {
-            this.renderMarketSection('turboMarkets', [...this.turboMarkets.jump, ...this.turboMarkets.boom, ...this.turboMarkets.volatility]);
-            this.renderMarketSection('jumpMarkets', this.turboMarkets.jump);
-            this.renderMarketSection('boomMarkets', this.turboMarkets.boom);
-            this.renderMarketSection('volatilityMarkets', this.turboMarkets.volatility);
-        }
-
-        renderMarketSection(containerId, markets) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-
-            container.innerHTML = markets.map(market => {
-                const badgeClass = `badge-${market.type}`;
-                const cardClass = `turbo-card ${market.type}`;
-                const isActive = this.selectedMarket && this.selectedMarket.symbol === market.symbol ? 'active' : '';
-                const trendSymbol = market.trend === 'bullish' ? '↗' : market.trend === 'bearish' ? '↘' : '➡';
-                const trendClass = market.trend === 'bullish' ? 'text-success' : market.trend === 'bearish' ? 'text-danger' : 'text-info';
-
-                return `
-                    <div class="${cardClass} ${isActive}" data-symbol="${market.symbol}">
-                        <div class="market-badge ${badgeClass}">${market.type.toUpperCase()}</div>
-                        <div class="flex justify-between items-center mb-1">
-                            <strong>${market.name}</strong>
-                            <span class="${trendClass}">${trendSymbol}</span>
-                        </div>
-                        <div class="text-large">$${market.price.toFixed(2)}</div>
-                        <div class="flex justify-between text-secondary">
-                            <small>Vol: ${market.volatility}</small>
-                            <small>Live</small>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        renderForexMarkets() {
-            this.renderForexSection('majorPairs', this.forexMarkets.major);
-            this.renderForexSection('minorPairs', this.forexMarkets.minor);
-            this.renderForexSection('exoticPairs', this.forexMarkets.exotic);
-        }
-
-        renderForexSection(containerId, pairs) {
-            const container = document.getElementById(containerId);
-            if (!container) return;
-
-            container.innerHTML = pairs.map(pair => {
-                const badgeClass = `badge-${pair.type}`;
-                const cardClass = `forex-card ${pair.type}`;
-                const isActive = this.selectedMarket && this.selectedMarket.symbol === pair.symbol ? 'active' : '';
-                const trendSymbol = pair.trend === 'bullish' ? '↗' : pair.trend === 'bearish' ? '↘' : '➡';
-                const trendClass = pair.trend === 'bullish' ? 'text-success' : pair.trend === 'bearish' ? 'text-danger' : 'text-info';
-                const changeClass = pair.change >= 0 ? 'text-success' : 'text-danger';
-                const changeSymbol = pair.change >= 0 ? '+' : '';
-
-                return `
-                    <div class="${cardClass} ${isActive}" data-symbol="${pair.symbol}">
-                        <div class="market-badge ${badgeClass}">${pair.type.toUpperCase()}</div>
-                        <div class="flex justify-between items-center mb-1">
-                            <strong class="text-medium">${pair.symbol}</strong>
-                            <span class="${trendClass}">${trendSymbol}</span>
-                        </div>
-                        <div class="text-large">${pair.price.toFixed(4)}</div>
-                        <div class="flex justify-between text-secondary">
-                            <small class="${changeClass}">${changeSymbol}${pair.change}%</small>
-                            <small>Spread: ${pair.spread}</small>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        selectTurboMarket(symbol) {
-            document.querySelectorAll('.turbo-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            const selectedCard = document.querySelector(`[data-symbol="${symbol}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('active');
-            }
-            
-            this.selectedMarket = this.findMarket(symbol);
-        }
-
-        selectForexMarket(symbol) {
-            document.querySelectorAll('.forex-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            const selectedCard = document.querySelector(`[data-symbol="${symbol}"]`);
-            if (selectedCard) {
-                selectedCard.classList.add('active');
-            }
-            
-            this.selectedMarket = this.findForexMarket(symbol);
-        }
-
-        findMarket(symbol) {
-            return Object.values(this.turboMarkets).flat().find(m => m.symbol === symbol);
-        }
-
-        findForexMarket(symbol) {
-            return Object.values(this.forexMarkets).flat().find(m => m.symbol === symbol);
-        }
-
-        showTurboTradeModal(direction) {
-            if (!this.selectedMarket) {
-                this.showNotification('Select Market', 'Please select a market first');
-                return;
-            }
-
-            this.currentTradeDirection = direction;
-            
-            document.getElementById('turboTradeTitle').textContent = `Turbo ${direction} Trade`;
-            document.getElementById('turboTradeSymbol').value = this.selectedMarket.name;
-            
-            const price = this.selectedMarket.type === 'major' || this.selectedMarket.type === 'minor' || this.selectedMarket.type === 'exotic' 
-                ? this.selectedMarket.price.toFixed(4) 
-                : this.selectedMarket.price.toFixed(2);
-                
-            document.getElementById('turboTradeEntryPrice').value = price;
-            
-            document.getElementById('confirmUp').classList.toggle('active-trade-up', direction === 'BUY');
-            document.getElementById('confirmDown').classList.toggle('active-trade-down', direction === 'SELL');
-            
-            this.startTradeCountdown();
-            this.showModal('turboTradeModal');
-        }
-
-        startTradeCountdown() {
-            let timeLeft = this.currentExpiry * 60;
-            const countdownElement = document.getElementById('tradeCountdown');
-            
-            this.stopCountdown();
-            
-            this.countdownInterval = setInterval(() => {
-                const minutes = Math.floor(timeLeft / 60);
-                const seconds = timeLeft % 60;
-                
-                if (countdownElement) {
-                    countdownElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-                    
-                    if (timeLeft <= 10) {
-                        countdownElement.className = 'countdown danger';
-                    } else if (timeLeft <= 30) {
-                        countdownElement.className = 'countdown warning';
-                    } else {
-                        countdownElement.className = 'countdown';
-                    }
-                }
-                
-                if (timeLeft <= 0) {
-                    this.stopCountdown();
-                    this.hideModal('turboTradeModal');
-                }
-                
-                timeLeft--;
-            }, 1000);
-        }
-
-        stopCountdown() {
-            if (this.countdownInterval) {
-                clearInterval(this.countdownInterval);
-                this.countdownInterval = null;
-            }
-        }
-
-        placeTurboTrade() {
-            if (!this.currentTradeDirection) {
-                this.showNotification('Error', 'Please select trade direction');
-                return;
-            }
-
-            const amountInput = document.getElementById('turboTradeAmount');
-            const amount = amountInput ? parseFloat(amountInput.value) : 0;
-            
-            if (isNaN(amount) || amount < 5 || amount > 1000) {
-                this.showNotification('Invalid Amount', 'Amount must be between $5 and $1000');
-                return;
-            }
-
-            const trade = {
-                id: Date.now(),
-                symbol: this.selectedMarket.symbol,
-                name: this.selectedMarket.name,
-                direction: this.currentTradeDirection,
-                amount: amount,
-                expiry: this.currentExpiry,
-                entryPrice: this.selectedMarket.price,
-                timestamp: new Date(),
-                status: 'PENDING'
-            };
-
-            this.activeTurboTrades.push(trade);
-            
-            this.hideModal('turboTradeModal');
-            this.stopCountdown();
-            
-            // Create single trade execution signal
-            this.createTradeSignal(trade);
-            
-            // Simulate trade resolution
-            setTimeout(() => {
-                this.resolveTurboTrade(trade);
-            }, this.currentExpiry * 60 * 1000);
-
-            this.showNotification('Trade Executed', 
-                `${trade.direction} ${trade.name} - $${trade.amount}`);
-        }
-
-        createTradeSignal(trade) {
-            const signalCard = document.createElement('div');
-            signalCard.className = `signal-card ${trade.direction.toLowerCase()}`;
-            signalCard.dataset.signalId = `TRADE_${trade.id}`;
-            
-            signalCard.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <h3>🎯 TRADE EXECUTED</h3>
-                    <span class="signal-strength strength-medium">LIVE</span>
-                </div>
-                <div class="flex justify-between items-center mb-2">
-                    <strong>${trade.name}</strong>
-                    <span class="text-large">${trade.direction}</span>
-                </div>
-                <div class="flex justify-between text-secondary">
-                    <span>Amount: $${trade.amount}</span>
-                    <span>Expires: ${trade.expiry}min</span>
-                </div>
-                <div class="flex justify-between text-secondary">
-                    <small class="signal-id">TRADE_${trade.id}</small>
-                    <small>${trade.timestamp.toLocaleTimeString()}</small>
-                </div>
-            `;
-            
-            this.addSignalToDashboard(signalCard);
-        }
-
-        resolveTurboTrade(trade) {
-            const market = this.findMarket(trade.symbol) || this.findForexMarket(trade.symbol);
-            if (!market) return;
-
-            const currentPrice = market.price;
-            const wasProfitable = (trade.direction === 'BUY' && currentPrice > trade.entryPrice) ||
-                                (trade.direction === 'SELL' && currentPrice < trade.entryPrice);
-
-            trade.status = wasProfitable ? 'WIN' : 'LOSS';
-            trade.exitPrice = currentPrice;
-            trade.profit = wasProfitable ? trade.amount * 0.85 : -trade.amount;
-
-            // Create single trade result signal
-            this.createTradeResultSignal(trade, wasProfitable);
-            
-            this.showNotification(
-                `Trade ${trade.status}`,
-                `${trade.name}: $${Math.abs(trade.profit).toFixed(2)} ${wasProfitable ? 'Profit!' : 'Loss'}`
-            );
-        }
-
-        createTradeResultSignal(trade, wasProfitable) {
-            const signalCard = document.createElement('div');
-            signalCard.className = `signal-card ${wasProfitable ? 'buy' : 'sell'}`;
-            signalCard.dataset.signalId = `RESULT_${trade.id}`;
-            
-            signalCard.innerHTML = `
-                <div class="flex justify-between items-center mb-2">
-                    <h3>${wasProfitable ? '💰 TRADE WON' : '💸 TRADE LOST'}</h3>
-                    <span class="signal-strength ${wasProfitable ? 'strength-high' : 'strength-low'}">${wasProfitable ? 'WIN' : 'LOSS'}</span>
-                </div>
-                <div class="flex justify-between items-center mb-2">
-                    <strong>${trade.name}</strong>
-                    <span class="${wasProfitable ? 'text-success' : 'text-danger'}">${wasProfitable ? '+' : '-'}$${Math.abs(trade.profit).toFixed(2)}</span>
-                </div>
-                <div class="flex justify-between text-secondary">
-                    <span>${trade.direction} @ ${trade.entryPrice.toFixed(trade.name.includes('/') ? 4 : 2)}</span>
-                    <span>Exit: ${trade.exitPrice.toFixed(trade.name.includes('/') ? 4 : 2)}</span>
-                </div>
-                <div class="flex justify-between text-secondary">
-                    <small class="signal-id">RESULT_${trade.id}</small>
-                    <small>${new Date().toLocaleTimeString()}</small>
-                </div>
-            `;
-            
-            this.addSignalToDashboard(signalCard);
-        }
-
-        addSignalToDashboard(signalCard) {
-            const dashboard = document.getElementById('turboSignals');
-            if (!dashboard) return;
-
-            // Remove "waiting" message if it exists
-            const waitingMessage = dashboard.querySelector('.text-center');
-            if (waitingMessage) {
-                waitingMessage.remove();
-            }
-
-            // Add new signal at the top
-            dashboard.insertBefore(signalCard, dashboard.firstChild);
-
-            // Limit to 6 signals maximum
-            const signals = dashboard.querySelectorAll('.signal-card');
-            if (signals.length > 6) {
-                signals[signals.length - 1].remove();
-            }
-            
-            // Auto-scroll to top
-            dashboard.scrollTop = 0;
-        }
-
-        showModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.add('active');
-                modal.setAttribute('aria-hidden', 'false');
-            }
-        }
-
-        hideModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.remove('active');
-                modal.setAttribute('aria-hidden', 'true');
-            }
-        }
-
-        showNotification(title, message) {
-            if ("Notification" in window && Notification.permission === "granted") {
-                new Notification(title, { body: message });
-            } else if (Notification.permission !== "denied") {
-                Notification.requestPermission();
-            }
-        }
+    // Calculate initial gains and losses
+    for (let i = 1; i <= period; i++) {
+      const diff = values[i] - values[i - 1];
+      gains += Math.max(diff, 0);
+      losses += Math.max(-diff, 0);
     }
 
-    // Initialize the application
-    document.addEventListener('DOMContentLoaded', () => {
-        window.quantumTrader = new QuantumTurboTrader();
-        
-        if ("Notification" in window && Notification.permission === "default") {
-            Notification.requestPermission();
+    let avgGain = gains / period;
+    let avgLoss = losses / period;
+    const rsi = new Array(period).fill(null); // Fill initial values with null
+
+    // Calculate subsequent RSI values
+    for (let i = period + 1; i < values.length; i++) {
+      const diff = values[i] - values[i - 1];
+      const currentGain = Math.max(diff, 0);
+      const currentLoss = Math.max(-diff, 0);
+
+      avgGain = (avgGain * (period - 1) + currentGain) / period;
+      avgLoss = (avgLoss * (period - 1) + currentLoss) / period;
+
+      if (avgLoss === 0) {
+        rsi.push(100);
+      } else {
+        const rs = avgGain / avgLoss;
+        rsi.push(100 - (100 / (1 + rs)));
+      }
+    }
+    return rsi;
+  } catch (error) {
+    console.error('RSI calculation error:', error);
+    return [];
+  }
+}
+
+// --- Add signal ---
+function addSignal(sig) {
+  try {
+    const div = document.createElement('div');
+    div.className = `signal-card ${sig.bias.toLowerCase()}`;
+    div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(2)} TP ${sig.tp.toFixed(2)} SL ${sig.sl.toFixed(2)}<br>
+      Reason: ${sig.reason}<br>Conf: ${sig.confidence} | ${sig.time}`;
+    document.getElementById('signalLog').prepend(div);
+    
+    // Add marker to chart
+    state.series.setMarkers([{
+      time: Math.floor(Date.now() / 1000),
+      position: sig.bias === 'BUY' ? 'belowBar' : 'aboveBar',
+      color: sig.bias === 'BUY' ? '#22c55e' : '#ef4444',
+      shape: sig.bias === 'BUY' ? 'arrowUp' : 'arrowDown',
+      text: sig.bias
+    }]);
+  } catch (error) {
+    console.error('Error adding signal:', error);
+  }
+}
+
+// --- WebSocket Management ---
+function connectWebSocket(url, onMessage, onStatusUpdate) {
+  return new Promise((resolve, reject) => {
+    try {
+      const ws = new WebSocket(url);
+      
+      ws.onopen = () => {
+        onStatusUpdate('connected');
+        resolve(ws);
+      };
+      
+      ws.onmessage = onMessage;
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        onStatusUpdate('error');
+        reject(error);
+      };
+      
+      ws.onclose = (event) => {
+        if (!event.wasClean) {
+          onStatusUpdate('disconnected');
+          setTimeout(() => reconnectWebSocket(url, onMessage, onStatusUpdate), 5000);
         }
-    });
-    </script>
+      };
+      
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
+
+function reconnectWebSocket(url, onMessage, onStatusUpdate) {
+  if (state.reconnectAttempts < state.maxReconnectAttempts) {
+    state.reconnectAttempts++;
+    onStatusUpdate('connecting');
+    console.log(`Reconnection attempt ${state.reconnectAttempts}`);
+    
+    setTimeout(() => {
+      connectWebSocket(url, onMessage, onStatusUpdate)
+        .then(ws => {
+          state.reconnectAttempts = 0;
+          return ws;
+        })
+        .catch(error => {
+          console.error('Reconnection failed:', error);
+        });
+    }, 2000);
+  }
+}
+
+// --- Detect SMC Signal with multi-timeframe confirmation ---
+function detectSMC() {
+  try {
+    if (!state.candles || state.candles.length < 30 || !state.candlesHTF || state.candlesHTF.length < 10) {
+      console.log('Insufficient data for SMC detection');
+      return;
+    }
+
+    // 5m analysis
+    const last = state.candles.slice(-10);
+    const closes = last.map(c => c.close);
+    const high = Math.max(...closes);
+    const low = Math.min(...closes);
+    const dir5 = closes[9] > closes[0] ? 'BUY' : 'SELL';
+    const range = high - low;
+    const retraceZone = dir5 === 'BUY' ? low + range * 0.4 : high - range * 0.4;
+    const entry = closes[9];
+    const valid5 = dir5 === 'BUY' ? (entry > retraceZone && entry < high) : (entry < retraceZone && entry > low);
+    
+    if (!valid5) return;
+
+    // 15m higher timeframe
+    const lastHTF = state.candlesHTF.slice(-5);
+    const closesHTF = lastHTF.map(c => c.close);
+    const dirHTF = closesHTF[closesHTF.length - 1] > closesHTF[0] ? 'BUY' : 'SELL';
+
+    // Check if both timeframes agree
+    if (dir5 !== dirHTF) return;
+
+    // EMA + RSI Filter
+    if (state.filter) {
+      const emaNow = state.ema[state.ema.length - 1];
+      const emaHTFNow = state.emaHTF[state.emaHTF.length - 1];
+      const rsiNow = state.rsi[state.rsi.length - 1];
+      const rsiHTFNow = state.rsiHTF[state.rsiHTF.length - 1];
+      
+      if (!emaNow || !emaHTFNow || !rsiNow || !rsiHTFNow) return;
+      
+      if (dir5 === 'BUY' && (entry < emaNow || rsiNow < 50 || rsiHTFNow < 50)) return;
+      if (dir5 === 'SELL' && (entry > emaNow || rsiNow > 50 || rsiHTFNow > 50)) return;
+    }
+
+    const bias = dir5;
+    const sl = bias === 'BUY' ? low - range * 0.2 : high + range * 0.2;
+    const tp = bias === 'BUY' ? high + range * 0.8 : low - range * 0.8;
+    const confidence = (0.8 + Math.random() * 0.15).toFixed(2);
+    
+    const sig = {
+      pair: state.pair.toUpperCase(),
+      bias,
+      entry,
+      tp,
+      sl,
+      reason: `${bias === 'BUY' ? 'Bullish' : 'Bearish'} OB + Retrace + Multi-Timeframe${state.filter ? ' + EMA+RSI' : ''}`,
+      confidence,
+      time: new Date().toLocaleTimeString()
+    };
+    
+    if (Date.now() - state.lastSignalTime > 60000) {
+      state.lastSignalTime = Date.now();
+      state.signals.push(sig);
+      addSignal(sig);
+    }
+  } catch (error) {
+    console.error('Error in SMC detection:', error);
+  }
+}
+
+// --- Connect to Binance feeds ---
+document.getElementById('connectFeed').onclick = async () => {
+  try {
+    const pair = document.getElementById('pairSelect').value;
+    state.pair = pair;
+    
+    // Clear existing data
+    state.candles = [];
+    state.candlesHTF = [];
+    
+    // Update status
+    document.getElementById('connectionStatus').textContent = 'Connecting...';
+    document.getElementById('connectionStatus').className = 'connecting';
+    
+    // Validate pair format
+    if (!pair.match(/^[a-z]+\/[a-z]+$/)) {
+      throw new Error('Invalid pair format');
+    }
+    
+    const binancePair = pair.replace('/', '').toLowerCase();
+    
+    // 5m feed
+    const url5m = `wss://stream.binance.com:9443/ws/${binancePair}@kline_5m`;
+    state.ws = await connectWebSocket(url5m, 
+      (msg) => {
+        try {
+          const data = JSON.parse(msg.data);
+          if (!data.k) throw new Error('Invalid candle data');
+          
+          const d = data.k;
+          const c = {
+            time: d.t / 1000,
+            open: parseFloat(d.o),
+            high: parseFloat(d.h),
+            low: parseFloat(d.l),
+            close: parseFloat(d.c)
+          };
+          
+          if (d.x) {
+            state.candles.push(c);
+            if (state.candles.length > 500) state.candles.shift();
+            
+            const closesAll = state.candles.map(x => x.close);
+            state.ema = calcEMA(closesAll, 50);
+            state.rsi = calcRSI(closesAll, 14);
+            
+            if (state.ema.length > 0) {
+              const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
+                time: x.time,
+                value: state.ema[i]
+              }));
+              state.emaSeries.setData(emaPlot);
+            }
+            
+            state.series.setData(state.candles);
+            if (state.auto) detectSMC();
+          }
+        } catch (error) {
+          console.error('Error processing 5m data:', error);
+        }
+      },
+      (status) => {
+        const element = document.getElementById('feed5mStatus');
+        element.textContent = status === 'connected' ? '✅' : status === 'connecting' ? '🔄' : '❌';
+        element.className = status === 'connected' ? 'connected' : status === 'connecting' ? 'connecting' : 'disconnected';
+      }
+    );
+    
+    // 15m HTF feed
+    const url15m = `wss://stream.binance.com:9443/ws/${binancePair}@kline_15m`;
+    state.wsHTF = await connectWebSocket(url15m,
+      (msg) => {
+        try {
+          const data = JSON.parse(msg.data);
+          if (!data.k) throw new Error('Invalid candle data');
+          
+          const d = data.k;
+          const c = {
+            time: d.t / 1000,
+            open: parseFloat(d.o),
+            high: parseFloat(d.h),
+            low: parseFloat(d.l),
+            close: parseFloat(d.c)
+          };
+          
+          if (d.x) {
+            state.candlesHTF.push(c);
+            if (state.candlesHTF.length > 200) state.candlesHTF.shift();
+            
+            const closesHTFAll = state.candlesHTF.map(x => x.close);
+            state.emaHTF = calcEMA(closesHTFAll, 50);
+            state.rsiHTF = calcRSI(closesHTFAll, 14);
+          }
+        } catch (error) {
+          console.error('Error processing 15m data:', error);
+        }
+      },
+      (status) => {
+        const element = document.getElementById('feed15mStatus');
+        element.textContent = status === 'connected' ? '✅' : status === 'connecting' ? '🔄' : '❌';
+        element.className = status === 'connected' ? 'connected' : status === 'connecting' ? 'connecting' : 'disconnected';
+      }
+    );
+    
+    document.getElementById('connectionStatus').textContent = `Connected (${pair.toUpperCase()})`;
+    document.getElementById('connectionStatus').className = 'connected';
+    state.reconnectAttempts = 0;
+    
+  } catch (error) {
+    console.error('Connection error:', error);
+    document.getElementById('connectionStatus').textContent = 'Connection Failed';
+    document.getElementById('connectionStatus').className = 'disconnected';
+    alert(`Failed to connect: ${error.message}`);
+  }
+};
+
+// --- Disconnect feeds ---
+document.getElementById('disconnectFeed').onclick = () => {
+  if (state.ws) {
+    state.ws.close();
+    state.ws = null;
+  }
+  if (state.wsHTF) {
+    state.wsHTF.close();
+    state.wsHTF = null;
+  }
+  
+  document.getElementById('connectionStatus').textContent = 'Disconnected';
+  document.getElementById('connectionStatus').className = 'disconnected';
+  document.getElementById('feed5mStatus').textContent = '❌';
+  document.getElementById('feed5mStatus').className = 'disconnected';
+  document.getElementById('feed15mStatus').textContent = '❌';
+  document.getElementById('feed15mStatus').className = 'disconnected';
+};
+
+// --- Manual generation ---
+document.getElementById('generateSignal').onclick = detectSMC;
+
+// --- Clear log ---
+document.getElementById('clearSignals').onclick = () => {
+  document.getElementById('signalLog').innerHTML = '';
+  state.signals = [];
+};
+
+// --- Auto Mode toggle ---
+document.getElementById('autoMode').onchange = (e) => state.auto = e.target.checked;
+document.getElementById('filterMode').onchange = (e) => state.filter = e.target.checked;
+
+// --- Cleanup on page unload ---
+window.addEventListener('beforeunload', () => {
+  if (state.ws) state.ws.close();
+  if (state.wsHTF) state.wsHTF.close();
+});
+</script>
 </body>
 </html>
