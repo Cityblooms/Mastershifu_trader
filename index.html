@@ -1,612 +1,689 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AI SMC Multi-Timeframe Dashboard</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>AI SMC Multi-Timeframe Dashboard — Deriv Ready</title>
+
+<!-- Lightweight Charts -->
 <script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
+
 <style>
-body{font-family:'Poppins',sans-serif;background:#0b0b10;color:#eee;margin:0;padding:0;display:flex;flex-direction:column;align-items:center}
-header{background:#111827;width:100%;padding:10px 20px;text-align:center;font-size:1.3em;box-shadow:0 2px 5px rgba(0,0,0,.4)}
-.controls{margin:15px 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-select,button,input[type=checkbox]{background:#1f2937;color:#fff;border:none;padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:600;transition:.3s}
-button:hover,select:hover{background:#4f46e5}
-#chart{width:95%;height:400px;margin-top:10px;border-radius:10px}
-#signalLog{width:95%;margin-top:20px;background:#1e1e2e;border-radius:10px;padding:10px;max-height:250px;overflow-y:auto}
-.signal-card{background:#26263a;margin:5px 0;padding:10px;border-left:5px solid #6366f1;border-radius:8px;font-size:.9em}
-.buy{border-left-color:#22c55e}.sell{border-left-color:#ef4444}
-label{display:flex;align-items:center;gap:6px;font-size:.9em}
-.status-container{display:flex;gap:15px;margin:10px 0;flex-wrap:wrap;justify-content:center}
-.status-item{padding:8px 15px;background:#1f2937;border-radius:8px;font-size:0.9em}
-.connected{color:#22c55e}.disconnected{color:#ef4444}.connecting{color:#f59e0b}
-.loading{display:none;color:#f59e0b}
+  /* --- Theme & Layout (kept close to your original) --- */
+  body{font-family:'Poppins',sans-serif;background:#0b0b10;color:#eee;margin:0;padding:0;display:flex;flex-direction:column;align-items:center}
+  header{background:#111827;width:100%;padding:10px 20px;text-align:center;font-size:1.2em;box-shadow:0 2px 5px rgba(0,0,0,.4)}
+  .controls{margin:12px 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  select,button,input[type=checkbox],input[type=password]{background:#1f2937;color:#fff;border:none;padding:10px 12px;border-radius:10px;cursor:pointer;font-weight:600;transition:.25s}
+  button:hover,select:hover,input[type=password]:hover{background:#4f46e5}
+  #chart{width:95%;height:420px;margin-top:10px;border-radius:10px}
+  #signalLog{width:95%;margin-top:16px;background:#1e1e2e;border-radius:10px;padding:10px;max-height:260px;overflow-y:auto}
+  .signal-card{background:#26263a;margin:5px 0;padding:10px;border-left:5px solid #6366f1;border-radius:8px;font-size:.9em}
+  .buy{border-left-color:#22c55e}.sell{border-left-color:#ef4444}
+  label{display:flex;align-items:center;gap:8px;font-size:.9em}
+  .status-container{display:flex;gap:15px;margin:10px 0;flex-wrap:wrap;justify-content:center}
+  .status-item{padding:8px 12px;background:#1f2937;border-radius:8px;font-size:0.9em}
+  .connected{color:#22c55e}.disconnected{color:#ef4444}.connecting{color:#f59e0b}
+  .loading{display:none;color:#f59e0b}
+  .time-display{font-size:0.9em;color:#888;margin:6px 0}
+  .conditions{background:#1a1a2e;padding:10px;border-radius:8px;margin:10px 0;font-size:0.85em;width:95%}
+  .condition-met{color:#22c55e}
+  .condition-failed{color:#ef4444}
+  .small{font-size:0.85em;color:#bbb}
+  input[type=password]{width:220px}
 </style>
 </head>
 <body>
-<header>AI SMC Multi-Timeframe Dashboard</header>
+<header>AI SMC Multi-Timeframe Dashboard — Deriv Ready</header>
 
 <div class="controls">
-  <select id="pairSelect">
-    <optgroup label="Cryptocurrencies">
-      <option value="btcusdt">BTC/USDT</option>
-      <option value="ethusdt">ETH/USDT</option>
-      <option value="bnbusdt">BNB/USDT</option>
-      <option value="adausdt">ADA/USDT</option>
-      <option value="solusdt">SOL/USDT</option>
-      <option value="dotusdt">DOT/USDT</option>
-      <option value="linkusdt">LINK/USDT</option>
-      <option value="ltcusdt">LTC/USDT</option>
+  <select id="pairSelect" title="Locked pair list (non-tamper)">
+    <optgroup label="Crypto Futures / Cross (kept for convenience)">
+      <option value="BTCUSD">BTCUSD</option>
+      <option value="ETHUSD">ETHUSD</option>
     </optgroup>
-    <optgroup label="Major Forex Pairs">
-      <option value="EURUSD">EUR/USD</option>
-      <option value="GBPUSD">GBP/USD</option>
-      <option value="USDJPY">USD/JPY</option>
-      <option value="USDCHF">USD/CHF</option>
-      <option value="AUDUSD">AUD/USD</option>
-      <option value="USDCAD">USD/CAD</option>
-      <option value="NZDUSD">NZD/USD</option>
+    <optgroup label="Forex">
+      <option value="frxEURUSD">EUR/USD</option>
+      <option value="frxGBPUSD">GBP/USD</option>
+      <option value="frxUSDJPY">USD/JPY</option>
+      <option value="frxAUDUSD">AUD/USD</option>
     </optgroup>
-    <optgroup label="Minor Forex Pairs">
-      <option value="EURGBP">EUR/GBP</option>
-      <option value="EURJPY">EUR/JPY</option>
-      <option value="GBPJPY">GBP/JPY</option>
-      <option value="EURCAD">EUR/CAD</option>
-      <option value="AUDJPY">AUD/JPY</option>
-      <option value="CADJPY">CAD/JPY</option>
+    <optgroup label="Indices">
+      <option value="IDXSP">US 500 (S&P)</option>
+      <option value="IDXNAS">US Tech 100</option>
+      <option value="IDXUKX">UK 100</option>
     </optgroup>
-    <optgroup label="Synthetic Indices">
-      <option value="SYNTH_Volatility">Volatility 75 Index</option>
-      <option value="SYNTH_Boom">Boom 1000 Index</option>
-      <option value="SYNTH_Crash">Crash 1000 Index</option>
-      <option value="SYNTH_Step">Step Index</option>
-      <option value="SYNTH_Range">Range Break Index</option>
-      <option value="SYNTH_Jump">Jump Index</option>
-    </optgroup>
-    <optgroup label="Commodities">
-      <option value="XAUUSD">Gold (XAU/USD)</option>
-      <option value="XAGUSD">Silver (XAG/USD)</option>
-      <option value="XPTUSD">Platinum (XPT/USD)</option>
-      <option value="XPDUSD">Palladium (XPD/USD)</option>
-    </optgroup>
-    <optgroup label="Stock Indices">
-      <option value="US30">US30 (Dow Jones)</option>
-      <option value="SPX500">SPX500 (S&P 500)</option>
-      <option value="NAS100">NAS100 (Nasdaq)</option>
-      <option value="UK100">UK100 (FTSE)</option>
-      <option value="GER40">GER40 (DAX)</option>
-      <option value="JPN225">JPN225 (Nikkei)</option>
+    <optgroup label="Deriv Synthetics">
+      <option value="R_10">R_10</option>
+      <option value="R_25">R_25</option>
+      <option value="R_50">R_50</option>
+      <option value="R_100">R_100</option>
+      <option value="VRTT">Volatility 75</option>
     </optgroup>
   </select>
-  <button id="connectFeed">🔌 Connect Live Feed</button>
+
+  <button id="connectReal">🔐 Connect (Real)</button>
+  <button id="connectDemo">🧪 Connect (Demo)</button>
   <button id="disconnectFeed">🔌 Disconnect</button>
   <button id="generateSignal">⚡ Manual SMC Signal</button>
-  <label><input type="checkbox" id="autoMode"> Auto Signal Mode</label>
-  <label><input type="checkbox" id="filterMode"> EMA + RSI Filter</label>
+
+  <label><input type="checkbox" id="autoMode" checked> Auto Signal Mode</label>
+  <label><input type="checkbox" id="filterMode" checked> EMA + RSI Filter</label>
   <button id="clearSignals">🧹 Clear</button>
 </div>
 
+<div class="controls" style="margin-top:0;">
+  <!-- Paste your Deriv token here (optional). If empty -> demo mode. -->
+  <input type="password" id="derivToken" placeholder="Paste Deriv API token (optional)"/>
+  <div class="small">App ID (test): <span id="appId" class="small">1089</span></div>
+</div>
+
 <div class="status-container">
-  <div>Status: <span id="connectionStatus" class="disconnected">Disconnected</span></div>
-  <div>5m Feed: <span id="feed5mStatus" class="disconnected">❌</span></div>
-  <div>15m Feed: <span id="feed15mStatus" class="disconnected">❌</span></div>
-  <div class="loading" id="loadingIndicator">🔄 Loading Historical Data...</div>
+  <div class="status-item">Status: <span id="connectionStatus" class="disconnected">Disconnected</span></div>
+  <div class="status-item">5m Feed: <span id="feed5mStatus" class="disconnected">❌</span></div>
+  <div class="status-item">15m Feed: <span id="feed15mStatus" class="disconnected">❌</span></div>
+  <div class="status-item loading" id="loadingIndicator">🔄 Loading historical data...</div>
+</div>
+
+<div class="time-display">
+  Last Update: <span id="lastUpdateTime">-</span> |
+  Chart Time: <span id="chartTime">-</span> |
+  Next Candle: <span id="nextCandleTime">-</span>
+</div>
+
+<div class="conditions">
+  <strong>Signal Conditions:</strong>
+  <div id="conditionStatus">Waiting for data...</div>
 </div>
 
 <div id="chart"></div>
-<h3>📊 Signals</h3>
+<h3>📊 Signals <span id="signalCount">(0)</span></h3>
 <div id="signalLog"></div>
 
 <script>
-// --- Global State ---
+/* ============================
+   AI SMC Dashboard — DERIV READY
+   - Uses Deriv WebSocket if token provided
+   - Falls back to Demo simulation otherwise
+   - Non-tamper pair list validated against allowedPairs
+   ============================ */
+
+/* ---------- State ---------- */
 const state = {
   ws: null,
-  wsHTF: null,
-  pair: "btcusdt",
-  candles: [],
-  candlesHTF: [],
+  connectedReal: false,
+  demoMode: true,
+  pair: document.getElementById('pairSelect').value,
+  app_id: 1089, // test app_id (replace with your own app_id for production)
+  candles: [],       // 5m candles
+  candlesHTF: [],    // 15m candles
   ema: [],
   emaHTF: [],
   rsi: [],
   rsiHTF: [],
-  auto: false,
-  filter: false,
-  lastSignalTime: 0,
+  signals: [],
   series: null,
   emaSeries: null,
-  signals: [],
-  reconnectAttempts: 0,
-  maxReconnectAttempts: 5,
-  dataProvider: 'binance' // Default provider
+  lastSignalTime: 0,
+  liveUpdateInterval: null
 };
 
-// --- Chart setup ---
+/* ---------- Allowed pair list (locked) ---------- */
+const allowedPairs = [
+  // crypto/others (kept for convenience)
+  "BTCUSD","ETHUSD",
+  // forex (Deriv uses specific prefixes like frx)
+  "frxEURUSD","frxGBPUSD","frxUSDJPY","frxAUDUSD",
+  // indices (Deriv naming - ensure matches Deriv active symbols)
+  "IDXSP","IDXNAS","IDXUKX",
+  // Deriv synthetics
+  "R_10","R_25","R_50","R_100","VRTT"
+];
+
+/* Utility: validate pair selection (prevents tamper) */
+function validatePair(p) {
+  if (!allowedPairs.includes(p)) {
+    alert("Invalid pair selection. Operation cancelled.");
+    throw new Error("Invalid pair selection: " + p);
+  }
+}
+
+/* ---------- Chart Setup (LightweightCharts) ---------- */
 const chart = LightweightCharts.createChart(document.getElementById('chart'), {
   layout: { background: { color: "#0b0b10" }, textColor: "#DDD" },
   grid: { vertLines: { color: "#1e1e2e" }, horzLines: { color: "#1e1e2e" } },
-  timeScale: { timeVisible: true, secondsVisible: false }
+  timeScale: { timeVisible: true, secondsVisible: false, rightOffset: 12, barSpacing: 6 },
 });
 state.series = chart.addCandlestickSeries();
-state.emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
+state.emaSeries = chart.addLineSeries({ lineWidth: 2, color: '#f59e0b' });
 
-// --- Data Provider Configuration ---
-const dataProviders = {
-  binance: {
-    name: 'Binance',
-    cryptoPairs: ['btcusdt', 'ethusdt', 'bnbusdt', 'adausdt', 'solusdt', 'dotusdt', 'linkusdt', 'ltcusdt'],
-    getWebSocketUrl: (pair, timeframe) => `wss://stream.binance.com:9443/ws/${pair}@kline_${timeframe}`,
-    parseData: (data) => {
-      const d = data.k;
-      return {
-        time: d.t / 1000,
-        open: parseFloat(d.o),
-        high: parseFloat(d.h),
-        low: parseFloat(d.l),
-        close: parseFloat(d.c),
-        volume: parseFloat(d.v)
-      };
-    }
-  },
-  forex: {
-    name: 'Forex',
-    pairs: ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD', 
-            'EURGBP', 'EURJPY', 'GBPJPY', 'EURCAD', 'AUDJPY', 'CADJPY'],
-    // Using TradingView-style data for forex (you can replace with your preferred forex provider)
-    getWebSocketUrl: (pair, timeframe) => {
-      // This is a placeholder - you'll need to replace with actual forex data provider
-      return `wss://ws.fxprovider.com/${pair}/${timeframe}`;
-    },
-    parseData: (data) => {
-      // Parse forex data format
-      return {
-        time: data.t / 1000,
-        open: parseFloat(data.o),
-        high: parseFloat(data.h),
-        low: parseFloat(data.l),
-        close: parseFloat(data.c),
-        volume: parseFloat(data.v || 0)
-      };
-    }
-  },
-  synthetic: {
-    name: 'Synthetic',
-    pairs: ['SYNTH_Volatility', 'SYNTH_Boom', 'SYNTH_Crash', 'SYNTH_Step', 'SYNTH_Range', 'SYNTH_Jump'],
-    // Placeholder for synthetic indices - you'll need actual data source
-    getWebSocketUrl: (pair, timeframe) => {
-      return `wss://synthetic-data-provider.com/${pair}/${timeframe}`;
-    },
-    parseData: (data) => {
-      return {
-        time: data.t / 1000,
-        open: parseFloat(data.o),
-        high: parseFloat(data.h),
-        low: parseFloat(data.l),
-        close: parseFloat(data.c),
-        volume: 1000 // Synthetic volume
-      };
-    }
-  }
-};
-
-// --- Determine Data Provider ---
-function getDataProvider(pair) {
-  if (dataProviders.binance.cryptoPairs.includes(pair.toLowerCase())) {
-    return 'binance';
-  } else if (dataProviders.forex.pairs.includes(pair)) {
-    return 'forex';
-  } else if (dataProviders.synthetic.pairs.includes(pair)) {
-    return 'synthetic';
-  } else {
-    return 'binance'; // fallback
-  }
-}
-
-// --- EMA Calculation ---
+/* ---------- Indicator Functions ---------- */
 function calcEMA(values, period) {
   if (!values || values.length < period) return [];
-  try {
-    let k = 2 / (period + 1);
-    let ema = [values[0]];
-    for (let i = 1; i < values.length; i++) {
-      ema.push(values[i] * k + ema[i - 1] * (1 - k));
-    }
-    return ema;
-  } catch (error) {
-    console.error('EMA calculation error:', error);
-    return [];
+  const k = 2 / (period + 1);
+  const ema = [values[0]];
+  for (let i = 1; i < values.length; i++) {
+    ema.push(values[i] * k + ema[i - 1] * (1 - k));
   }
+  return ema;
 }
 
-// --- Fixed RSI Calculation ---
 function calcRSI(values, period = 14) {
   if (!values || values.length <= period) return [];
-  
-  try {
-    let gains = 0;
-    let losses = 0;
-
-    // Calculate initial gains and losses
-    for (let i = 1; i <= period; i++) {
-      const diff = values[i] - values[i - 1];
-      gains += Math.max(diff, 0);
-      losses += Math.max(-diff, 0);
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const diff = values[i] - values[i - 1];
+    gains += Math.max(diff, 0);
+    losses += Math.max(-diff, 0);
+  }
+  let avgGain = gains / period, avgLoss = losses / period;
+  const rsi = new Array(period).fill(null);
+  for (let i = period + 1; i < values.length; i++) {
+    const diff = values[i] - values[i - 1];
+    const gain = Math.max(diff, 0), loss = Math.max(-diff, 0);
+    avgGain = (avgGain * (period - 1) + gain) / period;
+    avgLoss = (avgLoss * (period - 1) + loss) / period;
+    if (avgLoss === 0) rsi.push(100);
+    else {
+      const rs = avgGain / avgLoss;
+      rsi.push(100 - (100 / (1 + rs)));
     }
+  }
+  return rsi;
+}
 
-    let avgGain = gains / period;
-    let avgLoss = losses / period;
-    const rsi = new Array(period).fill(null); // Fill initial values with null
-
-    // Calculate subsequent RSI values
-    for (let i = period + 1; i < values.length; i++) {
-      const diff = values[i] - values[i - 1];
-      const currentGain = Math.max(diff, 0);
-      const currentLoss = Math.max(-diff, 0);
-
-      avgGain = (avgGain * (period - 1) + currentGain) / period;
-      avgLoss = (avgLoss * (period - 1) + currentLoss) / period;
-
-      if (avgLoss === 0) {
-        rsi.push(100);
-      } else {
-        const rs = avgGain / avgLoss;
-        rsi.push(100 - (100 / (1 + rs)));
-      }
-    }
-    return rsi;
-  } catch (error) {
-    console.error('RSI calculation error:', error);
-    return [];
+/* ---------- UI Updaters ---------- */
+function updateTimeDisplay() {
+  const now = new Date();
+  document.getElementById('lastUpdateTime').textContent = now.toLocaleTimeString();
+  if (state.candles.length) {
+    const last = state.candles[state.candles.length - 1];
+    document.getElementById('chartTime').textContent = new Date(last.time * 1000).toLocaleTimeString();
+    document.getElementById('nextCandleTime').textContent = new Date((last.time + 300) * 1000).toLocaleTimeString();
   }
 }
 
-// --- Add signal ---
+function updateConditionStatus(conds) {
+  const el = document.getElementById('conditionStatus');
+  el.innerHTML = conds.map(c => {
+    return `<div class="${c.met ? 'condition-met' : 'condition-failed'}">${c.met ? '✅' : '❌'} ${c.name}</div>`;
+  }).join('');
+}
+
+/* ---------- Signal UI ---------- */
 function addSignal(sig) {
-  try {
-    const div = document.createElement('div');
-    div.className = `signal-card ${sig.bias.toLowerCase()}`;
-    div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(5)} TP ${sig.tp.toFixed(5)} SL ${sig.sl.toFixed(5)}<br>
-      Reason: ${sig.reason}<br>Conf: ${sig.confidence} | ${sig.time}`;
-    document.getElementById('signalLog').prepend(div);
-    
-    // Add marker to chart
+  state.signals.unshift(sig);
+  const div = document.createElement('div');
+  div.className = `signal-card ${sig.bias === 'BUY' ? 'buy' : 'sell'}`;
+  div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(5)} TP ${sig.tp.toFixed(5)} SL ${sig.sl.toFixed(5)}<br>
+    Reason: ${sig.reason}<br>Conf: ${sig.confidence} | ${sig.time}`;
+  document.getElementById('signalLog').prepend(div);
+  document.getElementById('signalCount').textContent = `(${state.signals.length})`;
+  // marker
+  const lastTime = state.candles[state.candles.length - 1]?.time;
+  if (lastTime) {
     state.series.setMarkers([{
-      time: Math.floor(Date.now() / 1000),
+      time: lastTime,
       position: sig.bias === 'BUY' ? 'belowBar' : 'aboveBar',
       color: sig.bias === 'BUY' ? '#22c55e' : '#ef4444',
       shape: sig.bias === 'BUY' ? 'arrowUp' : 'arrowDown',
       text: sig.bias
     }]);
-  } catch (error) {
-    console.error('Error adding signal:', error);
   }
 }
 
-// --- WebSocket Management ---
-function connectWebSocket(url, onMessage, onStatusUpdate) {
-  return new Promise((resolve, reject) => {
-    try {
-      const ws = new WebSocket(url);
-      
-      ws.onopen = () => {
-        onStatusUpdate('connected');
-        resolve(ws);
-      };
-      
-      ws.onmessage = onMessage;
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        onStatusUpdate('error');
-        reject(error);
-      };
-      
-      ws.onclose = (event) => {
-        if (!event.wasClean) {
-          onStatusUpdate('disconnected');
-          setTimeout(() => reconnectWebSocket(url, onMessage, onStatusUpdate), 5000);
-        }
-      };
-      
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-function reconnectWebSocket(url, onMessage, onStatusUpdate) {
-  if (state.reconnectAttempts < state.maxReconnectAttempts) {
-    state.reconnectAttempts++;
-    onStatusUpdate('connecting');
-    console.log(`Reconnection attempt ${state.reconnectAttempts}`);
-    
-    setTimeout(() => {
-      connectWebSocket(url, onMessage, onStatusUpdate)
-        .then(ws => {
-          state.reconnectAttempts = 0;
-          return ws;
-        })
-        .catch(error => {
-          console.error('Reconnection failed:', error);
-        });
-    }, 2000);
-  }
-}
-
-// --- Load Historical Data ---
-async function loadHistoricalData(pair, timeframe, limit = 100) {
-  try {
-    document.getElementById('loadingIndicator').style.display = 'block';
-    
-    // For demo purposes, generating synthetic data
-    // In production, replace with actual API calls to your data provider
-    const candles = [];
-    const basePrice = pair.includes('forex') ? 1.0 : 100;
-    const volatility = pair.includes('Volatility') ? 0.1 : 0.02;
-    
-    let currentTime = Math.floor(Date.now() / 1000) - (limit * timeframe * 60);
-    let lastClose = basePrice;
-    
-    for (let i = 0; i < limit; i++) {
-      const change = (Math.random() - 0.5) * volatility * lastClose;
-      const open = lastClose;
-      const close = open + change;
-      const high = Math.max(open, close) + Math.random() * volatility * lastClose * 0.5;
-      const low = Math.min(open, close) - Math.random() * volatility * lastClose * 0.5;
-      
-      candles.push({
-        time: currentTime,
-        open: open,
-        high: high,
-        low: low,
-        close: close,
-        volume: 1000 + Math.random() * 5000
-      });
-      
-      lastClose = close;
-      currentTime += timeframe * 60;
-    }
-    
-    document.getElementById('loadingIndicator').style.display = 'none';
-    return candles;
-    
-  } catch (error) {
-    console.error('Error loading historical data:', error);
-    document.getElementById('loadingIndicator').style.display = 'none';
-    return [];
-  }
-}
-
-// --- Detect SMC Signal with multi-timeframe confirmation ---
+/* ---------- SMC Detection (kept similar to your logic) ---------- */
 function detectSMC() {
   try {
-    if (!state.candles || state.candles.length < 30 || !state.candlesHTF || state.candlesHTF.length < 10) {
-      console.log('Insufficient data for SMC detection');
+    // basic data check
+    if (state.candles.length < 35 || state.candlesHTF.length < 15) {
+      updateConditionStatus([{ name: 'Minimum data (35 x 5m, 15 x 15m)', met: false }]);
       return;
     }
+    const conditions = [];
+    let allOk = true;
 
-    // 5m analysis
-    const last = state.candles.slice(-10);
-    const closes = last.map(c => c.close);
-    const high = Math.max(...closes);
-    const low = Math.min(...closes);
-    const dir5 = closes[9] > closes[0] ? 'BUY' : 'SELL';
-    const range = high - low;
-    const retraceZone = dir5 === 'BUY' ? low + range * 0.4 : high - range * 0.4;
-    const entry = closes[9];
-    const valid5 = dir5 === 'BUY' ? (entry > retraceZone && entry < high) : (entry < retraceZone && entry > low);
-    
-    if (!valid5) return;
+    const last20 = state.candles.slice(-20);
+    const currentClose = last20[last20.length - 1].close;
+    const recentHigh = Math.max(...last20.slice(-10).map(c=>c.high));
+    const recentLow = Math.min(...last20.slice(-10).map(c=>c.low));
+    const volatility = (recentHigh - recentLow) / recentLow;
+    const hasVol = volatility > 0.005;
+    conditions.push({ name: `Minimum volatility (0.5%): ${(volatility*100).toFixed(2)}%`, met: hasVol });
+    if (!hasVol) allOk = false;
 
-    // 15m higher timeframe
+    // Market structure (simple swing detection)
+    const highs = last20.map(c=>c.high), lows = last20.map(c=>c.low);
+    const swingHighs = [], swingLows = [];
+    for (let i = 2; i < highs.length-2; i++){
+      if (highs[i]>highs[i-1] && highs[i]>highs[i-2] && highs[i]>highs[i+1] && highs[i]>highs[i+2]) swingHighs.push(highs[i]);
+      if (lows[i]<lows[i-1] && lows[i]<lows[i-2] && lows[i]<lows[i+1] && lows[i]<lows[i+2]) swingLows.push(lows[i]);
+    }
+    const hasStructure = swingHighs.length>=2 && swingLows.length>=2;
+    conditions.push({ name: 'Market structure (min 2 swings)', met: hasStructure });
+    if (!hasStructure) allOk = false;
+
+    // Multi-timeframe alignment
     const lastHTF = state.candlesHTF.slice(-5);
-    const closesHTF = lastHTF.map(c => c.close);
-    const dirHTF = closesHTF[closesHTF.length - 1] > closesHTF[0] ? 'BUY' : 'SELL';
+    const dirHTF = lastHTF[lastHTF.length-1].close > lastHTF[0].close ? 'BUY' : 'SELL';
+    const recent5m = last20.slice(-5);
+    const dir5m = recent5m[recent5m.length-1].close > recent5m[0].close ? 'BUY' : 'SELL';
+    const aligned = dir5m === dirHTF;
+    conditions.push({ name: `Multi-timeframe (5m: ${dir5m}, 15m: ${dirHTF})`, met: aligned });
+    if (!aligned) allOk = false;
 
-    // Check if both timeframes agree
-    if (dir5 !== dirHTF) return;
-
-    // EMA + RSI Filter
-    if (state.filter) {
-      const emaNow = state.ema[state.ema.length - 1];
-      const emaHTFNow = state.emaHTF[state.emaHTF.length - 1];
-      const rsiNow = state.rsi[state.rsi.length - 1];
-      const rsiHTFNow = state.rsiHTF[state.rsiHTF.length - 1];
-      
-      if (!emaNow || !emaHTFNow || !rsiNow || !rsiHTFNow) return;
-      
-      if (dir5 === 'BUY' && (entry < emaNow || rsiNow < 50 || rsiHTFNow < 50)) return;
-      if (dir5 === 'SELL' && (entry > emaNow || rsiNow > 50 || rsiHTFNow > 50)) return;
+    // EMA + RSI filter (if enabled)
+    let filterOk = true;
+    if (document.getElementById('filterMode').checked) {
+      const emaNow = state.ema[state.ema.length-1];
+      const emaHTFNow = state.emaHTF[state.emaHTF.length-1];
+      const rsiNow = state.rsi[state.rsi.length-1];
+      const rsiHTFNow = state.rsiHTF[state.rsiHTF.length-1];
+      if (!emaNow || !emaHTFNow || !rsiNow || !rsiHTFNow) filterOk = false;
+      else {
+        const buyEma = dir5m==='BUY' ? (currentClose>emaNow && currentClose>emaHTFNow) : (currentClose<emaNow && currentClose<emaHTFNow);
+        const buyRsi = dir5m==='BUY' ? (rsiNow>50 && rsiNow<80 && rsiHTFNow>50 && rsiHTFNow<80) : (rsiNow<50 && rsiNow>20 && rsiHTFNow<50 && rsiHTFNow>20);
+        filterOk = buyEma && buyRsi;
+        conditions.push({ name: `EMA alignment`, met: buyEma });
+        conditions.push({ name: `RSI filter (5m:${rsiNow?.toFixed(1) || 'n/a'} 15m:${rsiHTFNow?.toFixed(1) || 'n/a'})`, met: buyRsi });
+      }
+      if (!filterOk) allOk = false;
     }
 
-    const bias = dir5;
-    const sl = bias === 'BUY' ? low - range * 0.2 : high + range * 0.2;
-    const tp = bias === 'BUY' ? high + range * 0.8 : low - range * 0.8;
-    const confidence = (0.8 + Math.random() * 0.15).toFixed(2);
-    
-    const sig = {
-      pair: state.pair.toUpperCase(),
-      bias,
-      entry,
-      tp,
-      sl,
-      reason: `${bias === 'BUY' ? 'Bullish' : 'Bearish'} OB + Retrace + Multi-Timeframe${state.filter ? ' + EMA+RSI' : ''}`,
-      confidence,
-      time: new Date().toLocaleTimeString()
-    };
-    
-    if (Date.now() - state.lastSignalTime > 60000) {
-      state.lastSignalTime = Date.now();
-      state.signals.push(sig);
-      addSignal(sig);
+    // Retracement requirement
+    const range = recentHigh - recentLow;
+    const retracementLevel = (currentClose - recentLow) / (range || 1);
+    const validRetrace = retracementLevel >= 0.4 && retracementLevel <= 0.6;
+    conditions.push({ name: `Retracement (${(retracementLevel*100).toFixed(1)}%)`, met: validRetrace });
+    if (!validRetrace) allOk = false;
+
+    // Breakout confirmation
+    const previousHigh = Math.max(...state.candles.slice(-20, -5).map(c=>c.high));
+    const previousLow  = Math.min(...state.candles.slice(-20, -5).map(c=>c.low));
+    let breakout = false, bias = null, reason = '';
+    if (dir5m==='BUY' && last20[last20.length-1].high > previousHigh) { breakout=true; bias='BUY'; reason='Break of structure'; }
+    if (dir5m==='SELL' && last20[last20.length-1].low < previousLow)  { breakout=true; bias='SELL'; reason='Break of structure'; }
+    conditions.push({ name: 'Breakout confirmation', met: breakout });
+    if (!breakout) allOk = false;
+
+    updateConditionStatus(conditions);
+
+    if (allOk && bias) {
+      const sl = bias==='BUY' ? recentLow - range*0.1 : recentHigh + range*0.1;
+      const tp = bias==='BUY' ? currentClose + range*1.2 : currentClose - range*1.2;
+      let confidence = 0.7;
+      if (volatility>0.01) confidence+=0.1;
+      if (aligned) confidence+=0.1;
+      if (validRetrace && retracementLevel>=0.45 && retracementLevel<=0.55) confidence+=0.1;
+      const sig = {
+        pair: state.pair,
+        bias,
+        entry: currentClose,
+        tp: parseFloat(tp.toFixed(5)),
+        sl: parseFloat(sl.toFixed(5)),
+        reason: `${reason} ${document.getElementById('filterMode').checked ? '+ EMA+RSI' : ''}`,
+        confidence: Math.min(confidence,0.95).toFixed(2),
+        time: new Date().toLocaleTimeString()
+      };
+      if (Date.now() - state.lastSignalTime > 120000) { // cooldown 2 minutes
+        state.lastSignalTime = Date.now();
+        addSignal(sig);
+        console.log('Signal generated', sig);
+      } else console.log('Cooldown active');
+    } else {
+      // no signal
     }
-  } catch (error) {
-    console.error('Error in SMC detection:', error);
+
+  } catch (err) {
+    console.error('SMC detection error', err);
+    updateConditionStatus([{ name: 'Error in detection logic', met: false }]);
   }
 }
 
-// --- Connect to Data Feeds ---
-document.getElementById('connectFeed').onclick = async () => {
-  try {
-    const pair = document.getElementById('pairSelect').value;
-    state.pair = pair;
-    state.dataProvider = getDataProvider(pair);
-    
-    // Clear existing data
-    state.candles = [];
-    state.candlesHTF = [];
-    
-    // Update status
-    document.getElementById('connectionStatus').textContent = 'Connecting...';
-    document.getElementById('connectionStatus').className = 'connecting';
-    
-    // Load historical data first
-    const historical5m = await loadHistoricalData(pair, 5, 100);
-    const historical15m = await loadHistoricalData(pair, 15, 50);
-    
-    state.candles = historical5m;
-    state.candlesHTF = historical15m;
-    
-    // Update chart with historical data
-    if (state.candles.length > 0) {
-      state.series.setData(state.candles);
-      
-      // Calculate and display EMA
-      const closesAll = state.candles.map(x => x.close);
-      state.ema = calcEMA(closesAll, 50);
-      state.rsi = calcRSI(closesAll, 14);
-      
-      if (state.ema.length > 0) {
-        const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
-          time: x.time,
-          value: state.ema[i]
-        }));
-        state.emaSeries.setData(emaPlot);
-      }
-    }
-    
-    // For demo purposes, we'll simulate live data for all pairs
-    // In production, you would connect to actual WebSocket feeds
-    
-    // Simulate live data updates
-    state.liveUpdateInterval = setInterval(() => {
-      if (state.candles.length > 0) {
-        const lastCandle = {...state.candles[state.candles.length - 1]};
-        const change = (Math.random() - 0.5) * 0.01 * lastCandle.close;
-        
-        const newCandle = {
-          time: lastCandle.time + 300, // 5 minutes later
-          open: lastCandle.close,
-          close: lastCandle.close + change,
-          high: Math.max(lastCandle.close, lastCandle.close + change) + Math.random() * 0.005 * lastCandle.close,
-          low: Math.min(lastCandle.close, lastCandle.close + change) - Math.random() * 0.005 * lastCandle.close,
-          volume: 1000 + Math.random() * 5000
-        };
-        
-        state.candles.push(newCandle);
-        if (state.candles.length > 500) state.candles.shift();
-        
-        // Update 15m chart every 3 updates (15 minutes)
-        if (state.candles.length % 3 === 0) {
-          const lastHTF = {...state.candlesHTF[state.candlesHTF.length - 1]};
-          const newHTFCandle = {
-            time: lastHTF.time + 900, // 15 minutes later
-            open: lastHTF.close,
-            close: newCandle.close,
-            high: Math.max(lastHTF.high, newCandle.high),
-            low: Math.min(lastHTF.low, newCandle.low),
-            volume: lastHTF.volume + newCandle.volume
-          };
-          state.candlesHTF.push(newHTFCandle);
-          if (state.candlesHTF.length > 200) state.candlesHTF.shift();
-          
-          // Update HTF indicators
-          const closesHTFAll = state.candlesHTF.map(x => x.close);
-          state.emaHTF = calcEMA(closesHTFAll, 50);
-          state.rsiHTF = calcRSI(closesHTFAll, 14);
-        }
-        
-        // Update indicators
-        const closesAll = state.candles.map(x => x.close);
-        state.ema = calcEMA(closesAll, 50);
-        state.rsi = calcRSI(closesAll, 14);
-        
-        if (state.ema.length > 0) {
-          const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
-            time: x.time,
-            value: state.ema[i]
-          }));
-          state.emaSeries.setData(emaPlot);
-        }
-        
-        state.series.setData(state.candles);
-        
-        if (state.auto) detectSMC();
-      }
-    }, 2000); // Update every 2 seconds for demo
-    
-    document.getElementById('connectionStatus').textContent = `Connected (${pair}) - ${state.dataProvider.toUpperCase()}`;
-    document.getElementById('connectionStatus').className = 'connected';
-    document.getElementById('feed5mStatus').textContent = '✅';
-    document.getElementById('feed5mStatus').className = 'connected';
-    document.getElementById('feed15mStatus').textContent = '✅';
-    document.getElementById('feed15mStatus').className = 'connected';
-    
-  } catch (error) {
-    console.error('Connection error:', error);
-    document.getElementById('connectionStatus').textContent = 'Connection Failed';
-    document.getElementById('connectionStatus').className = 'disconnected';
-    alert(`Failed to connect: ${error.message}`);
+/* ---------- DEMO / SIMULATION (fallback) ---------- */
+function getCurrentCandleTime(timeframe = 5) {
+  const now = Math.floor(Date.now() / 1000);
+  return now - (now % (timeframe * 60));
+}
+function generateHistorical(pair, timeframe=5, limit=100) {
+  // realistic seeded generator
+  const candles = [];
+  const base = pair.toLowerCase().includes('btc') ? 50000 : (pair.toLowerCase().includes('frx') ? 1.2 : 100);
+  let t = getCurrentCandleTime(timeframe) - limit * timeframe * 60;
+  let last = base;
+  let trend = Math.random() > 0.5 ? 1 : -1;
+  for (let i=0;i<limit;i++){
+    if (Math.random()<0.04) trend*=-1;
+    const vol = pair.toLowerCase().includes('frx') ? 0.002 : 0.01;
+    const change = (Math.random()-0.5+trend*0.2)*vol*last;
+    const open = last;
+    const close = open + change;
+    const high = Math.max(open,close) + Math.random()*vol*last*0.3;
+    const low  = Math.min(open,close) - Math.random()*vol*last*0.3;
+    candles.push({ time: t, open: +open.toFixed(5), high: +high.toFixed(5), low: +low.toFixed(5), close: +close.toFixed(5), volume: 1000+Math.random()*4000 });
+    last = close; t += timeframe*60;
   }
-};
+  return candles;
+}
 
-// --- Disconnect feeds ---
-document.getElementById('disconnectFeed').onclick = () => {
-  if (state.ws) {
-    state.ws.close();
-    state.ws = null;
-  }
-  if (state.wsHTF) {
-    state.wsHTF.close();
-    state.wsHTF = null;
-  }
-  if (state.liveUpdateInterval) {
-    clearInterval(state.liveUpdateInterval);
-    state.liveUpdateInterval = null;
-  }
-  
-  document.getElementById('connectionStatus').textContent = 'Disconnected';
-  document.getElementById('connectionStatus').className = 'disconnected';
-  document.getElementById('feed5mStatus').textContent = '❌';
-  document.getElementById('feed5mStatus').className = 'disconnected';
-  document.getElementById('feed15mStatus').textContent = '❌';
-  document.getElementById('feed15mStatus').className = 'disconnected';
-};
-
-// --- Manual generation ---
-document.getElementById('generateSignal').onclick = detectSMC;
-
-// --- Clear log ---
-document.getElementById('clearSignals').onclick = () => {
-  document.getElementById('signalLog').innerHTML = '';
-  state.signals = [];
-};
-
-// --- Auto Mode toggle ---
-document.getElementById('autoMode').onchange = (e) => state.auto = e.target.checked;
-document.getElementById('filterMode').onchange = (e) => state.filter = e.target.checked;
-
-// --- Auto-connect on page load for demo ---
-window.addEventListener('load', () => {
-  setTimeout(() => {
-    document.getElementById('connectFeed').click();
-  }, 1000);
-});
-
-// --- Cleanup on page unload ---
-window.addEventListener('beforeunload', () => {
-  if (state.ws) state.ws.close();
-  if (state.wsHTF) state.wsHTF.close();
+function startDemoLive() {
+  // Clear any existing interval
   if (state.liveUpdateInterval) clearInterval(state.liveUpdateInterval);
+
+  // generate base historical
+  const p = state.pair;
+  state.candles = generateHistorical(p, 5, 120);
+  state.candlesHTF = generateHistorical(p, 15, 80);
+  // compute indicators
+  updateIndicatorsAndChart();
+
+  // run per-second simulation that appends/updates candle when new 5m alignment occurs
+  state.liveUpdateInterval = setInterval(() => {
+    if (!state.candles.length) return;
+    const nowAligned = getCurrentCandleTime(5);
+    const last = state.candles[state.candles.length-1];
+    if (nowAligned > last.time) {
+      // push a new candle
+      const vol = state.pair.toLowerCase().includes('frx') ? 0.002 : 0.01;
+      const change = (Math.random()-0.5)*vol*last.close;
+      const newC = {
+        time: nowAligned,
+        open: last.close,
+        close: +(last.close + change).toFixed(5),
+        high: +Math.max(last.close, last.close + change + Math.random()*vol*last.close*0.3).toFixed(5),
+        low: +Math.min(last.close, last.close + change - Math.random()*vol*last.close*0.3).toFixed(5),
+        volume: 1000 + Math.random()*4000
+      };
+      state.candles.push(newC);
+      if (state.candles.length>300) state.candles.shift();
+      // update HTF every 3 x 5min candles
+      if ((state.candles.length)%3 === 0) {
+        const lastHTF = state.candlesHTF[state.candlesHTF.length-1] || { close: state.candles[state.candles.length-4].close, high:newC.high, low:newC.low };
+        const recent5 = state.candles.slice(-3);
+        const htf = {
+          time: getCurrentCandleTime(15),
+          open: lastHTF.close,
+          close: newC.close,
+          high: Math.max(lastHTF.high || -Infinity, ...recent5.map(c=>c.high)),
+          low: Math.min(lastHTF.low || Infinity, ...recent5.map(c=>c.low)),
+          volume: recent5.reduce((s,c)=>s+c.volume,0)
+        };
+        state.candlesHTF.push(htf);
+        if (state.candlesHTF.length>150) state.candlesHTF.shift();
+      }
+      updateIndicatorsAndChart();
+      if (document.getElementById('autoMode').checked) detectSMC();
+    } else {
+      // update last candle (while current bar forming)
+      const volatility = state.pair.toLowerCase().includes('frx') ? 0.002 : 0.01;
+      const updateChange = (Math.random()-0.5)*volatility*last.close*0.2;
+      last.close = +(last.close + updateChange).toFixed(5);
+      last.high = Math.max(last.high,last.close);
+      last.low = Math.min(last.low,last.close);
+      updateIndicatorsAndChart(false); // update but no heavy ops
+    }
+  }, 1000);
+}
+
+/* ---------- Helpers to update indicators and chart ---------- */
+function updateIndicatorsAndChart(setMarkers=true) {
+  const closes = state.candles.map(c=>c.close);
+  const closesHTF = state.candlesHTF.map(c=>c.close);
+  state.ema = calcEMA(closes, 50);
+  state.rsi = calcRSI(closes, 14);
+  state.emaHTF = calcEMA(closesHTF, 50);
+  state.rsiHTF = calcRSI(closesHTF, 14);
+
+  // Update candle series
+  state.series.setData(state.candles);
+
+  // EMA plot
+  if (state.ema.length>0) {
+    const emaPlot = state.candles.slice(-state.ema.length).map((c,i)=>({ time: c.time, value: state.ema[i]}));
+    state.emaSeries.setData(emaPlot);
+  }
+
+  updateTimeDisplay();
+}
+
+/* ---------- DERIV WebSocket Integration ---------- */
+/* Important: Deriv uses a WebSocket endpoint: wss://ws.binaryws.com/websockets/v3?app_id=<APP_ID>
+   For real production usage, register an app on Deriv and replace app_id and use your token.
+   This script will:
+     - open WS
+     - authorize with { authorize: 'TOKEN' } if token supplied
+     - request ticks_history in candles format for 5m (granularity 300) and 15m (granularity 900)
+     - parse responses (best-effort) and maintain the 5m & 15m arrays
+*/
+function connectDerivLive(token) {
+  // validate
+  const p = state.pair;
+  validatePair(p);
+
+  const app_id = state.app_id;
+  const endpoint = `wss://ws.binaryws.com/websockets/v3?app_id=${app_id}`;
+  try {
+    state.ws = new WebSocket(endpoint);
+  } catch (err) {
+    console.error('WebSocket creation failed', err);
+    startDemoLive();
+    return;
+  }
+
+  document.getElementById('loadingIndicator').style.display = 'inline-block';
+  state.connectedReal = false;
+
+  state.ws.onopen = () => {
+    console.log('Connected to Deriv WS (endpoint):', endpoint);
+    // authorize if token provided
+    if (token) {
+      const authMsg = { authorize: token };
+      state.ws.send(JSON.stringify(authMsg));
+    } else {
+      // if no token, we still try to request market data that is public (some endpoints don't require auth)
+      console.log('No token provided — limited access expected. Falling back to demo for continuous updates.');
+      // close and fallback to demo for stability
+      state.ws.close();
+      startDemoLive();
+    }
+  };
+
+  state.ws.onmessage = (evt) => {
+    try {
+      const raw = JSON.parse(evt.data);
+      // Handle authorize responses
+      if (raw.authorize) {
+        if (raw.authorize && raw.authorize.error) {
+          console.warn('Authorize error', raw.authorize.error);
+          // fallback to demo
+          state.ws.close();
+          startDemoLive();
+        } else {
+          console.log('Authorized successfully:', raw.authorize);
+          state.connectedReal = true;
+          document.getElementById('connectionStatus').textContent = `Connected (Deriv)`;
+          document.getElementById('connectionStatus').className = 'connected';
+          // subscribe/request history for 5m and 15m
+          requestCandlesViaHistory(state.pair, 300, '5m');  // granularity 300 sec = 5m
+          requestCandlesViaHistory(state.pair, 900, '15m'); // granularity 900 sec = 15m
+        }
+      }
+
+      // Deriv returns responses keyed by the request type — we'll attempt to capture ticks_history/candles
+      if (raw.history || raw.candles || raw.tick) {
+        // Some example response bodies may include "history": { "candles": [...] } or similar.
+        // We'll attempt to parse both possibilities.
+        if (raw.history && raw.history.candles) {
+          // direct candles array (time in epoch seconds maybe)
+          const arr = raw.history.candles;
+          // map to consistent candle format
+          const mapped = arr.map(c=>{
+            // Deriv candle might be { time: 161..., open: '1.2345' ... } or { epoch:..., open:... }
+            const timeSec = c.epoch || c.time || Math.floor(Date.now()/1000);
+            return {
+              time: Math.floor(timeSec),
+              open: parseFloat(c.open),
+              high: parseFloat(c.high),
+              low: parseFloat(c.low),
+              close: parseFloat(c.close),
+              volume: c.volume || 0
+            };
+          });
+          // Determine which granularity based on length/time gaps — we keep both arrays from requests
+          // If it's a 5m set (most recent timeframe) update state.candles; else update HTF
+          if (mapped.length > 0 && (mapped[1]?.time - mapped[0]?.time) === 300) {
+            state.candles = mapped;
+            document.getElementById('feed5mStatus').textContent = '✅';
+            document.getElementById('feed5mStatus').className = 'connected';
+          } else if (mapped.length > 0 && (mapped[1]?.time - mapped[0]?.time) === 900) {
+            state.candlesHTF = mapped;
+            document.getElementById('feed15mStatus').textContent = '✅';
+            document.getElementById('feed15mStatus').className = 'connected';
+          }
+          updateIndicatorsAndChart();
+          document.getElementById('loadingIndicator').style.display = 'none';
+        } else if (raw.candles) {
+          // try raw.candles
+        } else if (raw.tick) {
+          // For real-time tick stream; could aggregate ticks into candles if desired
+          // Example: raw.tick.quote contains latest price
+          // TODO: implement tick->candle aggregation if delivering ticks only
+        }
+      }
+
+      // Some APIs return "error" fields — manage fallback
+      if (raw.error) {
+        console.warn('Deriv WS error:', raw.error);
+      }
+
+    } catch (err) {
+      console.error('Error parsing WS message', err, evt.data);
+    }
+  };
+
+  state.ws.onclose = (ev) => {
+    console.warn('Deriv WS closed', ev);
+    document.getElementById('connectionStatus').textContent = 'Disconnected';
+    document.getElementById('connectionStatus').className = 'disconnected';
+    // If we were connected in real mode and it closed unexpectedly -> fallback to demo
+    if (!state.connectedReal) {
+      startDemoLive();
+    } else {
+      // On unexpected disconnect, try to reconnect after short delay
+      setTimeout(() => {
+        const tok = document.getElementById('derivToken').value.trim();
+        if (tok) connectDerivLive(tok);
+        else startDemoLive();
+      }, 3000);
+    }
+  };
+
+  state.ws.onerror = (err) => {
+    console.error('WebSocket error', err);
+    // fallback to demo
+    if (state.ws) state.ws.close();
+    startDemoLive();
+  };
+
+  // Helper: request candles using ticks_history in candles format (best-effort)
+  function requestCandlesViaHistory(symbol, granularity, label) {
+    const req = {
+      ticks_history: symbol,
+      // Deriv expects end: "latest" and possibly count or start
+      end: "latest",
+      // request enough candles (count)
+      count: 200,
+      // style or format: some docs use "candles" or "ticks"
+      style: "candles",
+      // granularity in seconds (e.g., 300 for 5min)
+      granularity: granularity
+    };
+    state.ws.send(JSON.stringify(req));
+  }
+}
+
+/* ---------- UI Button Handlers ---------- */
+document.getElementById('connectReal').onclick = () => {
+  try {
+    const p = document.getElementById('pairSelect').value;
+    validatePair(p);
+    state.pair = p;
+    // clear old state & UI
+    state.candles = []; state.candlesHTF = []; state.signals = [];
+    document.getElementById('signalLog').innerHTML = ''; document.getElementById('signalCount').textContent='(0)';
+    document.getElementById('connectionStatus').textContent = 'Connecting...'; document.getElementById('connectionStatus').className = 'connecting';
+    document.getElementById('loadingIndicator').style.display = 'inline-block';
+    // if existing demo interval, clear it
+    if (state.liveUpdateInterval) { clearInterval(state.liveUpdateInterval); state.liveUpdateInterval = null; }
+    const token = document.getElementById('derivToken').value.trim();
+    if (!token) {
+      if (!confirm('No token provided. Click OK to start demo mode instead.')) return;
+      // start demo
+      state.demoMode = true;
+      startDemoLive();
+      document.getElementById('connectionStatus').textContent = 'Demo Mode';
+      document.getElementById('connectionStatus').className = 'connecting';
+      return;
+    }
+    state.demoMode = false;
+    connectDerivLive(token);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+document.getElementById('connectDemo').onclick = () => {
+  try {
+    const p = document.getElementById('pairSelect').value;
+    validatePair(p);
+    state.pair = p;
+    state.demoMode = true;
+    if (state.ws) { try { state.ws.close(); } catch(e){} state.ws=null; }
+    document.getElementById('connectionStatus').textContent = 'Demo Mode (Running)'; document.getElementById('connectionStatus').className = 'connected';
+    startDemoLive();
+  } catch (err) { console.error(err); }
+};
+
+document.getElementById('disconnectFeed').onclick = () => {
+  try {
+    if (state.ws) { state.ws.close(); state.ws = null; }
+    if (state.liveUpdateInterval) { clearInterval(state.liveUpdateInterval); state.liveUpdateInterval=null; }
+    document.getElementById('connectionStatus').textContent = 'Disconnected'; document.getElementById('connectionStatus').className = 'disconnected';
+    document.getElementById('feed5mStatus').textContent='❌'; document.getElementById('feed5mStatus').className='disconnected';
+    document.getElementById('feed15mStatus').textContent='❌'; document.getElementById('feed15mStatus').className='disconnected';
+  } catch (err) { console.error(err); }
+};
+
+document.getElementById('generateSignal').onclick = () => {
+  detectSMC();
+};
+
+document.getElementById('clearSignals').onclick = () => {
+  state.signals = []; document.getElementById('signalLog').innerHTML=''; document.getElementById('signalCount').textContent='(0)';
+};
+
+document.getElementById('autoMode').onchange = (e)=>{ console.log('Auto mode', e.target.checked); };
+document.getElementById('filterMode').onchange = (e)=>{ console.log('Filter mode', e.target.checked); };
+
+/* Auto-start demo mode after short delay so the page is interactive without token */
+window.addEventListener('load', () => {
+  setTimeout(()=> {
+    // start demo for the currently selected pair automatically
+    try {
+      const p = document.getElementById('pairSelect').value;
+      validatePair(p);
+      state.pair = p;
+      startDemoLive();
+      document.getElementById('connectionStatus').textContent = 'Demo Mode (Auto)'; document.getElementById('connectionStatus').className = 'connecting';
+    } catch (err) { console.error(err); }
+  }, 600);
 });
+
+/* Cleanup */
+window.addEventListener('beforeunload', ()=> {
+  if (state.liveUpdateInterval) clearInterval(state.liveUpdateInterval);
+  if (state.ws) try{ state.ws.close(); } catch(e){}
+});
+
 </script>
 </body>
 </html>
