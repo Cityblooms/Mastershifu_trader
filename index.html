@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AI SMC Synthetic Indices Dashboard</title>
+<title>AI SMC Multi-Asset Dashboard</title>
 <script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
 <style>
 body{font-family:'Poppins',sans-serif;background:#0b0b10;color:#eee;margin:0;padding:0;display:flex;flex-direction:column;align-items:center}
@@ -28,13 +28,28 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 .signal-buy{background:#1a2e1a;color:#22c55e;border:2px solid #22c55e}
 .signal-sell{background:#2e1a1a;color:#ef4444;border:2px solid #ef4444}
 .signal-none{background:#1a1a2e;color:#888;border:2px solid #6366f1}
+.sync-status{font-size:0.8em;color:#f59e0b;margin:5px 0}
 </style>
 </head>
 <body>
-<header>AI SMC Synthetic Indices Dashboard</header>
+<header>AI SMC Multi-Asset Dashboard</header>
 
 <div class="controls">
   <select id="pairSelect">
+    <optgroup label="Forex Major">
+      <option value="EURUSD">EUR/USD</option>
+      <option value="GBPUSD">GBP/USD</option>
+      <option value="USDJPY">USD/JPY</option>
+      <option value="AUDUSD">AUD/USD</option>
+      <option value="USDCAD">USD/CAD</option>
+      <option value="NZDUSD">NZD/USD</option>
+      <option value="EURGBP">EUR/GBP</option>
+      <option value="EURJPY">EUR/JPY</option>
+    </optgroup>
+    <optgroup label="Commodities & Crypto">
+      <option value="XAUUSD">Gold (XAU/USD)</option>
+      <option value="BTCUSD">Bitcoin (BTC/USD)</option>
+    </optgroup>
     <optgroup label="Volatility Indices">
       <option value="Volatility 10 Index">Volatility 10 Index</option>
       <option value="Volatility 25 Index">Volatility 25 Index</option>
@@ -73,10 +88,12 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 </div>
 
 <div class="time-display">
-  Last Update: <span id="lastUpdateTime">-</span> | 
+  System Time: <span id="systemTime">-</span> | 
   Chart Time: <span id="chartTime">-</span> |
   Next Candle: <span id="nextCandleTime">-</span>
 </div>
+
+<div class="sync-status" id="syncStatus">🔄 Synchronizing timeframes...</div>
 
 <div id="currentSignal" class="current-signal signal-none">
   🟡 NO CURRENT SIGNAL - Waiting for perfect conditions...
@@ -96,7 +113,7 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 const state = {
   ws: null,
   wsHTF: null,
-  pair: "Volatility 10 Index",
+  pair: "EURUSD",
   candles: [],
   candlesHTF: [],
   ema: [],
@@ -114,7 +131,8 @@ const state = {
   currentTime: Math.floor(Date.now() / 1000),
   lastCandleTime: null,
   liveUpdateInterval: null,
-  currentBias: null
+  currentBias: null,
+  timeSyncInterval: null
 };
 
 // --- Chart setup ---
@@ -135,23 +153,42 @@ const chart = LightweightCharts.createChart(document.getElementById('chart'), {
 state.series = chart.addCandlestickSeries();
 state.emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
 
-// --- Synthetic Index Properties ---
-const syntheticProperties = {
-  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1 },
-  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15 },
-  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2 },
-  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25 },
-  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3 },
-  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4 },
-  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35 },
-  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4 },
-  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35 },
-  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1 },
-  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1 },
-  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15 },
-  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2 },
-  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25 },
-  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3 }
+// --- Asset Properties ---
+const assetProperties = {
+  // Forex Pairs
+  "EURUSD": { basePrice: 1.0800, volatility: 0.0008, trendStrength: 0.0001, decimals: 5 },
+  "GBPUSD": { basePrice: 1.2600, volatility: 0.0010, trendStrength: 0.0001, decimals: 5 },
+  "USDJPY": { basePrice: 148.50, volatility: 0.0080, trendStrength: 0.0005, decimals: 3 },
+  "AUDUSD": { basePrice: 0.6550, volatility: 0.0012, trendStrength: 0.0001, decimals: 5 },
+  "USDCAD": { basePrice: 1.3500, volatility: 0.0010, trendStrength: 0.0001, decimals: 5 },
+  "NZDUSD": { basePrice: 0.6100, volatility: 0.0012, trendStrength: 0.0001, decimals: 5 },
+  "EURGBP": { basePrice: 0.8570, volatility: 0.0006, trendStrength: 0.00005, decimals: 5 },
+  "EURJPY": { basePrice: 160.00, volatility: 0.0090, trendStrength: 0.0005, decimals: 3 },
+  
+  // Commodities & Crypto
+  "XAUUSD": { basePrice: 1980.00, volatility: 0.005, trendStrength: 0.002, decimals: 2 },
+  "BTCUSD": { basePrice: 43000.00, volatility: 0.015, trendStrength: 0.005, decimals: 2 },
+  
+  // Volatility Indices
+  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 2 },
+  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15, decimals: 2 },
+  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2, decimals: 2 },
+  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25, decimals: 2 },
+  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3, decimals: 2 },
+  
+  // Boom & Crash Indices
+  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4, decimals: 2 },
+  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35, decimals: 2 },
+  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4, decimals: 2 },
+  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35, decimals: 2 },
+  
+  // Step & Jump Indices
+  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 2 },
+  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1, decimals: 2 },
+  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15, decimals: 2 },
+  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2, decimals: 2 },
+  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25, decimals: 2 },
+  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3, decimals: 2 }
 };
 
 // --- Time Synchronization Functions ---
@@ -163,7 +200,7 @@ function getCurrentCandleTime(timeframe = 5) {
 
 function updateTimeDisplay() {
   const now = new Date();
-  document.getElementById('lastUpdateTime').textContent = now.toLocaleTimeString();
+  document.getElementById('systemTime').textContent = now.toLocaleTimeString();
   
   if (state.candles.length > 0) {
     const lastCandleTime = new Date(state.candles[state.candles.length - 1].time * 1000);
@@ -171,6 +208,17 @@ function updateTimeDisplay() {
     
     const nextCandleTime = new Date((state.candles[state.candles.length - 1].time + 300) * 1000);
     document.getElementById('nextCandleTime').textContent = nextCandleTime.toLocaleTimeString();
+    
+    // Check sync status
+    const timeDiff = Math.abs(now.getTime() - lastCandleTime.getTime());
+    const syncElement = document.getElementById('syncStatus');
+    if (timeDiff < 10000) { // 10 seconds tolerance
+      syncElement.textContent = '✅ Timeframes synchronized';
+      syncElement.style.color = '#22c55e';
+    } else {
+      syncElement.textContent = '⚠️ Timeframes slightly out of sync';
+      syncElement.style.color = '#f59e0b';
+    }
   }
 }
 
@@ -265,7 +313,11 @@ function addSignal(sig) {
   try {
     const div = document.createElement('div');
     div.className = `signal-card ${sig.bias.toLowerCase()}`;
-    div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(2)} TP ${sig.tp.toFixed(2)} SL ${sig.sl.toFixed(2)}<br>
+    
+    const properties = assetProperties[state.pair] || { decimals: 2 };
+    const decimals = properties.decimals;
+    
+    div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(decimals)} TP ${sig.tp.toFixed(decimals)} SL ${sig.sl.toFixed(decimals)}<br>
       Reason: ${sig.reason}<br>Conf: ${sig.confidence}% | ${sig.time}`;
     document.getElementById('signalLog').prepend(div);
     
@@ -290,7 +342,7 @@ function addSignal(sig) {
   }
 }
 
-// --- STRICT SMC Signal Detection for Synthetic Indices ---
+// --- STRICT SMC Signal Detection for All Assets ---
 function detectSMC() {
   try {
     // Check minimum data requirements
@@ -310,19 +362,23 @@ function detectSMC() {
     const currentHigh = last20[last20.length - 1].high;
     const currentLow = last20[last20.length - 1].low;
 
-    // Condition 1: Sufficient volatility (minimum 0.3% range for synthetic indices)
+    // Condition 1: Sufficient volatility
     const recentHigh = Math.max(...last20.slice(-10).map(c => c.high));
     const recentLow = Math.min(...last20.slice(-10).map(c => c.low));
     const volatility = (recentHigh - recentLow) / recentLow;
-    const hasVolatility = volatility > 0.003;
-    conditions.push({ name: `Minimum volatility (0.3%): ${(volatility * 100).toFixed(2)}%`, met: hasVolatility });
+    
+    const properties = assetProperties[state.pair] || { volatility: 0.01 };
+    const minVolatility = state.pair.includes('Volatility') ? 0.003 : 0.001;
+    const hasVolatility = volatility > minVolatility;
+    
+    conditions.push({ name: `Minimum volatility (${(minVolatility*100).toFixed(2)}%): ${(volatility * 100).toFixed(2)}%`, met: hasVolatility });
     if (!hasVolatility) allConditionsMet = false;
 
-    // Condition 2: Clear market structure for synthetic indices
+    // Condition 2: Clear market structure
     const highs = last20.map(c => c.high);
     const lows = last20.map(c => c.low);
     
-    // Identify swing points with less strict requirements for synthetic indices
+    // Identify swing points
     const swingHighs = [];
     const swingLows = [];
     
@@ -387,14 +443,14 @@ function detectSMC() {
       if (!emaConditionsMet) allConditionsMet = false;
     }
 
-    // Condition 5: Valid retracement level (35-65% of recent range for synthetic indices)
+    // Condition 5: Valid retracement level
     const range = recentHigh - recentLow;
     const retracementLevel = (currentClose - recentLow) / range;
     const validRetracement = retracementLevel >= 0.35 && retracementLevel <= 0.65;
     conditions.push({ name: `Valid retracement (${(retracementLevel * 100).toFixed(1)}% of range)`, met: validRetracement });
     if (!validRetracement) allConditionsMet = false;
 
-    // Condition 6: Recent breakout confirmation for synthetic indices
+    // Condition 6: Recent breakout confirmation
     const previousHigh = Math.max(...last20.slice(-15, -5).map(c => c.high));
     const previousLow = Math.min(...last20.slice(-15, -5).map(c => c.low));
     
@@ -402,7 +458,6 @@ function detectSMC() {
     let bias = null;
     let reason = '';
     
-    // Less strict breakout conditions for synthetic indices
     if (dir5m === 'BUY' && currentHigh > previousHigh) {
       hasBreakout = true;
       bias = 'BUY';
@@ -421,8 +476,8 @@ function detectSMC() {
 
     // FINAL CHECK: Only generate signal if ALL conditions are met
     if (allConditionsMet && bias) {
-      const properties = syntheticProperties[state.pair];
-      const baseVolatility = properties ? properties.volatility : 0.1;
+      const properties = assetProperties[state.pair] || { volatility: 0.1 };
+      const baseVolatility = properties.volatility;
       
       const sl = bias === 'BUY' ? recentLow - range * 0.15 : recentHigh + range * 0.15;
       const tp = bias === 'BUY' ? currentClose + range * 1.5 : currentClose - range * 1.5;
@@ -436,15 +491,15 @@ function detectSMC() {
       const sig = {
         pair: state.pair,
         bias,
-        entry: parseFloat(currentClose.toFixed(2)),
-        tp: parseFloat(tp.toFixed(2)),
-        sl: parseFloat(sl.toFixed(2)),
+        entry: currentClose,
+        tp: tp,
+        sl: sl,
         reason: `${reason} + Multi-Timeframe${state.filter ? ' + EMA+RSI' : ''}`,
         confidence: Math.min(confidence, 95),
         time: new Date().toLocaleTimeString()
       };
       
-      // Prevent signal spam (1.5 minute cooldown for synthetic indices)
+      // Prevent signal spam (1.5 minute cooldown)
       if (Date.now() - state.lastSignalTime > 90000) {
         state.lastSignalTime = Date.now();
         state.signals.push(sig);
@@ -468,41 +523,37 @@ function detectSMC() {
   }
 }
 
-// --- Load Historical Data for Synthetic Indices ---
+// --- Load Historical Data for All Assets ---
 async function loadHistoricalData(pair, timeframe, limit = 100) {
   try {
     document.getElementById('loadingIndicator').style.display = 'block';
     
     const candles = [];
-    const properties = syntheticProperties[pair] || { basePrice: 10000, volatility: 0.1, trendStrength: 0.1 };
-    const { basePrice, volatility, trendStrength } = properties;
+    const properties = assetProperties[pair] || { basePrice: 1.0, volatility: 0.01, trendStrength: 0.001, decimals: 5 };
+    const { basePrice, volatility, trendStrength, decimals } = properties;
     
     let currentTime = getCurrentCandleTime(timeframe) - (limit * timeframe * 60);
     let lastClose = basePrice;
     
-    // Create realistic synthetic index movement
-    let trend = trendStrength; // Use the predefined trend strength
+    // Create realistic price movement
+    let trend = trendStrength;
     let jumpProbability = pair.includes('Jump') ? 0.1 : 0.02;
     let crashBoomProbability = (pair.includes('Boom') || pair.includes('Crash')) ? 0.05 : 0.01;
     
     for (let i = 0; i < limit; i++) {
       let change;
       
-      // Special behavior for different synthetic indices
+      // Special behavior for different asset types
       if (pair.includes('Boom') && Math.random() < crashBoomProbability) {
-        // Boom index sudden upward movement
         change = volatility * 3 * lastClose;
       } else if (pair.includes('Crash') && Math.random() < crashBoomProbability) {
-        // Crash index sudden downward movement
         change = -volatility * 3 * lastClose;
       } else if (pair.includes('Jump') && Math.random() < jumpProbability) {
-        // Jump index random large movement
         change = (Math.random() - 0.5) * volatility * 5 * lastClose;
       } else if (pair.includes('Step')) {
-        // Step index more predictable movement
         change = trend * volatility * lastClose + (Math.random() - 0.5) * volatility * 0.5 * lastClose;
       } else {
-        // Normal synthetic movement with trend bias
+        // Normal movement with trend bias
         change = (Math.random() - 0.5 + trend) * volatility * lastClose;
       }
       
@@ -513,11 +564,11 @@ async function loadHistoricalData(pair, timeframe, limit = 100) {
       
       candles.push({
         time: currentTime,
-        open: parseFloat(open.toFixed(2)),
-        high: parseFloat(high.toFixed(2)),
-        low: parseFloat(low.toFixed(2)),
-        close: parseFloat(close.toFixed(2)),
-        volume: 10000 + Math.random() * 50000
+        open: parseFloat(open.toFixed(decimals)),
+        high: parseFloat(high.toFixed(decimals)),
+        low: parseFloat(low.toFixed(decimals)),
+        close: parseFloat(close.toFixed(decimals)),
+        volume: pair.includes('Index') ? 10000 + Math.random() * 50000 : 1000 + Math.random() * 5000
       });
       
       lastClose = close;
@@ -534,24 +585,32 @@ async function loadHistoricalData(pair, timeframe, limit = 100) {
   }
 }
 
-// --- Synchronized Live Data Simulation for Synthetic Indices ---
+// --- Real-Time Synchronized Data Simulation ---
 function startLiveDataSimulation() {
   if (state.liveUpdateInterval) {
     clearInterval(state.liveUpdateInterval);
   }
   
+  // Start time synchronization
+  if (state.timeSyncInterval) {
+    clearInterval(state.timeSyncInterval);
+  }
+  
+  state.timeSyncInterval = setInterval(updateTimeDisplay, 1000);
+  
   state.liveUpdateInterval = setInterval(() => {
     if (state.candles.length > 0) {
       const now = getCurrentCandleTime(5);
       const lastCandle = state.candles[state.candles.length - 1];
-      const properties = syntheticProperties[state.pair] || { volatility: 0.1, trendStrength: 0.1 };
+      const properties = assetProperties[state.pair] || { volatility: 0.01, trendStrength: 0.001 };
       
+      // Only create new candle when real 5 minutes have passed
       if (now > lastCandle.time) {
         let change;
         const volatility = properties.volatility;
         const trend = properties.trendStrength;
         
-        // Special behaviors for different synthetic indices
+        // Special behaviors for different asset types
         if (state.pair.includes('Boom') && Math.random() < 0.03) {
           change = volatility * 2 * lastCandle.close;
         } else if (state.pair.includes('Crash') && Math.random() < 0.03) {
@@ -568,7 +627,7 @@ function startLiveDataSimulation() {
           close: lastCandle.close + change,
           high: Math.max(lastCandle.close, lastCandle.close + change) + Math.random() * volatility * lastCandle.close,
           low: Math.min(lastCandle.close, lastCandle.close + change) - Math.random() * volatility * lastCandle.close,
-          volume: 10000 + Math.random() * 50000
+          volume: state.pair.includes('Index') ? 10000 + Math.random() * 50000 : 1000 + Math.random() * 5000
         };
         
         state.candles.push(newCandle);
@@ -615,9 +674,11 @@ function startLiveDataSimulation() {
         if (state.auto && state.candles.length > 35 && state.candlesHTF.length > 15) {
           detectSMC();
         }
+        
+        console.log(`🕒 New 5m candle created at ${new Date(now * 1000).toLocaleTimeString()}`);
       }
     }
-  }, 1000);
+  }, 1000); // Check every second for new candles
 }
 
 // --- Connect to Data Feeds ---
@@ -687,6 +748,10 @@ document.getElementById('disconnectFeed').onclick = () => {
     clearInterval(state.liveUpdateInterval);
     state.liveUpdateInterval = null;
   }
+  if (state.timeSyncInterval) {
+    clearInterval(state.timeSyncInterval);
+    state.timeSyncInterval = null;
+  }
   
   document.getElementById('connectionStatus').textContent = 'Disconnected';
   document.getElementById('connectionStatus').className = 'disconnected';
@@ -730,6 +795,7 @@ window.addEventListener('load', () => {
 // --- Cleanup on page unload ---
 window.addEventListener('beforeunload', () => {
   if (state.liveUpdateInterval) clearInterval(state.liveUpdateInterval);
+  if (state.timeSyncInterval) clearInterval(state.timeSyncInterval);
 });
 </script>
 </body>
