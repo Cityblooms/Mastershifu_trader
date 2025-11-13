@@ -64,6 +64,9 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
       <option value="Crash 500 Index">Crash 500 Index</option>
     </optgroup>
     <optgroup label="Step & Jump Indices">
+      <option value="Step 100 Index">Step 100 Index</option>
+      <option value="Step 400 Index">Step 400 Index</option>
+      <option value="Step 500 Index">Step 500 Index</option>
       <option value="Step Index">Step Index</option>
       <option value="Jump 10 Index">Jump 10 Index</option>
       <option value="Jump 25 Index">Jump 25 Index</option>
@@ -111,8 +114,9 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 <script>
 // --- Global State ---
 const state = {
-  ws: null,
-  wsHTF: null,
+  wsBinance5m: null,
+  wsBinance15m: null,
+  wsDeriv: null,
   pair: "EURUSD",
   candles: [],
   candlesHTF: [],
@@ -126,14 +130,49 @@ const state = {
   series: null,
   emaSeries: null,
   signals: [],
+  markers: [],
   reconnectAttempts: 0,
   maxReconnectAttempts: 5,
   currentTime: Math.floor(Date.now() / 1000),
   lastCandleTime: null,
   liveUpdateInterval: null,
   currentBias: null,
-  timeSyncInterval: null
+  timeSyncInterval: null,
+  pendingResponses: {}, // For Deriv req_id
+  nextReqId: 1,
+  binancePairs: ['BTCUSD'],
+  derivPairs: [
+    'Volatility 10 Index', 'Volatility 25 Index', 'Volatility 50 Index', 'Volatility 75 Index', 'Volatility 100 Index',
+    'Boom 1000 Index', 'Boom 500 Index', 'Crash 1000 Index', 'Crash 500 Index',
+    'Step 100 Index', 'Step 400 Index', 'Step 500 Index', 'Step Index',
+    'Jump 10 Index', 'Jump 25 Index', 'Jump 50 Index', 'Jump 75 Index', 'Jump 100 Index'
+  ]
 };
+
+// --- Deriv Symbol Mapping ---
+function getDerivSymbol(pair) {
+  const mapping = {
+    'Volatility 10 Index': 'R_10',
+    'Volatility 25 Index': 'R_25',
+    'Volatility 50 Index': 'R_50',
+    'Volatility 75 Index': 'R_75',
+    'Volatility 100 Index': 'R_100',
+    'Boom 1000 Index': 'Boom1000',
+    'Boom 500 Index': 'Boom500',
+    'Crash 1000 Index': 'Crash1000',
+    'Crash 500 Index': 'Crash500',
+    'Step 100 Index': 'Step100',
+    'Step 400 Index': 'Step400',
+    'Step 500 Index': 'Step500',
+    'Step Index': 'StepIndex',
+    'Jump 10 Index': 'Jump10',
+    'Jump 25 Index': 'Jump25',
+    'Jump 50 Index': 'Jump50',
+    'Jump 75 Index': 'Jump75',
+    'Jump 100 Index': 'Jump100'
+  };
+  return mapping[pair] || pair;
+}
 
 // --- Chart setup ---
 const chart = LightweightCharts.createChart(document.getElementById('chart'), {
@@ -170,26 +209,58 @@ const assetProperties = {
   "BTCUSD": { basePrice: 43000.00, volatility: 0.015, trendStrength: 0.005, decimals: 2 },
   
   // Volatility Indices
-  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 2 },
-  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15, decimals: 2 },
-  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2, decimals: 2 },
-  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25, decimals: 2 },
-  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3, decimals: 2 },
+  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 0 },
+  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15, decimals: 0 },
+  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2, decimals: 0 },
+  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25, decimals: 0 },
+  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3, decimals: 0 },
   
   // Boom & Crash Indices
-  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4, decimals: 2 },
-  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35, decimals: 2 },
-  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4, decimals: 2 },
-  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35, decimals: 2 },
+  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4, decimals: 0 },
+  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35, decimals: 0 },
+  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4, decimals: 0 },
+  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35, decimals: 0 },
   
   // Step & Jump Indices
-  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 2 },
-  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1, decimals: 2 },
-  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15, decimals: 2 },
-  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2, decimals: 2 },
-  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25, decimals: 2 },
-  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3, decimals: 2 }
+  "Step 100 Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 0 },
+  "Step 400 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 0 },
+  "Step 500 Index": { basePrice: 10000, volatility: 0.10, trendStrength: 0.1, decimals: 0 },
+  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 0 },
+  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1, decimals: 0 },
+  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15, decimals: 0 },
+  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2, decimals: 0 },
+  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25, decimals: 0 },
+  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3, decimals: 0 }
 };
+
+// --- Persistence ---
+function saveSignals() {
+  localStorage.setItem('smcSignals', JSON.stringify(state.signals));
+}
+
+function loadSignals() {
+  const saved = localStorage.getItem('smcSignals');
+  if (saved) {
+    state.signals = JSON.parse(saved);
+    repopulateSignalLog();
+  }
+}
+
+function repopulateSignalLog() {
+  document.getElementById('signalLog').innerHTML = '';
+  state.signals.slice().reverse().forEach(addSignalToLog);
+  document.getElementById('signalCount').textContent = `(${state.signals.length})`;
+}
+
+function addSignalToLog(sig) {
+  const div = document.createElement('div');
+  div.className = `signal-card ${sig.bias.toLowerCase()}`;
+  const properties = assetProperties[state.pair] || { decimals: 2 };
+  const decimals = properties.decimals;
+  div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(decimals)} TP ${sig.tp.toFixed(decimals)} SL ${sig.sl.toFixed(decimals)}<br>
+    Reason: ${sig.reason}<br>Conf: ${sig.confidence}% | ${sig.time}`;
+  document.getElementById('signalLog').appendChild(div);
+}
 
 // --- Time Synchronization Functions ---
 function getCurrentCandleTime(timeframe = 5) {
@@ -209,10 +280,9 @@ function updateTimeDisplay() {
     const nextCandleTime = new Date((state.candles[state.candles.length - 1].time + 300) * 1000);
     document.getElementById('nextCandleTime').textContent = nextCandleTime.toLocaleTimeString();
     
-    // Check sync status
     const timeDiff = Math.abs(now.getTime() - lastCandleTime.getTime());
     const syncElement = document.getElementById('syncStatus');
-    if (timeDiff < 10000) { // 10 seconds tolerance
+    if (timeDiff < 10000) {
       syncElement.textContent = '✅ Timeframes synchronized';
       syncElement.style.color = '#22c55e';
     } else {
@@ -270,7 +340,7 @@ function calcEMA(values, period) {
 
 // --- Fixed RSI Calculation ---
 function calcRSI(values, period = 14) {
-  if (!values || values.length <= period) return [];
+  if (!values || values.length < period + 1) return [];
   
   try {
     let gains = 0;
@@ -286,6 +356,17 @@ function calcRSI(values, period = 14) {
     let avgLoss = losses / period;
     const rsi = new Array(period).fill(null);
 
+    // Compute and append the first RSI value
+    let firstRSI;
+    if (avgLoss === 0) {
+      firstRSI = 100;
+    } else {
+      const rs = avgGain / avgLoss;
+      firstRSI = 100 - (100 / (1 + rs));
+    }
+    rsi.push(firstRSI);
+
+    // Subsequent RSI values
     for (let i = period + 1; i < values.length; i++) {
       const diff = values[i] - values[i - 1];
       const currentGain = Math.max(diff, 0);
@@ -294,12 +375,14 @@ function calcRSI(values, period = 14) {
       avgGain = (avgGain * (period - 1) + currentGain) / period;
       avgLoss = (avgLoss * (period - 1) + currentLoss) / period;
 
+      let thisRSI;
       if (avgLoss === 0) {
-        rsi.push(100);
+        thisRSI = 100;
       } else {
         const rs = avgGain / avgLoss;
-        rsi.push(100 - (100 / (1 + rs)));
+        thisRSI = 100 - (100 / (1 + rs));
       }
+      rsi.push(thisRSI);
     }
     return rsi;
   } catch (error) {
@@ -308,33 +391,52 @@ function calcRSI(values, period = 14) {
   }
 }
 
+// --- Update Chart and Indicators ---
+function updateChart() {
+  if (state.candles.length > 0) {
+    state.series.setData(state.candles);
+    const closesAll = state.candles.map(x => x.close);
+    state.ema = calcEMA(closesAll, 50);
+    state.rsi = calcRSI(closesAll, 14);
+    
+    if (state.ema.length > 0) {
+      const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
+        time: x.time,
+        value: state.ema[i]
+      }));
+      state.emaSeries.setData(emaPlot);
+    }
+  }
+  
+  if (state.candlesHTF.length > 0) {
+    const closesHTFAll = state.candlesHTF.map(x => x.close);
+    state.emaHTF = calcEMA(closesHTFAll, 50);
+    state.rsiHTF = calcRSI(closesHTFAll, 14);
+  }
+  
+  state.series.setMarkers(state.markers);
+  updateTimeDisplay();
+}
+
 // --- Add signal ---
 function addSignal(sig) {
   try {
-    const div = document.createElement('div');
-    div.className = `signal-card ${sig.bias.toLowerCase()}`;
+    state.signals.push(sig);
+    saveSignals();
     
-    const properties = assetProperties[state.pair] || { decimals: 2 };
-    const decimals = properties.decimals;
-    
-    div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(decimals)} TP ${sig.tp.toFixed(decimals)} SL ${sig.sl.toFixed(decimals)}<br>
-      Reason: ${sig.reason}<br>Conf: ${sig.confidence}% | ${sig.time}`;
-    document.getElementById('signalLog').prepend(div);
-    
-    document.getElementById('signalCount').textContent = `(${state.signals.length})`;
-    
-    // Update current signal display
-    updateCurrentSignal(sig.bias, sig.confidence);
-    
-    const markers = [{
+    const marker = {
       time: state.candles[state.candles.length - 1].time,
       position: sig.bias === 'BUY' ? 'belowBar' : 'aboveBar',
       color: sig.bias === 'BUY' ? '#22c55e' : '#ef4444',
       shape: sig.bias === 'BUY' ? 'arrowUp' : 'arrowDown',
       text: sig.bias
-    }];
+    };
+    state.markers.push(marker);
     
-    state.series.setMarkers(markers);
+    addSignalToLog(sig);
+    document.getElementById('signalCount').textContent = `(${state.signals.length})`;
+    
+    updateCurrentSignal(sig.bias, sig.confidence);
     
     console.log(`🎯 SIGNAL GENERATED: ${sig.bias} at ${sig.time}`);
   } catch (error) {
@@ -345,7 +447,6 @@ function addSignal(sig) {
 // --- STRICT SMC Signal Detection for All Assets ---
 function detectSMC() {
   try {
-    // Check minimum data requirements
     if (!state.candles || state.candles.length < 35 || !state.candlesHTF || state.candlesHTF.length < 15) {
       console.log('❌ Insufficient data for SMC detection');
       updateConditionStatus([{ name: 'Minimum data (35 candles 5m, 15 candles 15m)', met: false }]);
@@ -356,13 +457,11 @@ function detectSMC() {
     const conditions = [];
     let allConditionsMet = true;
 
-    // Get current market data
     const last20 = state.candles.slice(-20);
     const currentClose = last20[last20.length - 1].close;
     const currentHigh = last20[last20.length - 1].high;
     const currentLow = last20[last20.length - 1].low;
 
-    // Condition 1: Sufficient volatility
     const recentHigh = Math.max(...last20.slice(-10).map(c => c.high));
     const recentLow = Math.min(...last20.slice(-10).map(c => c.low));
     const volatility = (recentHigh - recentLow) / recentLow;
@@ -374,11 +473,9 @@ function detectSMC() {
     conditions.push({ name: `Minimum volatility (${(minVolatility*100).toFixed(2)}%): ${(volatility * 100).toFixed(2)}%`, met: hasVolatility });
     if (!hasVolatility) allConditionsMet = false;
 
-    // Condition 2: Clear market structure
     const highs = last20.map(c => c.high);
     const lows = last20.map(c => c.low);
     
-    // Identify swing points
     const swingHighs = [];
     const swingLows = [];
     
@@ -395,12 +492,10 @@ function detectSMC() {
     conditions.push({ name: `Market structure (min 1 swing)`, met: hasMarketStructure });
     if (!hasMarketStructure) allConditionsMet = false;
 
-    // Condition 3: Multi-timeframe alignment
     const lastHTF = state.candlesHTF.slice(-5);
     const closesHTF = lastHTF.map(c => c.close);
     const dirHTF = closesHTF[closesHTF.length - 1] > closesHTF[0] ? 'BUY' : 'SELL';
     
-    // Determine 5m direction based on recent price action
     const recent5m = last20.slice(-5);
     const dir5m = recent5m[recent5m.length - 1].close > recent5m[0].close ? 'BUY' : 'SELL';
     
@@ -408,7 +503,6 @@ function detectSMC() {
     conditions.push({ name: `Multi-timeframe alignment (5m: ${dir5m}, 15m: ${dirHTF})`, met: timeframeAligned });
     if (!timeframeAligned) allConditionsMet = false;
 
-    // Condition 4: EMA alignment (if filter enabled)
     let emaConditionsMet = true;
     if (state.filter) {
       const emaNow = state.ema[state.ema.length - 1];
@@ -419,40 +513,38 @@ function detectSMC() {
       if (!emaNow || !emaHTFNow || !rsiNow || !rsiHTFNow) {
         emaConditionsMet = false;
       } else {
-        // For BUY: Price above EMA, RSI > 45 but not overbought (< 75)
-        const buyEmaCondition = dir5m === 'BUY' ? 
+        const emaCondition = dir5m === 'BUY' ? 
           (currentClose > emaNow && currentClose > emaHTFNow) : 
           (currentClose < emaNow && currentClose < emaHTFNow);
         
-        const buyRsiCondition = dir5m === 'BUY' ? 
+        const rsiCondition = dir5m === 'BUY' ? 
           (rsiNow > 45 && rsiNow < 75 && rsiHTFNow > 45 && rsiHTFNow < 75) :
           (rsiNow < 55 && rsiNow > 25 && rsiHTFNow < 55 && rsiHTFNow > 25);
         
-        emaConditionsMet = buyEmaCondition && buyRsiCondition;
+        emaConditionsMet = emaCondition && rsiCondition;
         
         conditions.push({ 
           name: `EMA alignment (Price ${dir5m === 'BUY' ? 'above' : 'below'} EMA)`, 
-          met: buyEmaCondition 
+          met: emaCondition 
         });
         conditions.push({ 
           name: `RSI conditions (5m: ${rsiNow.toFixed(1)}, 15m: ${rsiHTFNow.toFixed(1)})`, 
-          met: buyRsiCondition 
+          met: rsiCondition 
         });
       }
       
       if (!emaConditionsMet) allConditionsMet = false;
     }
 
-    // Condition 5: Valid retracement level
     const range = recentHigh - recentLow;
     const retracementLevel = (currentClose - recentLow) / range;
     const validRetracement = retracementLevel >= 0.35 && retracementLevel <= 0.65;
     conditions.push({ name: `Valid retracement (${(retracementLevel * 100).toFixed(1)}% of range)`, met: validRetracement });
     if (!validRetracement) allConditionsMet = false;
 
-    // Condition 6: Recent breakout confirmation
-    const previousHigh = Math.max(...last20.slice(-15, -5).map(c => c.high));
-    const previousLow = Math.min(...last20.slice(-15, -5).map(c => c.low));
+    const prevSlice = last20.slice(-15, -5);
+    const previousHigh = prevSlice.length > 0 ? Math.max(...prevSlice.map(c => c.high)) : currentHigh;
+    const previousLow = prevSlice.length > 0 ? Math.min(...prevSlice.map(c => c.low)) : currentLow;
     
     let hasBreakout = false;
     let bias = null;
@@ -471,10 +563,8 @@ function detectSMC() {
     conditions.push({ name: `Breakout confirmation`, met: hasBreakout });
     if (!hasBreakout) allConditionsMet = false;
 
-    // Update condition display
     updateConditionStatus(conditions);
 
-    // FINAL CHECK: Only generate signal if ALL conditions are met
     if (allConditionsMet && bias) {
       const properties = assetProperties[state.pair] || { volatility: 0.1 };
       const baseVolatility = properties.volatility;
@@ -482,7 +572,6 @@ function detectSMC() {
       const sl = bias === 'BUY' ? recentLow - range * 0.15 : recentHigh + range * 0.15;
       const tp = bias === 'BUY' ? currentClose + range * 1.5 : currentClose - range * 1.5;
       
-      // Calculate confidence based on how many conditions were strongly met
       let confidence = 70;
       if (volatility > baseVolatility * 0.8) confidence += 10;
       if (timeframeAligned) confidence += 10;
@@ -499,10 +588,8 @@ function detectSMC() {
         time: new Date().toLocaleTimeString()
       };
       
-      // Prevent signal spam (1.5 minute cooldown)
       if (Date.now() - state.lastSignalTime > 90000) {
         state.lastSignalTime = Date.now();
-        state.signals.push(sig);
         state.currentBias = bias;
         addSignal(sig);
         console.log('🎯 ALL CONDITIONS MET - SIGNAL GENERATED!', sig);
@@ -523,11 +610,137 @@ function detectSMC() {
   }
 }
 
-// --- Load Historical Data for All Assets ---
+// --- Deriv WS Helper Functions ---
+async function sendDerivRequest(request) {
+  return new Promise((resolve, reject) => {
+    const reqId = state.nextReqId++;
+    state.pendingResponses[reqId] = { resolve, reject };
+    state.wsDeriv.send(JSON.stringify({ ...request, req_id: reqId }));
+    // Timeout after 10s
+    setTimeout(() => {
+      if (state.pendingResponses[reqId]) {
+        delete state.pendingResponses[reqId];
+        reject(new Error('Request timeout'));
+      }
+    }, 10000);
+  });
+}
+
+function connectDerivWS() {
+  const ws = new WebSocket('wss://ws.derivws.com/websockets/v3?app_id=1089'); // Demo public app_id
+  
+  ws.onopen = () => {
+    console.log('Connected to Deriv WS');
+  };
+  
+  ws.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      const reqId = msg.req_id;
+      if (reqId && state.pendingResponses[reqId]) {
+        state.pendingResponses[reqId].resolve(msg);
+        delete state.pendingResponses[reqId];
+      }
+      
+      // Handle live candle updates
+      if (msg.msg_type === 'candles' && msg.subscribe === 1 && msg.candle) {
+        const candle = {
+          time: msg.candle.epoch,
+          open: parseFloat(msg.candle.open),
+          high: parseFloat(msg.candle.high),
+          low: parseFloat(msg.candle.low),
+          close: parseFloat(msg.candle.close),
+          volume: 0 // Not provided
+        };
+        
+        if (msg.granularity === 300) {
+          state.candles.push(candle);
+          if (state.candles.length > 200) state.candles.shift();
+        } else if (msg.granularity === 900) {
+          state.candlesHTF.push(candle);
+          if (state.candlesHTF.length > 100) state.candlesHTF.shift();
+        }
+        
+        updateChart();
+        
+        if (state.auto && state.candles.length > 35 && state.candlesHTF.length > 15) {
+          detectSMC();
+        }
+      }
+    } catch (error) {
+      console.error('Deriv WS message error:', error);
+    }
+  };
+  
+  ws.onclose = () => {
+    console.log('Deriv WS closed');
+  };
+  
+  ws.onerror = (error) => {
+    console.error('Deriv WS error:', error);
+  };
+  
+  return ws;
+}
+
+// --- Load Historical Data ---
 async function loadHistoricalData(pair, timeframe, limit = 100) {
   try {
     document.getElementById('loadingIndicator').style.display = 'block';
     
+    const isBinance = state.binancePairs.includes(pair);
+    const isDeriv = state.derivPairs.includes(pair);
+    
+    if (isBinance) {
+      const symbol = pair === 'BTCUSD' ? 'BTCUSDT' : pair.replace('/', '');
+      const interval = timeframe === 5 ? '5m' : '15m';
+      const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const candles = data.map(k => ({
+        time: Math.floor(k[0] / 1000),
+        open: parseFloat(k[1]),
+        high: parseFloat(k[2]),
+        low: parseFloat(k[3]),
+        close: parseFloat(k[4]),
+        volume: parseFloat(k[5])
+      }));
+      console.log(`Loaded ${candles.length} real candles for ${pair} ${interval}`);
+      document.getElementById('loadingIndicator').style.display = 'none';
+      return candles;
+    }
+    
+    if (isDeriv) {
+      const symbol = getDerivSymbol(pair);
+      const granularity = timeframe * 60; // seconds
+      const request = {
+        candles: symbol,
+        granularity: granularity,
+        count: limit,
+        end: 'latest',
+        style: 'candles',
+        subscribe: 0
+      };
+      const response = await sendDerivRequest(request);
+      if (response.candles) {
+        const candles = response.candles.map(c => ({
+          time: c.epoch,
+          open: parseFloat(c.open),
+          high: parseFloat(c.high),
+          low: parseFloat(c.low),
+          close: parseFloat(c.close),
+          volume: 0
+        })).reverse(); // Deriv returns oldest first
+        console.log(`Loaded ${candles.length} Deriv candles for ${pair} ${timeframe}m`);
+        document.getElementById('loadingIndicator').style.display = 'none';
+        return candles;
+      } else {
+        throw new Error('No candles in response');
+      }
+    }
+    
+    // Simulation for unsupported pairs
     const candles = [];
     const properties = assetProperties[pair] || { basePrice: 1.0, volatility: 0.01, trendStrength: 0.001, decimals: 5 };
     const { basePrice, volatility, trendStrength, decimals } = properties;
@@ -535,15 +748,14 @@ async function loadHistoricalData(pair, timeframe, limit = 100) {
     let currentTime = getCurrentCandleTime(timeframe) - (limit * timeframe * 60);
     let lastClose = basePrice;
     
-    // Create realistic price movement
     let trend = trendStrength;
     let jumpProbability = pair.includes('Jump') ? 0.1 : 0.02;
     let crashBoomProbability = (pair.includes('Boom') || pair.includes('Crash')) ? 0.05 : 0.01;
+    let stepProbability = pair.includes('Step') ? 0.05 : 0.01; // Small steps for Step indices
     
     for (let i = 0; i < limit; i++) {
       let change;
       
-      // Special behavior for different asset types
       if (pair.includes('Boom') && Math.random() < crashBoomProbability) {
         change = volatility * 3 * lastClose;
       } else if (pair.includes('Crash') && Math.random() < crashBoomProbability) {
@@ -551,9 +763,10 @@ async function loadHistoricalData(pair, timeframe, limit = 100) {
       } else if (pair.includes('Jump') && Math.random() < jumpProbability) {
         change = (Math.random() - 0.5) * volatility * 5 * lastClose;
       } else if (pair.includes('Step')) {
-        change = trend * volatility * lastClose + (Math.random() - 0.5) * volatility * 0.5 * lastClose;
+        // Fixed step size based on pair
+        const stepSize = pair.includes('100') ? 0.1 : pair.includes('400') ? 0.4 : pair.includes('500') ? 0.5 : 0.1;
+        change = (Math.random() > 0.5 ? stepSize : -stepSize) * lastClose * 0.01; // Scaled
       } else {
-        // Normal movement with trend bias
         change = (Math.random() - 0.5 + trend) * volatility * lastClose;
       }
       
@@ -585,13 +798,69 @@ async function loadHistoricalData(pair, timeframe, limit = 100) {
   }
 }
 
-// --- Real-Time Synchronized Data Simulation ---
+// --- Binance WS Connection ---
+function connectBinanceWS(tf) {
+  if (!state.binancePairs.includes(state.pair)) return null;
+  
+  const symbol = state.pair === 'BTCUSD' ? 'btcusdt' : state.pair.toLowerCase().replace('/', '');
+  const interval = tf === 5 ? '5m' : '15m';
+  const wsUrl = `wss://stream.binance.com:9443/ws/${symbol}@kline_${interval}`;
+  
+  const ws = new WebSocket(wsUrl);
+  
+  ws.onopen = () => {
+    console.log(`Connected to ${interval} Binance WS for ${state.pair}`);
+  };
+  
+  ws.onmessage = (event) => {
+    try {
+      const kline = JSON.parse(event.data);
+      if (kline.k && kline.k.x) { // Candle closed
+        const candle = {
+          time: Math.floor(kline.k.t / 1000),
+          open: parseFloat(kline.k.o),
+          high: parseFloat(kline.k.h),
+          low: parseFloat(kline.k.l),
+          close: parseFloat(kline.k.c),
+          volume: parseFloat(kline.k.v)
+        };
+        
+        if (tf === 5) {
+          state.candles.push(candle);
+          if (state.candles.length > 200) state.candles.shift();
+        } else {
+          state.candlesHTF.push(candle);
+          if (state.candlesHTF.length > 100) state.candlesHTF.shift();
+        }
+        
+        updateChart();
+        
+        if (state.auto && state.candles.length > 35 && state.candlesHTF.length > 15) {
+          detectSMC();
+        }
+      }
+    } catch (error) {
+      console.error('Binance WS message error:', error);
+    }
+  };
+  
+  ws.onclose = () => {
+    console.log(`${interval} Binance WS closed for ${state.pair}`);
+  };
+  
+  ws.onerror = (error) => {
+    console.error(`${interval} Binance WS error for ${state.pair}:`, error);
+  };
+  
+  return ws;
+}
+
+// --- Real-Time Synchronized Data Simulation (for unsupported pairs) ---
 function startLiveDataSimulation() {
   if (state.liveUpdateInterval) {
     clearInterval(state.liveUpdateInterval);
   }
   
-  // Start time synchronization
   if (state.timeSyncInterval) {
     clearInterval(state.timeSyncInterval);
   }
@@ -604,19 +873,20 @@ function startLiveDataSimulation() {
       const lastCandle = state.candles[state.candles.length - 1];
       const properties = assetProperties[state.pair] || { volatility: 0.01, trendStrength: 0.001 };
       
-      // Only create new candle when real 5 minutes have passed
       if (now > lastCandle.time) {
         let change;
         const volatility = properties.volatility;
         const trend = properties.trendStrength;
         
-        // Special behaviors for different asset types
         if (state.pair.includes('Boom') && Math.random() < 0.03) {
           change = volatility * 2 * lastCandle.close;
         } else if (state.pair.includes('Crash') && Math.random() < 0.03) {
           change = -volatility * 2 * lastCandle.close;
         } else if (state.pair.includes('Jump') && Math.random() < 0.08) {
           change = (Math.random() - 0.5) * volatility * 4 * lastCandle.close;
+        } else if (state.pair.includes('Step')) {
+          const stepSize = state.pair.includes('100') ? 0.1 : state.pair.includes('400') ? 0.4 : state.pair.includes('500') ? 0.5 : 0.1;
+          change = (Math.random() > 0.5 ? stepSize : -stepSize) * lastCandle.close * 0.01;
         } else {
           change = (Math.random() - 0.5 + trend) * volatility * lastCandle.close;
         }
@@ -633,7 +903,6 @@ function startLiveDataSimulation() {
         state.candles.push(newCandle);
         if (state.candles.length > 200) state.candles.shift();
         
-        // Update 15m chart every 3 candles (15 minutes)
         if (state.candles.length % 3 === 0 && state.candlesHTF.length > 0) {
           const lastHTF = state.candlesHTF[state.candlesHTF.length - 1];
           const recent5m = state.candles.slice(-3);
@@ -649,36 +918,14 @@ function startLiveDataSimulation() {
           
           state.candlesHTF.push(newHTFCandle);
           if (state.candlesHTF.length > 100) state.candlesHTF.shift();
-          
-          const closesHTFAll = state.candlesHTF.map(x => x.close);
-          state.emaHTF = calcEMA(closesHTFAll, 50);
-          state.rsiHTF = calcRSI(closesHTFAll, 14);
         }
         
-        const closesAll = state.candles.map(x => x.close);
-        state.ema = calcEMA(closesAll, 50);
-        state.rsi = calcRSI(closesAll, 14);
-        
-        if (state.ema.length > 0) {
-          const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
-            time: x.time,
-            value: state.ema[i]
-          }));
-          state.emaSeries.setData(emaPlot);
-        }
-        
-        state.series.setData(state.candles);
-        updateTimeDisplay();
-        
-        // Check for signals only when we have enough data
-        if (state.auto && state.candles.length > 35 && state.candlesHTF.length > 15) {
-          detectSMC();
-        }
+        updateChart();
         
         console.log(`🕒 New 5m candle created at ${new Date(now * 1000).toLocaleTimeString()}`);
       }
     }
-  }, 1000); // Check every second for new candles
+  }, 1000);
 }
 
 // --- Connect to Data Feeds ---
@@ -689,8 +936,11 @@ document.getElementById('connectFeed').onclick = async () => {
     
     state.candles = [];
     state.candlesHTF = [];
+    state.markers = [];
     state.signals = [];
     state.currentBias = null;
+    state.pendingResponses = {};
+    state.nextReqId = 1;
     document.getElementById('signalLog').innerHTML = '';
     document.getElementById('signalCount').textContent = '(0)';
     updateCurrentSignal(null, 0);
@@ -704,36 +954,55 @@ document.getElementById('connectFeed').onclick = async () => {
     state.candles = historical5m;
     state.candlesHTF = historical15m;
     
-    if (state.candles.length > 0) {
-      state.series.setData(state.candles);
-      
-      const closesAll = state.candles.map(x => x.close);
-      state.ema = calcEMA(closesAll, 50);
-      state.rsi = calcRSI(closesAll, 14);
-      
-      if (state.ema.length > 0) {
-        const emaPlot = state.candles.slice(-state.ema.length).map((x, i) => ({
-          time: x.time,
-          value: state.ema[i]
-        }));
-        state.emaSeries.setData(emaPlot);
-      }
-      
-      const closesHTFAll = state.candlesHTF.map(x => x.close);
-      state.emaHTF = calcEMA(closesHTFAll, 50);
-      state.rsiHTF = calcRSI(closesHTFAll, 14);
-    }
+    updateChart();
     
-    startLiveDataSimulation();
+    loadSignals();
+    
+    const isBinance = state.binancePairs.includes(pair);
+    const isDeriv = state.derivPairs.includes(pair);
+    
+    if (isBinance) {
+      state.wsBinance5m = connectBinanceWS(5);
+      state.wsBinance15m = connectBinanceWS(15);
+      document.getElementById('feed5mStatus').textContent = '🔴 Live (Binance)';
+      document.getElementById('feed15mStatus').textContent = '🔴 Live (Binance)';
+      document.getElementById('feed5mStatus').className = 'connected';
+      document.getElementById('feed15mStatus').className = 'connected';
+      console.log(`Using Binance feeds for ${pair}`);
+    } else if (isDeriv) {
+      state.wsDeriv = connectDerivWS();
+      // Wait for connection
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Subscribe to live candles
+      const symbol = getDerivSymbol(pair);
+      await sendDerivRequest({
+        candles: symbol,
+        granularity: 300,
+        subscribe: 1
+      });
+      await sendDerivRequest({
+        candles: symbol,
+        granularity: 900,
+        subscribe: 1
+      });
+      
+      document.getElementById('feed5mStatus').textContent = '🔴 Live (Deriv)';
+      document.getElementById('feed15mStatus').textContent = '🔴 Live (Deriv)';
+      document.getElementById('feed5mStatus').className = 'connected';
+      document.getElementById('feed15mStatus').className = 'connected';
+      console.log(`Using Deriv feeds for ${pair}`);
+    } else {
+      startLiveDataSimulation();
+      document.getElementById('feed5mStatus').textContent = '🟢 Simulated';
+      document.getElementById('feed15mStatus').textContent = '🟢 Simulated';
+      document.getElementById('feed5mStatus').className = 'connected';
+      document.getElementById('feed15mStatus').className = 'connected';
+      console.log(`Using simulated feeds for ${pair}`);
+    }
     
     document.getElementById('connectionStatus').textContent = `Connected (${pair})`;
     document.getElementById('connectionStatus').className = 'connected';
-    document.getElementById('feed5mStatus').textContent = '✅';
-    document.getElementById('feed5mStatus').className = 'connected';
-    document.getElementById('feed15mStatus').textContent = '✅';
-    document.getElementById('feed15mStatus').className = 'connected';
-    
-    updateTimeDisplay();
     
   } catch (error) {
     console.error('Connection error:', error);
@@ -753,6 +1022,23 @@ document.getElementById('disconnectFeed').onclick = () => {
     state.timeSyncInterval = null;
   }
   
+  if (state.wsBinance5m) {
+    state.wsBinance5m.close();
+    state.wsBinance5m = null;
+  }
+  if (state.wsBinance15m) {
+    state.wsBinance15m.close();
+    state.wsBinance15m = null;
+  }
+  if (state.wsDeriv) {
+    // Unsubscribe
+    const symbol = getDerivSymbol(state.pair);
+    sendDerivRequest({ candles: symbol, granularity: 300, subscribe: 0 }).catch(() => {});
+    sendDerivRequest({ candles: symbol, granularity: 900, subscribe: 0 }).catch(() => {});
+    state.wsDeriv.close();
+    state.wsDeriv = null;
+  }
+  
   document.getElementById('connectionStatus').textContent = 'Disconnected';
   document.getElementById('connectionStatus').className = 'disconnected';
   document.getElementById('feed5mStatus').textContent = '❌';
@@ -760,6 +1046,7 @@ document.getElementById('disconnectFeed').onclick = () => {
   document.getElementById('feed15mStatus').textContent = '❌';
   document.getElementById('feed15mStatus').className = 'disconnected';
   updateCurrentSignal(null, 0);
+  state.markers = [];
 };
 
 // --- Manual signal generation ---
@@ -772,7 +1059,10 @@ document.getElementById('generateSignal').onclick = () => {
 document.getElementById('clearSignals').onclick = () => {
   document.getElementById('signalLog').innerHTML = '';
   state.signals = [];
+  state.markers = [];
   document.getElementById('signalCount').textContent = '(0)';
+  localStorage.removeItem('smcSignals');
+  state.series.setMarkers([]);
 };
 
 // --- Auto Mode toggle ---
@@ -796,6 +1086,9 @@ window.addEventListener('load', () => {
 window.addEventListener('beforeunload', () => {
   if (state.liveUpdateInterval) clearInterval(state.liveUpdateInterval);
   if (state.timeSyncInterval) clearInterval(state.timeSyncInterval);
+  if (state.wsBinance5m) state.wsBinance5m.close();
+  if (state.wsBinance15m) state.wsBinance15m.close();
+  if (state.wsDeriv) state.wsDeriv.close();
 });
 </script>
 </body>
