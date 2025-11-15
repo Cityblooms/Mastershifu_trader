@@ -45,6 +45,8 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 .market-open{background:rgba(34,197,94,0.2);color:#22c55e;border:1px solid #22c55e}
 .market-closed{background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444}
 .market-status-container{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}
+.smc-levels{background:#1a1a2e;padding:10px;border-radius:8px;margin:10px 0;font-size:0.8em}
+.smc-level{display:flex;justify-content:space-between;margin:2px 0}
 </style>
 </head>
 <body>
@@ -95,14 +97,14 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
   <button id="disconnectFeed">🔌 Disconnect All</button>
   <button id="generateSignal">⚡ Generate Test Signal</button>
   <label><input type="checkbox" id="autoMode" checked> Auto Signal Mode</label>
-  <label><input type="checkbox" id="filterMode"> EMA + RSI Filter</label>
+  <label><input type="checkbox" id="filterMode"> Advanced SMC Filter</label>
   <button id="clearSignals">🧹 Clear</button>
 </div>
 
 <div class="status-container">
   <div>Status: <span id="connectionStatus" class="disconnected">Disconnected</span></div>
   <div>Active Pairs: <span id="activePairs">0</span></div>
-  <div>Signals Today: <span id="signalsToday">0/8</span></div>
+  <div>Total Signals: <span id="signalsToday">0</span></div>
   <div class="loading" id="loadingIndicator">🔄 Loading All Pairs...</div>
 </div>
 
@@ -124,20 +126,26 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
   </div>
 </div>
 
-<div class="sync-status" id="syncStatus">🔄 Monitoring market hours...</div>
+<div class="sync-status" id="syncStatus">🔄 Advanced SMC Analysis Active</div>
 <div class="debug-info" id="debugInfo">Debug: System ready - Click Connect All Pairs</div>
+
+<!-- SMC LEVELS DISPLAY -->
+<div class="smc-levels" id="smcLevels" style="display:none">
+  <h4>📊 SMC Market Structure</h4>
+  <div id="smcLevelsContent"></div>
+</div>
 
 <!-- MULTI-PAIR SIGNALS DISPLAY -->
 <div class="multi-signals">
   <h4>🎯 ACTIVE SIGNALS ACROSS ALL PAIRS</h4>
   <div id="multiSignalsContainer">
-    <div style="text-align:center;color:#888;padding:20px">No active signals - Markets may be closed</div>
+    <div style="text-align:center;color:#888;padding:20px">No active signals - Connect pairs and wait for signals</div>
   </div>
 </div>
 
 <!-- CURRENT CHART PAIR SIGNAL -->
 <div id="currentSignal" class="current-signal signal-none">
-  🟡 NO SIGNAL - Markets closed or daily limit reached
+  🟡 NO SIGNAL - Analyzing market structure
 </div>
 
 <div class="signal-stats" id="signalStats" style="display:none">
@@ -148,8 +156,8 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 </div>
 
 <div class="conditions">
-  <strong>Current Pair Conditions (<span id="currentPairName">-</span>):</strong>
-  <div id="conditionStatus">Select a pair to view conditions</div>
+  <strong>Advanced SMC Analysis (<span id="currentPairName">-</span>):</strong>
+  <div id="conditionStatus">Select a pair to view SMC conditions</div>
 </div>
 
 <div id="chart"></div>
@@ -186,11 +194,13 @@ const state = {
   activeSignals: {},
   monitoringInterval: null,
   signalsToday: 0,
-  maxSignalsPerDay: 8,
   marketTrends: {},
   lastDebug: '',
   signalCounter: 0,
-  lastTradingDay: null
+  lastTradingDay: null,
+  marketStructure: {},
+  orderBlocks: {},
+  fairValueGaps: {}
 };
 
 // Asset Types
@@ -284,7 +294,7 @@ function resetDailyCounter() {
   if (state.lastTradingDay !== today) {
     state.signalsToday = 0;
     state.lastTradingDay = today;
-    document.getElementById('signalsToday').textContent = `0/${state.maxSignalsPerDay}`;
+    document.getElementById('signalsToday').textContent = `0`;
     updateDebugInfo('Daily signal counter reset');
   }
 }
@@ -374,6 +384,198 @@ function updateDebugInfo(message) {
   console.log(`DEBUG: ${message}`);
 }
 
+// --- Advanced SMC Analysis Functions ---
+function detectMarketStructure(candles, pairName) {
+  if (!candles || candles.length < 20) return null;
+  
+  const structure = {
+    higherHighs: 0,
+    higherLows: 0,
+    lowerHighs: 0,
+    lowerLows: 0,
+    trend: 'RANGING',
+    keyLevels: [],
+    orderBlocks: [],
+    fairValueGaps: []
+  };
+  
+  // Analyze last 20 candles for market structure
+  const recentCandles = candles.slice(-20);
+  
+  // Detect Higher Highs and Higher Lows for Uptrend
+  for (let i = 2; i < recentCandles.length; i++) {
+    if (recentCandles[i].high > recentCandles[i-1].high && 
+        recentCandles[i-1].high > recentCandles[i-2].high) {
+      structure.higherHighs++;
+    }
+    if (recentCandles[i].low > recentCandles[i-1].low && 
+        recentCandles[i-1].low > recentCandles[i-2].low) {
+      structure.higherLows++;
+    }
+  }
+  
+  // Detect Lower Highs and Lower Lows for Downtrend
+  for (let i = 2; i < recentCandles.length; i++) {
+    if (recentCandles[i].high < recentCandles[i-1].high && 
+        recentCandles[i-1].high < recentCandles[i-2].high) {
+      structure.lowerHighs++;
+    }
+    if (recentCandles[i].low < recentCandles[i-1].low && 
+        recentCandles[i-1].low < recentCandles[i-2].low) {
+      structure.lowerLows++;
+    }
+  }
+  
+  // Determine trend
+  if (structure.higherHighs >= 2 && structure.higherLows >= 2) {
+    structure.trend = 'BULLISH';
+  } else if (structure.lowerHighs >= 2 && structure.lowerLows >= 2) {
+    structure.trend = 'BEARISH';
+  }
+  
+  // Identify key levels (support/resistance)
+  structure.keyLevels = identifyKeyLevels(candles);
+  
+  // Identify order blocks
+  structure.orderBlocks = identifyOrderBlocks(candles);
+  
+  // Identify fair value gaps
+  structure.fairValueGaps = identifyFairValueGaps(candles);
+  
+  state.marketStructure[pairName] = structure;
+  return structure;
+}
+
+function identifyKeyLevels(candles) {
+  const levels = [];
+  const priceMap = {};
+  
+  // Group prices into levels
+  candles.forEach(candle => {
+    const highLevel = Math.round(candle.high * 100) / 100;
+    const lowLevel = Math.round(candle.low * 100) / 100;
+    
+    priceMap[highLevel] = (priceMap[highLevel] || 0) + 1;
+    priceMap[lowLevel] = (priceMap[lowLevel] || 0) + 1;
+  });
+  
+  // Find significant levels (touched at least 3 times)
+  Object.keys(priceMap).forEach(level => {
+    if (priceMap[level] >= 3) {
+      levels.push(parseFloat(level));
+    }
+  });
+  
+  return levels.sort((a, b) => a - b);
+}
+
+function identifyOrderBlocks(candles) {
+  const blocks = [];
+  
+  for (let i = 2; i < candles.length - 1; i++) {
+    const current = candles[i];
+    const previous = candles[i-1];
+    const next = candles[i+1];
+    
+    // Bullish order block: strong bear candle followed by bullish reaction
+    if (previous.close < previous.open && // Bear candle
+        current.close > current.open &&   // Bull candle
+        current.low < previous.low &&     // New low
+        next.close > next.open) {         // Confirmation
+      blocks.push({
+        type: 'BULLISH',
+        price: current.low,
+        time: current.time
+      });
+    }
+    
+    // Bearish order block: strong bull candle followed by bearish reaction
+    if (previous.close > previous.open && // Bull candle
+        current.close < current.open &&   // Bear candle
+        current.high > previous.high &&   // New high
+        next.close < next.open) {         // Confirmation
+      blocks.push({
+        type: 'BEARISH',
+        price: current.high,
+        time: current.time
+      });
+    }
+  }
+  
+  return blocks.slice(-5); // Return last 5 blocks
+}
+
+function identifyFairValueGaps(candles) {
+  const gaps = [];
+  
+  for (let i = 1; i < candles.length; i++) {
+    const current = candles[i];
+    const previous = candles[i-1];
+    
+    // Bullish FVG: previous low > current high
+    if (previous.low > current.high) {
+      gaps.push({
+        type: 'BULLISH',
+        top: previous.low,
+        bottom: current.high,
+        time: current.time
+      });
+    }
+    
+    // Bearish FVG: previous high < current low
+    if (previous.high < current.low) {
+      gaps.push({
+        type: 'BEARISH',
+        top: current.low,
+        bottom: previous.high,
+        time: current.time
+      });
+    }
+  }
+  
+  return gaps.slice(-3); // Return last 3 gaps
+}
+
+function updateSMCLevelsDisplay(structure, pairName) {
+  const container = document.getElementById('smcLevels');
+  const content = document.getElementById('smcLevelsContent');
+  
+  if (!structure) {
+    container.style.display = 'none';
+    return;
+  }
+  
+  let html = `
+    <div class="smc-level">
+      <span>Market Trend:</span>
+      <span style="color: ${structure.trend === 'BULLISH' ? '#22c55e' : structure.trend === 'BEARISH' ? '#ef4444' : '#f59e0b'}">
+        ${structure.trend}
+      </span>
+    </div>
+    <div class="smc-level">
+      <span>Higher Highs/Lows:</span>
+      <span>${structure.higherHighs}/${structure.higherLows}</span>
+    </div>
+    <div class="smc-level">
+      <span>Lower Highs/Lows:</span>
+      <span>${structure.lowerHighs}/${structure.lowerLows}</span>
+    </div>
+  `;
+  
+  if (structure.orderBlocks.length > 0) {
+    html += `<div style="margin-top: 8px;"><strong>Order Blocks:</strong></div>`;
+    structure.orderBlocks.forEach(block => {
+      html += `<div class="smc-level">
+        <span>${block.type}:</span>
+        <span>${block.price.toFixed(4)}</span>
+      </div>`;
+    });
+  }
+  
+  content.innerHTML = html;
+  container.style.display = 'block';
+}
+
 // --- Update Multi-Pair Signals Display ---
 function updateMultiSignalsDisplay() {
   const container = document.getElementById('multiSignalsContainer');
@@ -433,12 +635,10 @@ function updateCurrentSignal(signal) {
   } else {
     signalElement.className = 'current-signal signal-none';
     
-    if (state.signalsToday >= state.maxSignalsPerDay) {
-      signalElement.innerHTML = `🟡 DAILY LIMIT REACHED (${state.signalsToday}/${state.maxSignalsPerDay} signals)`;
-    } else if (!isMarketOpenForPair(state.pair)) {
+    if (!isMarketOpenForPair(state.pair)) {
       signalElement.innerHTML = `🔒 ${state.pair} MARKET CLOSED - No signals until next session`;
     } else {
-      signalElement.innerHTML = `🟡 NO ACTIVE SIGNALS - Monitoring markets`;
+      signalElement.innerHTML = `🟡 NO ACTIVE SIGNALS - Analyzing market structure`;
     }
     statsElement.style.display = 'none';
   }
@@ -530,22 +730,22 @@ function addSignal(sig) {
     
     document.getElementById('signalCount').textContent = `(${state.signals.length})`;
     state.signalsToday++;
-    document.getElementById('signalsToday').textContent = `${state.signalsToday}/${state.maxSignalsPerDay}`;
+    document.getElementById('signalsToday').textContent = `${state.signalsToday}`;
     
     console.log(`🎯 SIGNAL GENERATED: ${sig.pair} ${sig.bias} at ${sig.time}`);
-    updateDebugInfo(`New ${sig.bias} signal for ${sig.pair} (${state.signalsToday}/${state.maxSignalsPerDay})`);
+    updateDebugInfo(`New ${sig.bias} signal for ${sig.pair} (Total: ${state.signalsToday})`);
   } catch (error) {
     console.error('Error adding signal:', error);
   }
 }
 
-// --- CONTROLLED SMC Detection ---
+// --- ADVANCED SMC Detection ---
 function detectSMCForPair(pairData, pairName) {
   try {
     const { candles } = pairData;
     
     // Check minimum data requirements
-    if (!candles || candles.length < 8) {
+    if (!candles || candles.length < 25) {
       return null;
     }
 
@@ -553,69 +753,114 @@ function detectSMCForPair(pairData, pairName) {
     if (!isMarketOpenForPair(pairName)) {
       return null;
     }
-    
-    if (state.signalsToday >= state.maxSignalsPerDay) {
-      updateDebugInfo(`Daily limit reached (${state.signalsToday}/${state.maxSignalsPerDay})`);
-      return null;
-    }
 
     const conditions = [];
     
     // Get current market data
-    const last8 = candles.slice(-8);
-    const currentClose = last8[last8.length - 1].close;
+    const currentClose = candles[candles.length - 1].close;
+    const currentPrice = currentClose;
     
-    // CONTROLLED CONDITIONS - Only generate quality signals
-    const hasEnoughData = candles.length >= 15;
-    conditions.push({ name: `Sufficient data (${candles.length} candles)`, met: hasEnoughData });
-    if (!hasEnoughData) return null;
+    // Advanced SMC Analysis
+    const marketStructure = detectMarketStructure(candles, pairName);
+    if (!marketStructure) return null;
     
-    // Check for clear trend (reduces conflicting signals)
-    const recentTrend = last8.slice(-5).map(c => c.close);
-    const trendStrength = (recentTrend[recentTrend.length - 1] - recentTrend[0]) / recentTrend[0];
-    const hasClearTrend = Math.abs(trendStrength) > 0.002; // 0.2% minimum trend
-    conditions.push({ name: `Clear trend present`, met: hasClearTrend });
-    if (!hasClearTrend) return null;
+    updateSMCLevelsDisplay(marketStructure, pairName);
     
-    // Determine direction based on strong trend
-    const bias = trendStrength > 0 ? 'BUY' : 'SELL';
-    conditions.push({ name: `Trend direction: ${bias}`, met: true });
+    // SMC Conditions - Only generate HIGH QUALITY signals
+    const hasClearStructure = marketStructure.trend !== 'RANGING';
+    conditions.push({ name: `Clear Market Structure (${marketStructure.trend})`, met: hasClearStructure });
+    if (!hasClearStructure) return null;
     
-    // CONTROLLED SIGNAL GENERATION - 15% CHANCE EVERY CHECK
-    const shouldGenerateSignal = Math.random() < 0.15; // 15% chance of signal
+    // Check for valid order blocks near current price
+    const recentOrderBlocks = marketStructure.orderBlocks.filter(block => {
+      const priceDiff = Math.abs(block.price - currentPrice) / currentPrice;
+      return priceDiff < 0.02; // Within 2% of current price
+    });
     
-    if (shouldGenerateSignal && hasEnoughData && hasClearTrend) {
-      const properties = assetProperties[pairName] || { basePrice: 1000, volatility: 0.01 };
+    const hasValidOrderBlock = recentOrderBlocks.length > 0;
+    conditions.push({ name: `Valid Order Block Present`, met: hasValidOrderBlock });
+    if (!hasValidOrderBlock) return null;
+    
+    // Determine bias based on SMC principles
+    let bias = null;
+    let reason = '';
+    let confidence = 0;
+    
+    // BULLISH SMC Setup
+    if (marketStructure.trend === 'BULLISH' || 
+        (marketStructure.higherHighs >= 2 && marketStructure.higherLows >= 1)) {
       
-      // Professional risk management
-      const riskPercent = 0.008; // 0.8% risk
-      const rewardPercent = 0.024; // 2.4% reward (1:3 ratio)
+      const bullishBlocks = recentOrderBlocks.filter(block => block.type === 'BULLISH');
+      const nearestBullBlock = bullishBlocks[0];
       
-      const sl = bias === 'BUY' ? currentClose * (1 - riskPercent) : currentClose * (1 + riskPercent);
-      const tp = bias === 'BUY' ? currentClose * (1 + rewardPercent) : currentClose * (1 - rewardPercent);
-      
-      // Quality confidence scoring
-      const baseConfidence = 75;
-      const trendConfidence = Math.min(Math.abs(trendStrength) * 1000, 15); // Up to 15% bonus for strong trends
-      const confidence = Math.min(baseConfidence + trendConfidence, 90);
-      
-      const signal = {
-        pair: pairName,
-        bias: bias,
-        entry: currentClose,
-        tp: tp,
-        sl: sl,
-        reason: 'Quality SMC Pattern',
-        confidence: confidence,
-        time: new Date().toLocaleTimeString(),
-        conditions: conditions
-      };
-      
-      updateDebugInfo(`✅ Quality signal for ${pairName} (${bias}) - ${state.signalsToday + 1}/${state.maxSignalsPerDay}`);
-      return signal;
+      if (nearestBullBlock && currentPrice <= nearestBullBlock.price * 1.01) { // Within 1% of bullish OB
+        bias = 'BUY';
+        reason = 'Bullish Order Block + Market Structure Break';
+        confidence = 75 + Math.min(marketStructure.higherHighs * 5, 15);
+      }
     }
     
-    return null;
+    // BEARISH SMC Setup
+    if (marketStructure.trend === 'BEARISH' || 
+        (marketStructure.lowerHighs >= 2 && marketStructure.lowerLows >= 1)) {
+      
+      const bearishBlocks = recentOrderBlocks.filter(block => block.type === 'BEARISH');
+      const nearestBearBlock = bearishBlocks[0];
+      
+      if (nearestBearBlock && currentPrice >= nearestBearBlock.price * 0.99) { // Within 1% of bearish OB
+        bias = 'SELL';
+        reason = 'Bearish Order Block + Market Structure Break';
+        confidence = 75 + Math.min(marketStructure.lowerHighs * 5, 15);
+      }
+    }
+    
+    if (!bias) return null;
+    
+    // Professional risk management with SMC principles
+    const properties = assetProperties[pairName] || { basePrice: 1000, volatility: 0.01 };
+    const riskPercent = 0.01; // 1% risk
+    const rewardPercent = 0.03; // 3% reward (1:3 ratio)
+    
+    let sl, tp;
+    
+    if (bias === 'BUY') {
+      // For BUY: SL below recent low, TP at next resistance
+      const recentLow = Math.min(...candles.slice(-10).map(c => c.low));
+      sl = recentLow * 0.995;
+      tp = currentPrice * (1 + rewardPercent);
+    } else {
+      // For SELL: SL above recent high, TP at next support
+      const recentHigh = Math.max(...candles.slice(-10).map(c => c.high));
+      sl = recentHigh * 1.005;
+      tp = currentPrice * (1 - rewardPercent);
+    }
+    
+    // Ensure proper risk:reward
+    const riskRewardRatio = Math.abs(tp - currentPrice) / Math.abs(sl - currentPrice);
+    if (riskRewardRatio < 2) {
+      // Adjust TP to maintain minimum 1:2 risk:reward
+      if (bias === 'BUY') {
+        tp = currentPrice + (2 * Math.abs(currentPrice - sl));
+      } else {
+        tp = currentPrice - (2 * Math.abs(sl - currentPrice));
+      }
+    }
+    
+    const signal = {
+      pair: pairName,
+      bias: bias,
+      entry: currentPrice,
+      tp: tp,
+      sl: sl,
+      reason: reason,
+      confidence: Math.min(confidence, 90),
+      time: new Date().toLocaleTimeString(),
+      conditions: conditions,
+      marketStructure: marketStructure.trend
+    };
+    
+    updateDebugInfo(`✅ SMC ${bias} signal for ${pairName} - ${marketStructure.trend} structure`);
+    return signal;
     
   } catch (error) {
     console.error(`Error in SMC detection for ${pairName}:`, error);
@@ -691,8 +936,8 @@ function monitorAllPairs() {
   // Update market status
   const anyMarketOpen = updateMarketStatus();
   
-  if (!anyMarketOpen || state.signalsToday >= state.maxSignalsPerDay) {
-    // Clear active signals when all markets are closed or limit reached
+  if (!anyMarketOpen) {
+    // Clear active signals when all markets are closed
     state.activeSignals = {};
     updateMultiSignalsDisplay();
     updateCurrentSignal(null);
@@ -704,14 +949,14 @@ function monitorAllPairs() {
     if (pairData && pairData.candles && pairData.candles.length > 0) {
       activePairsCount++;
       
-      // Check for signals only if under daily limit AND this pair's market is open
-      if (state.signalsToday < state.maxSignalsPerDay && isMarketOpenForPair(pair)) {
+      // Check for signals only if this pair's market is open
+      if (isMarketOpenForPair(pair)) {
         const signal = detectSMCForPair(pairData, pair);
         if (signal) {
           newActiveSignals[pair] = signal;
           
-          // Add to main signal log if new (2 minute cooldown per pair)
-          if (!state.activeSignals[pair] || (Date.now() - state.lastSignalTime) > 120000) {
+          // Add to main signal log if new (5 minute cooldown per pair)
+          if (!state.activeSignals[pair] || (Date.now() - state.lastSignalTime) > 300000) {
             state.signals.push(signal);
             state.lastSignalTime = Date.now();
             addSignal(signal);
@@ -782,7 +1027,7 @@ async function initializeAllPairs() {
   }
   
   document.getElementById('loadingIndicator').style.display = 'none';
-  updateDebugInfo(`✅ All ${loadedCount} pairs loaded - Synthetic & Crypto markets open 24/7`);
+  updateDebugInfo(`✅ All ${loadedCount} pairs loaded - Advanced SMC Analysis Active`);
 }
 
 // --- Update All Pairs Data ---
@@ -831,14 +1076,14 @@ function startMultiPairMonitoring() {
     resetDailyCounter();
   }, 1000);
   
-  // Update all pairs data and check for signals every 10 seconds
+  // Update all pairs data and check for signals every 15 seconds
   state.monitoringInterval = setInterval(() => {
     updateAllPairsData();
     monitorAllPairs();
     updateChartForPair(state.pair);
-  }, 10000); // Check every 10 seconds
+  }, 15000); // Check every 15 seconds
   
-  updateDebugInfo('🚀 Professional monitoring started - Synthetic & Crypto markets open 24/7');
+  updateDebugInfo('🚀 Advanced SMC Monitoring Started - Following real market structure');
 }
 
 // --- Update Chart for Selected Pair ---
@@ -898,22 +1143,35 @@ document.getElementById('disconnectFeed').addEventListener('click', () => {
 });
 
 document.getElementById('generateSignal').addEventListener('click', () => {
-  // Force generate a signal for current pair (bypasses daily limit for testing)
+  // Force generate a signal for current pair using SMC principles
   const pairData = state.allPairsData[state.pair];
   if (pairData && pairData.candles && pairData.candles.length > 0) {
+    const marketStructure = detectMarketStructure(pairData.candles, state.pair);
+    
+    let bias, reason;
+    if (marketStructure && marketStructure.trend === 'BULLISH') {
+      bias = 'BUY';
+      reason = 'Manual Bullish SMC Setup';
+    } else if (marketStructure && marketStructure.trend === 'BEARISH') {
+      bias = 'SELL';
+      reason = 'Manual Bearish SMC Setup';
+    } else {
+      bias = Math.random() > 0.5 ? 'BUY' : 'SELL';
+      reason = 'Manual SMC Test Signal';
+    }
+    
     const currentPrice = pairData.candles[pairData.candles.length - 1].close;
-    const bias = Math.random() > 0.5 ? 'BUY' : 'SELL';
     
     const testSignal = {
       pair: state.pair,
       bias: bias,
       entry: currentPrice,
-      tp: bias === 'BUY' ? currentPrice * 1.024 : currentPrice * 0.976,
-      sl: bias === 'BUY' ? currentPrice * 0.992 : currentPrice * 1.008,
-      reason: 'MANUAL TEST SIGNAL',
+      tp: bias === 'BUY' ? currentPrice * 1.03 : currentPrice * 0.97,
+      sl: bias === 'BUY' ? currentPrice * 0.99 : currentPrice * 1.01,
+      reason: reason,
       confidence: 85,
       time: new Date().toLocaleTimeString(),
-      conditions: [{ name: 'Manual test signal', met: true }]
+      conditions: [{ name: 'Manual SMC signal', met: true }]
     };
     
     state.activeSignals[state.pair] = testSignal;
@@ -923,7 +1181,7 @@ document.getElementById('generateSignal').addEventListener('click', () => {
     updateCurrentSignal(testSignal);
     updateConditionStatus(testSignal.conditions, state.pair);
     
-    updateDebugInfo(`✅ Manual ${bias} signal generated for ${state.pair}`);
+    updateDebugInfo(`✅ Manual ${bias} SMC signal generated for ${state.pair}`);
   } else {
     updateDebugInfo('❌ No data available - Connect pairs first');
   }
@@ -935,10 +1193,10 @@ document.getElementById('clearSignals').addEventListener('click', () => {
   state.activeSignals = {};
   state.signalsToday = 0;
   document.getElementById('signalCount').textContent = '(0)';
-  document.getElementById('signalsToday').textContent = `0/${state.maxSignalsPerDay}`;
+  document.getElementById('signalsToday').textContent = `0`;
   updateMultiSignalsDisplay();
   updateCurrentSignal(null);
-  updateDebugInfo('All signals cleared - Daily counter reset');
+  updateDebugInfo('All signals cleared');
 });
 
 document.getElementById('autoMode').addEventListener('change', (e) => {
@@ -948,7 +1206,7 @@ document.getElementById('autoMode').addEventListener('change', (e) => {
 
 document.getElementById('filterMode').addEventListener('change', (e) => {
   state.filter = e.target.checked;
-  updateDebugInfo(`Filter mode: ${state.filter ? 'ON' : 'OFF'}`);
+  updateDebugInfo(`Advanced SMC Filter: ${state.filter ? 'ON' : 'OFF'}`);
 });
 
 document.getElementById('pairSelect').addEventListener('change', (e) => {
