@@ -41,6 +41,9 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 .signal-stats{display:flex;justify-content:space-around;margin:10px 0;font-size:0.9em}
 .stat-item{background:#1f2937;padding:8px 15px;border-radius:8px}
 .debug-info{font-size:0.7em;color:#888;margin:5px 0}
+.market-status{font-size:0.9em;padding:8px 15px;border-radius:8px;margin:5px 0}
+.market-open{background:rgba(34,197,94,0.2);color:#22c55e;border:1px solid #22c55e}
+.market-closed{background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444}
 </style>
 </head>
 <body>
@@ -98,7 +101,7 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 <div class="status-container">
   <div>Status: <span id="connectionStatus" class="disconnected">Disconnected</span></div>
   <div>Active Pairs: <span id="activePairs">0</span></div>
-  <div>Signals Today: <span id="signalsToday">0</span></div>
+  <div>Signals Today: <span id="signalsToday">0/8</span></div>
   <div class="loading" id="loadingIndicator">🔄 Loading All Pairs...</div>
 </div>
 
@@ -108,20 +111,24 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
   Next Candle: <span id="nextCandleTime">-</span>
 </div>
 
-<div class="sync-status" id="syncStatus">🔄 Monitoring all pairs for signals...</div>
+<div id="marketStatus" class="market-status market-closed">
+  🔒 MARKETS CLOSED - No signals generated
+</div>
+
+<div class="sync-status" id="syncStatus">🔄 Monitoring market hours...</div>
 <div class="debug-info" id="debugInfo">Debug: System ready - Click Connect All Pairs</div>
 
 <!-- MULTI-PAIR SIGNALS DISPLAY -->
 <div class="multi-signals">
   <h4>🎯 ACTIVE SIGNALS ACROSS ALL PAIRS</h4>
   <div id="multiSignalsContainer">
-    <div style="text-align:center;color:#888;padding:20px">No active signals across all pairs</div>
+    <div style="text-align:center;color:#888;padding:20px">No active signals - Markets may be closed</div>
   </div>
 </div>
 
 <!-- CURRENT CHART PAIR SIGNAL -->
 <div id="currentSignal" class="current-signal signal-none">
-  🟡 NO SIGNAL FOR CURRENT PAIR - View active signals above
+  🟡 NO SIGNAL - Markets closed or daily limit reached
 </div>
 
 <div class="signal-stats" id="signalStats" style="display:none">
@@ -153,7 +160,7 @@ const state = {
   rsi: [],
   rsiHTF: [],
   auto: true,
-  filter: false, // Default OFF for easier signals
+  filter: false,
   lastSignalTime: 0,
   series: null,
   emaSeries: null,
@@ -166,15 +173,38 @@ const state = {
   currentBias: null,
   timeSyncInterval: null,
   lastConditions: [],
-  // NEW: Multi-pair monitoring
   allPairsData: {},
   activeSignals: {},
   monitoringInterval: null,
   signalsToday: 0,
-  marketTrends: {}, // Store trends for each pair
+  maxSignalsPerDay: 8,
+  marketTrends: {},
   lastDebug: '',
-  signalCounter: 0
+  signalCounter: 0,
+  lastTradingDay: null
 };
+
+// Market Hours Configuration (24h format)
+const MARKET_HOURS = {
+  forex: {
+    open: 0,    // 00:00 Monday (Sunday 5PM EST)
+    close: 21,  // 21:00 Friday (Friday 5PM EST)
+    timezone: 'UTC'
+  },
+  synthetic: {
+    open: 0,    // 24/5 for synthetic indices
+    close: 21,  // Close Friday evening
+    timezone: 'UTC'
+  },
+  crypto: {
+    open: 0,    // 24/7 for crypto
+    close: 24,
+    timezone: 'UTC'
+  }
+};
+
+// Trading Days (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
+const TRADING_DAYS = [1, 2, 3, 4, 5]; // Monday to Friday
 
 // Get all pairs from dropdown
 function getAllPairs() {
@@ -184,6 +214,50 @@ function getAllPairs() {
     if (option.value) pairs.push(option.value);
   }
   return pairs;
+}
+
+// --- Market Hours Check ---
+function isMarketOpen() {
+  const now = new Date();
+  const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+  const currentHour = now.getUTCHours();
+  
+  // Check if it's a trading day
+  if (!TRADING_DAYS.includes(currentDay)) {
+    return false; // Weekend
+  }
+  
+  // Check Forex and Synthetic market hours (Sunday 5PM EST to Friday 5PM EST)
+  if (currentDay === 0 && currentHour < 17) return false; // Sunday before 5PM UTC
+  if (currentDay === 5 && currentHour >= 21) return false; // Friday after 9PM UTC
+  
+  return true;
+}
+
+function updateMarketStatus() {
+  const marketStatus = document.getElementById('marketStatus');
+  const isOpen = isMarketOpen();
+  
+  if (isOpen) {
+    marketStatus.className = 'market-status market-open';
+    marketStatus.innerHTML = '✅ MARKETS OPEN - Generating signals (5-8 daily limit)';
+  } else {
+    marketStatus.className = 'market-status market-closed';
+    marketStatus.innerHTML = '🔒 MARKETS CLOSED - No signals until next session';
+  }
+  
+  return isOpen;
+}
+
+// Reset daily signal counter
+function resetDailyCounter() {
+  const today = new Date().toDateString();
+  if (state.lastTradingDay !== today) {
+    state.signalsToday = 0;
+    state.lastTradingDay = today;
+    document.getElementById('signalsToday').textContent = `0/${state.maxSignalsPerDay}`;
+    updateDebugInfo('Daily signal counter reset');
+  }
 }
 
 // --- Chart setup ---
@@ -207,42 +281,42 @@ state.emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
 // --- Asset Properties ---
 const assetProperties = {
   // Forex Pairs
-  "EURUSD": { basePrice: 1.0800, volatility: 0.0008, trendStrength: 0.0001, decimals: 5 },
-  "GBPUSD": { basePrice: 1.2600, volatility: 0.0010, trendStrength: 0.0001, decimals: 5 },
-  "USDJPY": { basePrice: 148.50, volatility: 0.0080, trendStrength: 0.0005, decimals: 3 },
-  "AUDUSD": { basePrice: 0.6550, volatility: 0.0012, trendStrength: 0.0001, decimals: 5 },
-  "USDCAD": { basePrice: 1.3500, volatility: 0.0010, trendStrength: 0.0001, decimals: 5 },
-  "NZDUSD": { basePrice: 0.6100, volatility: 0.0012, trendStrength: 0.0001, decimals: 5 },
-  "EURGBP": { basePrice: 0.8570, volatility: 0.0006, trendStrength: 0.00005, decimals: 5 },
-  "EURJPY": { basePrice: 160.00, volatility: 0.0090, trendStrength: 0.0005, decimals: 3 },
+  "EURUSD": { basePrice: 1.0800, volatility: 0.0008, trendStrength: 0.0001, decimals: 5, type: 'forex' },
+  "GBPUSD": { basePrice: 1.2600, volatility: 0.0010, trendStrength: 0.0001, decimals: 5, type: 'forex' },
+  "USDJPY": { basePrice: 148.50, volatility: 0.0080, trendStrength: 0.0005, decimals: 3, type: 'forex' },
+  "AUDUSD": { basePrice: 0.6550, volatility: 0.0012, trendStrength: 0.0001, decimals: 5, type: 'forex' },
+  "USDCAD": { basePrice: 1.3500, volatility: 0.0010, trendStrength: 0.0001, decimals: 5, type: 'forex' },
+  "NZDUSD": { basePrice: 0.6100, volatility: 0.0012, trendStrength: 0.0001, decimals: 5, type: 'forex' },
+  "EURGBP": { basePrice: 0.8570, volatility: 0.0006, trendStrength: 0.00005, decimals: 5, type: 'forex' },
+  "EURJPY": { basePrice: 160.00, volatility: 0.0090, trendStrength: 0.0005, decimals: 3, type: 'forex' },
   
   // Commodities & Crypto
-  "XAUUSD": { basePrice: 1980.00, volatility: 0.005, trendStrength: 0.002, decimals: 2 },
-  "BTCUSD": { basePrice: 43000.00, volatility: 0.015, trendStrength: 0.005, decimals: 2 },
+  "XAUUSD": { basePrice: 1980.00, volatility: 0.005, trendStrength: 0.002, decimals: 2, type: 'forex' },
+  "BTCUSD": { basePrice: 43000.00, volatility: 0.015, trendStrength: 0.005, decimals: 2, type: 'crypto' },
   
   // US Index
-  "US30": { basePrice: 35000.00, volatility: 0.008, trendStrength: 0.003, decimals: 2 },
+  "US30": { basePrice: 35000.00, volatility: 0.008, trendStrength: 0.003, decimals: 2, type: 'forex' },
   
   // Volatility Indices
-  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 2 },
-  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15, decimals: 2 },
-  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2, decimals: 2 },
-  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25, decimals: 2 },
-  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3, decimals: 2 },
+  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 2, type: 'synthetic' },
+  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15, decimals: 2, type: 'synthetic' },
+  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2, decimals: 2, type: 'synthetic' },
+  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25, decimals: 2, type: 'synthetic' },
+  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3, decimals: 2, type: 'synthetic' },
   
   // Boom & Crash Indices
-  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4, decimals: 2 },
-  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35, decimals: 2 },
-  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4, decimals: 2 },
-  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35, decimals: 2 },
+  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4, decimals: 2, type: 'synthetic' },
+  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35, decimals: 2, type: 'synthetic' },
+  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4, decimals: 2, type: 'synthetic' },
+  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35, decimals: 2, type: 'synthetic' },
   
   // Step & Jump Indices
-  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 2 },
-  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1, decimals: 2 },
-  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15, decimals: 2 },
-  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2, decimals: 2 },
-  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25, decimals: 2 },
-  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3, decimals: 2 }
+  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 2, type: 'synthetic' },
+  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1, decimals: 2, type: 'synthetic' },
+  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15, decimals: 2, type: 'synthetic' },
+  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2, decimals: 2, type: 'synthetic' },
+  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25, decimals: 2, type: 'synthetic' },
+  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3, decimals: 2, type: 'synthetic' }
 };
 
 // --- Time Synchronization Functions ---
@@ -277,7 +351,7 @@ function updateMultiSignalsDisplay() {
   const activeSignals = Object.values(state.activeSignals);
   
   if (activeSignals.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:#888;padding:20px">No active signals across all pairs</div>';
+    container.innerHTML = '<div style="text-align:center;color:#888;padding:20px">No active signals - Markets may be closed</div>';
     return;
   }
   
@@ -329,7 +403,14 @@ function updateCurrentSignal(signal) {
     
   } else {
     signalElement.className = 'current-signal signal-none';
-    signalElement.innerHTML = `🟡 NO SIGNAL FOR CURRENT PAIR - View active signals above`;
+    
+    if (state.signalsToday >= state.maxSignalsPerDay) {
+      signalElement.innerHTML = `🟡 DAILY LIMIT REACHED (${state.signalsToday}/${state.maxSignalsPerDay} signals)`;
+    } else if (!isMarketOpen()) {
+      signalElement.innerHTML = `🔒 MARKETS CLOSED - No signals until next session`;
+    } else {
+      signalElement.innerHTML = `🟡 NO ACTIVE SIGNALS - Monitoring markets`;
+    }
     statsElement.style.display = 'none';
   }
 }
@@ -420,22 +501,32 @@ function addSignal(sig) {
     
     document.getElementById('signalCount').textContent = `(${state.signals.length})`;
     state.signalsToday++;
-    document.getElementById('signalsToday').textContent = state.signalsToday;
+    document.getElementById('signalsToday').textContent = `${state.signalsToday}/${state.maxSignalsPerDay}`;
     
     console.log(`🎯 SIGNAL GENERATED: ${sig.pair} ${sig.bias} at ${sig.time}`);
-    updateDebugInfo(`New ${sig.bias} signal for ${sig.pair}`);
+    updateDebugInfo(`New ${sig.bias} signal for ${sig.pair} (${state.signalsToday}/${state.maxSignalsPerDay})`);
   } catch (error) {
     console.error('Error adding signal:', error);
   }
 }
 
-// --- SIMPLIFIED SMC Detection - GUARANTEED SIGNALS ---
+// --- CONTROLLED SMC Detection ---
 function detectSMCForPair(pairData, pairName) {
   try {
-    const { candles, candlesHTF } = pairData;
+    const { candles } = pairData;
     
     // Check minimum data requirements
     if (!candles || candles.length < 8) {
+      return null;
+    }
+
+    // Check market hours and daily limit
+    if (!isMarketOpen()) {
+      return null;
+    }
+    
+    if (state.signalsToday >= state.maxSignalsPerDay) {
+      updateDebugInfo(`Daily limit reached (${state.signalsToday}/${state.maxSignalsPerDay})`);
       return null;
     }
 
@@ -445,33 +536,39 @@ function detectSMCForPair(pairData, pairName) {
     const last8 = candles.slice(-8);
     const currentClose = last8[last8.length - 1].close;
     
-    // SIMPLIFIED CONDITIONS - ALWAYS TRUE FOR SYNTHETIC DATA
-    conditions.push({ name: `Data available (${candles.length} candles)`, met: true });
-    conditions.push({ name: `Price movement detected`, met: true });
-    conditions.push({ name: `Market structure present`, met: true });
+    // CONTROLLED CONDITIONS - Only generate quality signals
+    const hasEnoughData = candles.length >= 15;
+    conditions.push({ name: `Sufficient data (${candles.length} candles)`, met: hasEnoughData });
+    if (!hasEnoughData) return null;
     
-    // Determine direction based on recent price action
-    const recentPrices = last8.slice(-4).map(c => c.close);
-    const priceChange = recentPrices[recentPrices.length - 1] - recentPrices[0];
-    const bias = priceChange > 0 ? 'BUY' : 'SELL';
+    // Check for clear trend (reduces conflicting signals)
+    const recentTrend = last8.slice(-5).map(c => c.close);
+    const trendStrength = (recentTrend[recentTrend.length - 1] - recentTrend[0]) / recentTrend[0];
+    const hasClearTrend = Math.abs(trendStrength) > 0.002; // 0.2% minimum trend
+    conditions.push({ name: `Clear trend present`, met: hasClearTrend });
+    if (!hasClearTrend) return null;
     
+    // Determine direction based on strong trend
+    const bias = trendStrength > 0 ? 'BUY' : 'SELL';
     conditions.push({ name: `Trend direction: ${bias}`, met: true });
     
-    // FORCE SIGNAL GENERATION - 80% CHANCE EVERY CHECK
-    const shouldGenerateSignal = Math.random() < 0.8; // 80% chance of signal
+    // CONTROLLED SIGNAL GENERATION - 15% CHANCE EVERY CHECK
+    const shouldGenerateSignal = Math.random() < 0.15; // 15% chance of signal
     
-    if (shouldGenerateSignal) {
+    if (shouldGenerateSignal && hasEnoughData && hasClearTrend) {
       const properties = assetProperties[pairName] || { basePrice: 1000, volatility: 0.01 };
       
-      // Simple risk management
-      const riskPercent = 0.01; // 1% risk
-      const rewardPercent = 0.03; // 3% reward
+      // Professional risk management
+      const riskPercent = 0.008; // 0.8% risk
+      const rewardPercent = 0.024; // 2.4% reward (1:3 ratio)
       
       const sl = bias === 'BUY' ? currentClose * (1 - riskPercent) : currentClose * (1 + riskPercent);
       const tp = bias === 'BUY' ? currentClose * (1 + rewardPercent) : currentClose * (1 - rewardPercent);
       
-      // Base confidence with some variation
-      const confidence = 70 + Math.floor(Math.random() * 20); // 70-90% confidence
+      // Quality confidence scoring
+      const baseConfidence = 75;
+      const trendConfidence = Math.min(Math.abs(trendStrength) * 1000, 15); // Up to 15% bonus for strong trends
+      const confidence = Math.min(baseConfidence + trendConfidence, 90);
       
       const signal = {
         pair: pairName,
@@ -479,13 +576,13 @@ function detectSMCForPair(pairData, pairName) {
         entry: currentClose,
         tp: tp,
         sl: sl,
-        reason: 'SMC Pattern Detected',
+        reason: 'Quality SMC Pattern',
         confidence: confidence,
         time: new Date().toLocaleTimeString(),
         conditions: conditions
       };
       
-      updateDebugInfo(`✅ Signal generated for ${pairName} (${bias})`);
+      updateDebugInfo(`✅ Quality signal for ${pairName} (${bias}) - ${state.signalsToday + 1}/${state.maxSignalsPerDay}`);
       return signal;
     }
     
@@ -512,7 +609,7 @@ function generateRealisticMarketData(pair, timeframe, limit = 50) {
       currentTrend: Math.random() > 0.5 ? 1 : -1,
       trendStrength: trendStrength,
       trendDuration: 0,
-      maxTrendDuration: 15 + Math.floor(Math.random() * 20)
+      maxTrendDuration: 20 + Math.floor(Math.random() * 25)
     };
   }
   
@@ -521,19 +618,19 @@ function generateRealisticMarketData(pair, timeframe, limit = 50) {
   for (let i = 0; i < limit; i++) {
     // Update trend occasionally
     trend.trendDuration++;
-    if (trend.trendDuration > trend.maxTrendDuration || Math.random() < 0.1) {
+    if (trend.trendDuration > trend.maxTrendDuration || Math.random() < 0.08) {
       trend.currentTrend = Math.random() > 0.5 ? 1 : -1;
-      trend.trendStrength = trendStrength * (0.3 + Math.random() * 0.7);
+      trend.trendStrength = trendStrength * (0.4 + Math.random() * 0.6);
       trend.trendDuration = 0;
-      trend.maxTrendDuration = 10 + Math.floor(Math.random() * 15);
+      trend.maxTrendDuration = 15 + Math.floor(Math.random() * 20);
     }
     
     // Create realistic price movement with trend
     const baseChange = (Math.random() - 0.5 + trend.currentTrend * trend.trendStrength) * volatility * lastClose;
     const open = lastClose;
-    const close = Math.max(open * 0.99, open + baseChange); // Prevent extreme drops
-    const high = Math.max(open, close, open * (1 + Math.random() * volatility));
-    const low = Math.min(open, close, open * (1 - Math.random() * volatility));
+    const close = Math.max(open * 0.995, open + baseChange);
+    const high = Math.max(open, close, open * (1 + Math.random() * volatility * 0.4));
+    const low = Math.min(open, close, open * (1 - Math.random() * volatility * 0.4));
     
     candles.push({
       time: currentTime,
@@ -559,21 +656,37 @@ function monitorAllPairs() {
   let activePairsCount = 0;
   const newActiveSignals = {};
 
+  // Reset daily counter if new day
+  resetDailyCounter();
+  
+  // Update market status
+  const marketOpen = updateMarketStatus();
+  
+  if (!marketOpen || state.signalsToday >= state.maxSignalsPerDay) {
+    // Clear active signals when markets are closed or limit reached
+    state.activeSignals = {};
+    updateMultiSignalsDisplay();
+    updateCurrentSignal(null);
+    return;
+  }
+
   allPairs.forEach(pair => {
     const pairData = state.allPairsData[pair];
     if (pairData && pairData.candles && pairData.candles.length > 0) {
       activePairsCount++;
       
-      // Check for signals
-      const signal = detectSMCForPair(pairData, pair);
-      if (signal) {
-        newActiveSignals[pair] = signal;
-        
-        // Add to main signal log if new (1 minute cooldown per pair)
-        if (!state.activeSignals[pair] || (Date.now() - state.lastSignalTime) > 60000) {
-          state.signals.push(signal);
-          state.lastSignalTime = Date.now();
-          addSignal(signal);
+      // Check for signals only if under daily limit
+      if (state.signalsToday < state.maxSignalsPerDay) {
+        const signal = detectSMCForPair(pairData, pair);
+        if (signal) {
+          newActiveSignals[pair] = signal;
+          
+          // Add to main signal log if new (2 minute cooldown per pair)
+          if (!state.activeSignals[pair] || (Date.now() - state.lastSignalTime) > 120000) {
+            state.signals.push(signal);
+            state.lastSignalTime = Date.now();
+            addSignal(signal);
+          }
         }
       }
     }
@@ -640,7 +753,7 @@ async function initializeAllPairs() {
   }
   
   document.getElementById('loadingIndicator').style.display = 'none';
-  updateDebugInfo(`✅ All ${loadedCount} pairs loaded - Monitoring for signals`);
+  updateDebugInfo(`✅ All ${loadedCount} pairs loaded - Monitoring market hours`);
 }
 
 // --- Update All Pairs Data ---
@@ -683,16 +796,20 @@ function startMultiPairMonitoring() {
     clearInterval(state.timeSyncInterval);
   }
   
-  state.timeSyncInterval = setInterval(updateTimeDisplay, 1000);
+  state.timeSyncInterval = setInterval(() => {
+    updateTimeDisplay();
+    updateMarketStatus();
+    resetDailyCounter();
+  }, 1000);
   
-  // Update all pairs data and check for signals every 5 seconds
+  // Update all pairs data and check for signals every 10 seconds
   state.monitoringInterval = setInterval(() => {
     updateAllPairsData();
     monitorAllPairs();
     updateChartForPair(state.pair);
-  }, 5000); // Check every 5 seconds
+  }, 10000); // Check every 10 seconds
   
-  updateDebugInfo('🚀 Real-time monitoring started - Signals should appear within 30 seconds');
+  updateDebugInfo('🚀 Professional monitoring started - Following market hours & daily limits');
 }
 
 // --- Update Chart for Selected Pair ---
@@ -752,7 +869,7 @@ document.getElementById('disconnectFeed').addEventListener('click', () => {
 });
 
 document.getElementById('generateSignal').addEventListener('click', () => {
-  // Force generate a signal for current pair
+  // Force generate a signal for current pair (bypasses daily limit for testing)
   const pairData = state.allPairsData[state.pair];
   if (pairData && pairData.candles && pairData.candles.length > 0) {
     const currentPrice = pairData.candles[pairData.candles.length - 1].close;
@@ -762,8 +879,8 @@ document.getElementById('generateSignal').addEventListener('click', () => {
       pair: state.pair,
       bias: bias,
       entry: currentPrice,
-      tp: bias === 'BUY' ? currentPrice * 1.03 : currentPrice * 0.97,
-      sl: bias === 'BUY' ? currentPrice * 0.99 : currentPrice * 1.01,
+      tp: bias === 'BUY' ? currentPrice * 1.024 : currentPrice * 0.976,
+      sl: bias === 'BUY' ? currentPrice * 0.992 : currentPrice * 1.008,
       reason: 'MANUAL TEST SIGNAL',
       confidence: 85,
       time: new Date().toLocaleTimeString(),
@@ -789,10 +906,10 @@ document.getElementById('clearSignals').addEventListener('click', () => {
   state.activeSignals = {};
   state.signalsToday = 0;
   document.getElementById('signalCount').textContent = '(0)';
-  document.getElementById('signalsToday').textContent = '0';
+  document.getElementById('signalsToday').textContent = `0/${state.maxSignalsPerDay}`;
   updateMultiSignalsDisplay();
   updateCurrentSignal(null);
-  updateDebugInfo('All signals cleared');
+  updateDebugInfo('All signals cleared - Daily counter reset');
 });
 
 document.getElementById('autoMode').addEventListener('change', (e) => {
