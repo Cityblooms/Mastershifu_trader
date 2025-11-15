@@ -44,6 +44,7 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
 .market-status{font-size:0.9em;padding:8px 15px;border-radius:8px;margin:5px 0}
 .market-open{background:rgba(34,197,94,0.2);color:#22c55e;border:1px solid #22c55e}
 .market-closed{background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444}
+.market-status-container{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}
 </style>
 </head>
 <body>
@@ -111,8 +112,16 @@ label{display:flex;align-items:center;gap:6px;font-size:.9em}
   Next Candle: <span id="nextCandleTime">-</span>
 </div>
 
-<div id="marketStatus" class="market-status market-closed">
-  🔒 MARKETS CLOSED - No signals generated
+<div class="market-status-container">
+  <div id="marketStatusForex" class="market-status market-closed">
+    🔒 FOREX CLOSED
+  </div>
+  <div id="marketStatusSynthetic" class="market-status market-open">
+    ✅ SYNTHETIC OPEN (24/7)
+  </div>
+  <div id="marketStatusCrypto" class="market-status market-open">
+    ✅ CRYPTO OPEN (24/7)
+  </div>
 </div>
 
 <div class="sync-status" id="syncStatus">🔄 Monitoring market hours...</div>
@@ -184,23 +193,11 @@ const state = {
   lastTradingDay: null
 };
 
-// Market Hours Configuration (24h format)
-const MARKET_HOURS = {
-  forex: {
-    open: 0,    // 00:00 Monday (Sunday 5PM EST)
-    close: 21,  // 21:00 Friday (Friday 5PM EST)
-    timezone: 'UTC'
-  },
-  synthetic: {
-    open: 0,    // 24/5 for synthetic indices
-    close: 21,  // Close Friday evening
-    timezone: 'UTC'
-  },
-  crypto: {
-    open: 0,    // 24/7 for crypto
-    close: 24,
-    timezone: 'UTC'
-  }
+// Asset Types
+const ASSET_TYPES = {
+  FOREX: 'forex',
+  SYNTHETIC: 'synthetic',
+  CRYPTO: 'crypto'
 };
 
 // Trading Days (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
@@ -217,36 +214,68 @@ function getAllPairs() {
 }
 
 // --- Market Hours Check ---
-function isMarketOpen() {
+function isMarketOpenForAssetType(assetType) {
   const now = new Date();
   const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  const currentHour = now.getUTCHours();
   
-  // Check if it's a trading day
-  if (!TRADING_DAYS.includes(currentDay)) {
-    return false; // Weekend
+  // Different market hours for different asset types
+  switch (assetType) {
+    case ASSET_TYPES.FOREX:
+      // Forex: Sunday 5PM EST to Friday 5PM EST (UTC: Sunday 10PM to Friday 10PM)
+      const currentHour = now.getUTCHours();
+      if (currentDay === 0 && currentHour < 22) return false; // Sunday before 10PM UTC
+      if (currentDay === 5 && currentHour >= 22) return false; // Friday after 10PM UTC
+      if (currentDay === 6) return false; // Saturday
+      return true;
+      
+    case ASSET_TYPES.SYNTHETIC:
+      // Synthetic: 24/7 - Always open
+      return true;
+      
+    case ASSET_TYPES.CRYPTO:
+      // Crypto: 24/7 - Always open
+      return true;
+      
+    default:
+      return false;
   }
+}
+
+function isMarketOpenForPair(pair) {
+  const properties = assetProperties[pair];
+  if (!properties) return false;
   
-  // Check Forex and Synthetic market hours (Sunday 5PM EST to Friday 5PM EST)
-  if (currentDay === 0 && currentHour < 17) return false; // Sunday before 5PM UTC
-  if (currentDay === 5 && currentHour >= 21) return false; // Friday after 9PM UTC
-  
-  return true;
+  return isMarketOpenForAssetType(properties.type);
 }
 
 function updateMarketStatus() {
-  const marketStatus = document.getElementById('marketStatus');
-  const isOpen = isMarketOpen();
+  const forexStatus = document.getElementById('marketStatusForex');
+  const syntheticStatus = document.getElementById('marketStatusSynthetic');
+  const cryptoStatus = document.getElementById('marketStatusCrypto');
   
-  if (isOpen) {
-    marketStatus.className = 'market-status market-open';
-    marketStatus.innerHTML = '✅ MARKETS OPEN - Generating signals (5-8 daily limit)';
+  const forexOpen = isMarketOpenForAssetType(ASSET_TYPES.FOREX);
+  const syntheticOpen = isMarketOpenForAssetType(ASSET_TYPES.SYNTHETIC);
+  const cryptoOpen = isMarketOpenForAssetType(ASSET_TYPES.CRYPTO);
+  
+  // Update forex status
+  if (forexOpen) {
+    forexStatus.className = 'market-status market-open';
+    forexStatus.innerHTML = '✅ FOREX OPEN';
   } else {
-    marketStatus.className = 'market-status market-closed';
-    marketStatus.innerHTML = '🔒 MARKETS CLOSED - No signals until next session';
+    forexStatus.className = 'market-status market-closed';
+    forexStatus.innerHTML = '🔒 FOREX CLOSED';
   }
   
-  return isOpen;
+  // Update synthetic status - Always open (24/7)
+  syntheticStatus.className = 'market-status market-open';
+  syntheticStatus.innerHTML = '✅ SYNTHETIC OPEN (24/7)';
+  
+  // Update crypto status - Always open (24/7)
+  cryptoStatus.className = 'market-status market-open';
+  cryptoStatus.innerHTML = '✅ CRYPTO OPEN (24/7)';
+  
+  // Return if any market is open
+  return forexOpen || syntheticOpen || cryptoOpen;
 }
 
 // Reset daily signal counter
@@ -281,42 +310,42 @@ state.emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
 // --- Asset Properties ---
 const assetProperties = {
   // Forex Pairs
-  "EURUSD": { basePrice: 1.0800, volatility: 0.0008, trendStrength: 0.0001, decimals: 5, type: 'forex' },
-  "GBPUSD": { basePrice: 1.2600, volatility: 0.0010, trendStrength: 0.0001, decimals: 5, type: 'forex' },
-  "USDJPY": { basePrice: 148.50, volatility: 0.0080, trendStrength: 0.0005, decimals: 3, type: 'forex' },
-  "AUDUSD": { basePrice: 0.6550, volatility: 0.0012, trendStrength: 0.0001, decimals: 5, type: 'forex' },
-  "USDCAD": { basePrice: 1.3500, volatility: 0.0010, trendStrength: 0.0001, decimals: 5, type: 'forex' },
-  "NZDUSD": { basePrice: 0.6100, volatility: 0.0012, trendStrength: 0.0001, decimals: 5, type: 'forex' },
-  "EURGBP": { basePrice: 0.8570, volatility: 0.0006, trendStrength: 0.00005, decimals: 5, type: 'forex' },
-  "EURJPY": { basePrice: 160.00, volatility: 0.0090, trendStrength: 0.0005, decimals: 3, type: 'forex' },
+  "EURUSD": { basePrice: 1.0800, volatility: 0.0008, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
+  "GBPUSD": { basePrice: 1.2600, volatility: 0.0010, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
+  "USDJPY": { basePrice: 148.50, volatility: 0.0080, trendStrength: 0.0005, decimals: 3, type: ASSET_TYPES.FOREX },
+  "AUDUSD": { basePrice: 0.6550, volatility: 0.0012, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
+  "USDCAD": { basePrice: 1.3500, volatility: 0.0010, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
+  "NZDUSD": { basePrice: 0.6100, volatility: 0.0012, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
+  "EURGBP": { basePrice: 0.8570, volatility: 0.0006, trendStrength: 0.00005, decimals: 5, type: ASSET_TYPES.FOREX },
+  "EURJPY": { basePrice: 160.00, volatility: 0.0090, trendStrength: 0.0005, decimals: 3, type: ASSET_TYPES.FOREX },
   
   // Commodities & Crypto
-  "XAUUSD": { basePrice: 1980.00, volatility: 0.005, trendStrength: 0.002, decimals: 2, type: 'forex' },
-  "BTCUSD": { basePrice: 43000.00, volatility: 0.015, trendStrength: 0.005, decimals: 2, type: 'crypto' },
+  "XAUUSD": { basePrice: 1980.00, volatility: 0.005, trendStrength: 0.002, decimals: 2, type: ASSET_TYPES.FOREX },
+  "BTCUSD": { basePrice: 43000.00, volatility: 0.015, trendStrength: 0.005, decimals: 2, type: ASSET_TYPES.CRYPTO },
   
   // US Index
-  "US30": { basePrice: 35000.00, volatility: 0.008, trendStrength: 0.003, decimals: 2, type: 'forex' },
+  "US30": { basePrice: 35000.00, volatility: 0.008, trendStrength: 0.003, decimals: 2, type: ASSET_TYPES.FOREX },
   
   // Volatility Indices
-  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 2, type: 'synthetic' },
-  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15, decimals: 2, type: 'synthetic' },
-  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2, decimals: 2, type: 'synthetic' },
-  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25, decimals: 2, type: 'synthetic' },
-  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3, decimals: 2, type: 'synthetic' },
+  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
   
   // Boom & Crash Indices
-  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4, decimals: 2, type: 'synthetic' },
-  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35, decimals: 2, type: 'synthetic' },
-  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4, decimals: 2, type: 'synthetic' },
-  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35, decimals: 2, type: 'synthetic' },
+  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
   
   // Step & Jump Indices
-  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 2, type: 'synthetic' },
-  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1, decimals: 2, type: 'synthetic' },
-  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15, decimals: 2, type: 'synthetic' },
-  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2, decimals: 2, type: 'synthetic' },
-  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25, decimals: 2, type: 'synthetic' },
-  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3, decimals: 2, type: 'synthetic' }
+  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
+  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3, decimals: 2, type: ASSET_TYPES.SYNTHETIC }
 };
 
 // --- Time Synchronization Functions ---
@@ -351,7 +380,7 @@ function updateMultiSignalsDisplay() {
   const activeSignals = Object.values(state.activeSignals);
   
   if (activeSignals.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:#888;padding:20px">No active signals - Markets may be closed</div>';
+    container.innerHTML = '<div style="text-align:center;color:#888;padding:20px">No active signals - Connect pairs and wait for signals</div>';
     return;
   }
   
@@ -406,8 +435,8 @@ function updateCurrentSignal(signal) {
     
     if (state.signalsToday >= state.maxSignalsPerDay) {
       signalElement.innerHTML = `🟡 DAILY LIMIT REACHED (${state.signalsToday}/${state.maxSignalsPerDay} signals)`;
-    } else if (!isMarketOpen()) {
-      signalElement.innerHTML = `🔒 MARKETS CLOSED - No signals until next session`;
+    } else if (!isMarketOpenForPair(state.pair)) {
+      signalElement.innerHTML = `🔒 ${state.pair} MARKET CLOSED - No signals until next session`;
     } else {
       signalElement.innerHTML = `🟡 NO ACTIVE SIGNALS - Monitoring markets`;
     }
@@ -520,8 +549,8 @@ function detectSMCForPair(pairData, pairName) {
       return null;
     }
 
-    // Check market hours and daily limit
-    if (!isMarketOpen()) {
+    // Check market hours for this specific pair
+    if (!isMarketOpenForPair(pairName)) {
       return null;
     }
     
@@ -660,10 +689,10 @@ function monitorAllPairs() {
   resetDailyCounter();
   
   // Update market status
-  const marketOpen = updateMarketStatus();
+  const anyMarketOpen = updateMarketStatus();
   
-  if (!marketOpen || state.signalsToday >= state.maxSignalsPerDay) {
-    // Clear active signals when markets are closed or limit reached
+  if (!anyMarketOpen || state.signalsToday >= state.maxSignalsPerDay) {
+    // Clear active signals when all markets are closed or limit reached
     state.activeSignals = {};
     updateMultiSignalsDisplay();
     updateCurrentSignal(null);
@@ -675,8 +704,8 @@ function monitorAllPairs() {
     if (pairData && pairData.candles && pairData.candles.length > 0) {
       activePairsCount++;
       
-      // Check for signals only if under daily limit
-      if (state.signalsToday < state.maxSignalsPerDay) {
+      // Check for signals only if under daily limit AND this pair's market is open
+      if (state.signalsToday < state.maxSignalsPerDay && isMarketOpenForPair(pair)) {
         const signal = detectSMCForPair(pairData, pair);
         if (signal) {
           newActiveSignals[pair] = signal;
@@ -753,7 +782,7 @@ async function initializeAllPairs() {
   }
   
   document.getElementById('loadingIndicator').style.display = 'none';
-  updateDebugInfo(`✅ All ${loadedCount} pairs loaded - Monitoring market hours`);
+  updateDebugInfo(`✅ All ${loadedCount} pairs loaded - Synthetic & Crypto markets open 24/7`);
 }
 
 // --- Update All Pairs Data ---
@@ -809,7 +838,7 @@ function startMultiPairMonitoring() {
     updateChartForPair(state.pair);
   }, 10000); // Check every 10 seconds
   
-  updateDebugInfo('🚀 Professional monitoring started - Following market hours & daily limits');
+  updateDebugInfo('🚀 Professional monitoring started - Synthetic & Crypto markets open 24/7');
 }
 
 // --- Update Chart for Selected Pair ---
