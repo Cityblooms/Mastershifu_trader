@@ -1,1234 +1,864 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>AI SMC Multi-Pair Dashboard</title>
-<script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
-<style>
-body{font-family:'Poppins',sans-serif;background:#0b0b10;color:#eee;margin:0;padding:0;display:flex;flex-direction:column;align-items:center}
-header{background:#111827;width:100%;padding:10px 20px;text-align:center;font-size:1.3em;box-shadow:0 2px 5px rgba(0,0,0,.4)}
-.controls{margin:15px 0;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-select,button,input[type=checkbox]{background:#1f2937;color:#fff;border:none;padding:10px 16px;border-radius:10px;cursor:pointer;font-weight:600;transition:.3s}
-button:hover,select:hover{background:#4f46e5}
-#chart{width:95%;height:400px;margin-top:10px;border-radius:10px}
-#signalLog{width:95%;margin-top:20px;background:#1e1e2e;border-radius:10px;padding:10px;max-height:250px;overflow-y:auto}
-.signal-card{background:#26263a;margin:5px 0;padding:10px;border-left:5px solid #6366f1;border-radius:8px;font-size:.9em}
-.buy{border-left-color:#22c55e}.sell{border-left-color:#ef4444}
-label{display:flex;align-items:center;gap:6px;font-size:.9em}
-.status-container{display:flex;gap:15px;margin:10px 0;flex-wrap:wrap;justify-content:center}
-.status-item{padding:8px 15px;background:#1f2937;border-radius:8px;font-size:0.9em}
-.connected{color:#22c55e}.disconnected{color:#ef4444}.connecting{color:#f59e0b}
-.loading{display:none;color:#f59e0b}
-.time-display{font-size:0.9em;color:#888;margin:5px 0}
-.conditions{background:#1a1a2e;padding:10px;border-radius:8px;margin:10px 0;font-size:0.8em}
-.condition-met{color:#22c55e}
-.condition-failed{color:#ef4444}
-.current-signal{font-size:1.5em;font-weight:bold;padding:15px;border-radius:10px;margin:15px 0;text-align:center;animation: pulse 2s infinite}
-.signal-buy{background:linear-gradient(135deg, #1a2e1a, #22c55e);color:#fff;border:3px solid #22c55e;box-shadow:0 0 20px rgba(34,197,94,0.5)}
-.signal-sell{background:linear-gradient(135deg, #2e1a1a, #ef4444);color:#fff;border:3px solid #ef4444;box-shadow:0 0 20px rgba(239,68,68,0.5)}
-.signal-none{background:#1a1a2e;color:#888;border:2px solid #6366f1}
-.sync-status{font-size:0.8em;color:#f59e0b;margin:5px 0}
-.multi-signals{width:95%;margin:10px 0;background:#1a1a2e;border-radius:10px;padding:10px}
-.multi-signal-item{padding:8px;margin:5px 0;border-radius:5px;display:flex;justify-content:space-between;align-items:center}
-.multi-buy{background:rgba(34,197,94,0.2);border-left:4px solid #22c55e}
-.multi-sell{background:rgba(239,68,68,0.2);border-left:4px solid #ef4444}
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
-}
-.signal-stats{display:flex;justify-content:space-around;margin:10px 0;font-size:0.9em}
-.stat-item{background:#1f2937;padding:8px 15px;border-radius:8px}
-.debug-info{font-size:0.7em;color:#888;margin:5px 0}
-.market-status{font-size:0.9em;padding:8px 15px;border-radius:8px;margin:5px 0}
-.market-open{background:rgba(34,197,94,0.2);color:#22c55e;border:1px solid #22c55e}
-.market-closed{background:rgba(239,68,68,0.2);color:#ef4444;border:1px solid #ef4444}
-.market-status-container{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin:10px 0}
-.smc-levels{background:#1a1a2e;padding:10px;border-radius:8px;margin:10px 0;font-size:0.8em}
-.smc-level{display:flex;justify-content:space-between;margin:2px 0}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Trading Robot</title>
+    <style>
+        :root {
+            --primary: #1e2a3a;
+            --secondary: #2d3e50;
+            --accent: #3498db;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --text: #ecf0f1;
+            --text-muted: #bdc3c7;
+            --border: #34495e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--primary);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        
+        .logo p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .status-indicators {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .status {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .status.active {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .status.inactive {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .status.warning {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background-color: var(--secondary);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: var(--accent);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .pairs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 15px;
+        }
+        
+        .pair-card {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 15px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        
+        .pair-card:hover {
+            border-color: var(--accent);
+        }
+        
+        .pair-card.active {
+            border-color: var(--success);
+        }
+        
+        .pair-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .pair-symbol {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        .pair-price {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .pair-change {
+            font-size: 0.9rem;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        
+        .positive {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success);
+        }
+        
+        .negative {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background-color: #d35400;
+        }
+        
+        .control-group {
+            margin-bottom: 20px;
+        }
+        
+        .control-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .slider-container {
+            margin-bottom: 20px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+        
+        .signals-section {
+            margin-bottom: 30px;
+        }
+        
+        .signal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        
+        .signal-card {
+            background-color: var(--secondary);
+            border-radius: 6px;
+            padding: 15px;
+            border-left: 4px solid var(--accent);
+        }
+        
+        .signal-card.buy {
+            border-left-color: var(--success);
+        }
+        
+        .signal-card.sell {
+            border-left-color: var(--danger);
+        }
+        
+        .signal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .signal-pair {
+            font-weight: 600;
+        }
+        
+        .signal-type {
+            font-size: 0.8rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        
+        .signal-type.buy {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success);
+        }
+        
+        .signal-type.sell {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+        }
+        
+        .signal-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .signal-strength {
+            margin-top: 10px;
+        }
+        
+        .strength-bar {
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .strength-fill {
+            height: 100%;
+            border-radius: 3px;
+        }
+        
+        .strength-high {
+            background-color: var(--success);
+            width: 85%;
+        }
+        
+        .strength-medium {
+            background-color: var(--warning);
+            width: 60%;
+        }
+        
+        .strength-low {
+            background-color: var(--danger);
+            width: 40%;
+        }
+        
+        .terminal {
+            margin-top: 30px;
+        }
+        
+        .terminal-output {
+            height: 200px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .log-time {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        
+        .log-info {
+            color: var(--text);
+        }
+        
+        .log-success {
+            color: var(--success);
+        }
+        
+        .log-warning {
+            color: var(--warning);
+        }
+        
+        .log-error {
+            color: var(--danger);
+        }
+        
+        .terminal-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .terminal-input input {
+            flex-grow: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background-color: rgba(0, 0, 0, 0.2);
+            color: var(--text);
+        }
+        
+        .terminal-input button {
+            padding: 12px 20px;
+            border-radius: 6px;
+            border: none;
+            background-color: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            margin-top: 30px;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .pairs-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .pairs-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            
+            .signal-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+        }
+    </style>
 </head>
 <body>
-<header>AI SMC Multi-Pair Dashboard</header>
-
-<div class="controls">
-  <select id="pairSelect">
-    <optgroup label="Forex Pairs">
-      <option value="EURUSD">EUR/USD</option>
-      <option value="GBPUSD">GBP/USD</option>
-      <option value="USDJPY">USD/JPY</option>
-      <option value="AUDUSD">AUD/USD</option>
-      <option value="USDCAD">USD/CAD</option>
-      <option value="NZDUSD">NZD/USD</option>
-      <option value="EURGBP">EUR/GBP</option>
-      <option value="EURJPY">EUR/JPY</option>
-    </optgroup>
-    <optgroup label="Commodities & Crypto">
-      <option value="XAUUSD">Gold (XAU/USD)</option>
-      <option value="BTCUSD">Bitcoin (BTC/USD)</option>
-    </optgroup>
-    <optgroup label="US Index">
-      <option value="US30">US30</option>
-    </optgroup>
-    <optgroup label="Volatility Indices">
-      <option value="Volatility 10 Index">Volatility 10 Index</option>
-      <option value="Volatility 25 Index">Volatility 25 Index</option>
-      <option value="Volatility 50 Index">Volatility 50 Index</option>
-      <option value="Volatility 75 Index">Volatility 75 Index</option>
-      <option value="Volatility 100 Index">Volatility 100 Index</option>
-    </optgroup>
-    <optgroup label="Boom & Crash Indices">
-      <option value="Boom 1000 Index">Boom 1000 Index</option>
-      <option value="Boom 500 Index">Boom 500 Index</option>
-      <option value="Crash 1000 Index">Crash 1000 Index</option>
-      <option value="Crash 500 Index">Crash 500 Index</option>
-    </optgroup>
-    <optgroup label="Step & Jump Indices">
-      <option value="Step Index">Step Index</option>
-      <option value="Jump 10 Index">Jump 10 Index</option>
-      <option value="Jump 25 Index">Jump 25 Index</option>
-      <option value="Jump 50 Index">Jump 50 Index</option>
-      <option value="Jump 75 Index">Jump 75 Index</option>
-      <option value="Jump 100 Index">Jump 100 Index</option>
-    </optgroup>
-  </select>
-  <button id="connectFeed">🔌 Connect All Pairs</button>
-  <button id="disconnectFeed">🔌 Disconnect All</button>
-  <button id="generateSignal">⚡ Generate Test Signal</button>
-  <label><input type="checkbox" id="autoMode" checked> Auto Signal Mode</label>
-  <label><input type="checkbox" id="filterMode"> Advanced SMC Filter</label>
-  <button id="clearSignals">🧹 Clear</button>
-</div>
-
-<div class="status-container">
-  <div>Status: <span id="connectionStatus" class="disconnected">Disconnected</span></div>
-  <div>Active Pairs: <span id="activePairs">0</span></div>
-  <div>Total Signals: <span id="signalsToday">0</span></div>
-  <div class="loading" id="loadingIndicator">🔄 Loading All Pairs...</div>
-</div>
-
-<div class="time-display">
-  System Time: <span id="systemTime">-</span> | 
-  Chart Time: <span id="chartTime">-</span> |
-  Next Candle: <span id="nextCandleTime">-</span>
-</div>
-
-<div class="market-status-container">
-  <div id="marketStatusForex" class="market-status market-closed">
-    🔒 FOREX CLOSED
-  </div>
-  <div id="marketStatusSynthetic" class="market-status market-open">
-    ✅ SYNTHETIC OPEN (24/7)
-  </div>
-  <div id="marketStatusCrypto" class="market-status market-open">
-    ✅ CRYPTO OPEN (24/7)
-  </div>
-</div>
-
-<div class="sync-status" id="syncStatus">🔄 Advanced SMC Analysis Active</div>
-<div class="debug-info" id="debugInfo">Debug: System ready - Click Connect All Pairs</div>
-
-<!-- SMC LEVELS DISPLAY -->
-<div class="smc-levels" id="smcLevels" style="display:none">
-  <h4>📊 SMC Market Structure</h4>
-  <div id="smcLevelsContent"></div>
-</div>
-
-<!-- MULTI-PAIR SIGNALS DISPLAY -->
-<div class="multi-signals">
-  <h4>🎯 ACTIVE SIGNALS ACROSS ALL PAIRS</h4>
-  <div id="multiSignalsContainer">
-    <div style="text-align:center;color:#888;padding:20px">No active signals - Connect pairs and wait for signals</div>
-  </div>
-</div>
-
-<!-- CURRENT CHART PAIR SIGNAL -->
-<div id="currentSignal" class="current-signal signal-none">
-  🟡 NO SIGNAL - Analyzing market structure
-</div>
-
-<div class="signal-stats" id="signalStats" style="display:none">
-  <div class="stat-item">Entry: <span id="statEntry">-</span></div>
-  <div class="stat-item">TP: <span id="statTP">-</span></div>
-  <div class="stat-item">SL: <span id="statSL">-</span></div>
-  <div class="stat-item">Confidence: <span id="statConfidence">-</span></div>
-</div>
-
-<div class="conditions">
-  <strong>Advanced SMC Analysis (<span id="currentPairName">-</span>):</strong>
-  <div id="conditionStatus">Select a pair to view SMC conditions</div>
-</div>
-
-<div id="chart"></div>
-<h3>📊 Recent Signals <span id="signalCount">(0)</span></h3>
-<div id="signalLog"></div>
-
-<script>
-// --- Global State ---
-const state = {
-  ws: null,
-  wsHTF: null,
-  pair: "XAUUSD",
-  candles: [],
-  candlesHTF: [],
-  ema: [],
-  emaHTF: [],
-  rsi: [],
-  rsiHTF: [],
-  auto: true,
-  filter: false,
-  lastSignalTime: 0,
-  series: null,
-  emaSeries: null,
-  signals: [],
-  reconnectAttempts: 0,
-  maxReconnectAttempts: 5,
-  currentTime: Math.floor(Date.now() / 1000),
-  lastCandleTime: null,
-  liveUpdateInterval: null,
-  currentBias: null,
-  timeSyncInterval: null,
-  lastConditions: [],
-  allPairsData: {},
-  activeSignals: {},
-  monitoringInterval: null,
-  signalsToday: 0,
-  marketTrends: {},
-  lastDebug: '',
-  signalCounter: 0,
-  lastTradingDay: null,
-  marketStructure: {},
-  orderBlocks: {},
-  fairValueGaps: {}
-};
-
-// Asset Types
-const ASSET_TYPES = {
-  FOREX: 'forex',
-  SYNTHETIC: 'synthetic',
-  CRYPTO: 'crypto'
-};
-
-// Trading Days (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-const TRADING_DAYS = [1, 2, 3, 4, 5]; // Monday to Friday
-
-// Get all pairs from dropdown
-function getAllPairs() {
-  const pairs = [];
-  const select = document.getElementById('pairSelect');
-  for (let option of select.options) {
-    if (option.value) pairs.push(option.value);
-  }
-  return pairs;
-}
-
-// --- Market Hours Check ---
-function isMarketOpenForAssetType(assetType) {
-  const now = new Date();
-  const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-  
-  // Different market hours for different asset types
-  switch (assetType) {
-    case ASSET_TYPES.FOREX:
-      // Forex: Sunday 5PM EST to Friday 5PM EST (UTC: Sunday 10PM to Friday 10PM)
-      const currentHour = now.getUTCHours();
-      if (currentDay === 0 && currentHour < 22) return false; // Sunday before 10PM UTC
-      if (currentDay === 5 && currentHour >= 22) return false; // Friday after 10PM UTC
-      if (currentDay === 6) return false; // Saturday
-      return true;
-      
-    case ASSET_TYPES.SYNTHETIC:
-      // Synthetic: 24/7 - Always open
-      return true;
-      
-    case ASSET_TYPES.CRYPTO:
-      // Crypto: 24/7 - Always open
-      return true;
-      
-    default:
-      return false;
-  }
-}
-
-function isMarketOpenForPair(pair) {
-  const properties = assetProperties[pair];
-  if (!properties) return false;
-  
-  return isMarketOpenForAssetType(properties.type);
-}
-
-function updateMarketStatus() {
-  const forexStatus = document.getElementById('marketStatusForex');
-  const syntheticStatus = document.getElementById('marketStatusSynthetic');
-  const cryptoStatus = document.getElementById('marketStatusCrypto');
-  
-  const forexOpen = isMarketOpenForAssetType(ASSET_TYPES.FOREX);
-  const syntheticOpen = isMarketOpenForAssetType(ASSET_TYPES.SYNTHETIC);
-  const cryptoOpen = isMarketOpenForAssetType(ASSET_TYPES.CRYPTO);
-  
-  // Update forex status
-  if (forexOpen) {
-    forexStatus.className = 'market-status market-open';
-    forexStatus.innerHTML = '✅ FOREX OPEN';
-  } else {
-    forexStatus.className = 'market-status market-closed';
-    forexStatus.innerHTML = '🔒 FOREX CLOSED';
-  }
-  
-  // Update synthetic status - Always open (24/7)
-  syntheticStatus.className = 'market-status market-open';
-  syntheticStatus.innerHTML = '✅ SYNTHETIC OPEN (24/7)';
-  
-  // Update crypto status - Always open (24/7)
-  cryptoStatus.className = 'market-status market-open';
-  cryptoStatus.innerHTML = '✅ CRYPTO OPEN (24/7)';
-  
-  // Return if any market is open
-  return forexOpen || syntheticOpen || cryptoOpen;
-}
-
-// Reset daily signal counter
-function resetDailyCounter() {
-  const today = new Date().toDateString();
-  if (state.lastTradingDay !== today) {
-    state.signalsToday = 0;
-    state.lastTradingDay = today;
-    document.getElementById('signalsToday').textContent = `0`;
-    updateDebugInfo('Daily signal counter reset');
-  }
-}
-
-// --- Chart setup ---
-const chart = LightweightCharts.createChart(document.getElementById('chart'), {
-  layout: { background: { color: "#0b0b10" }, textColor: "#DDD" },
-  grid: { vertLines: { color: "#1e1e2e" }, horzLines: { color: "#1e1e2e" } },
-  timeScale: { 
-    timeVisible: true, 
-    secondsVisible: false,
-    rightOffset: 12,
-    barSpacing: 6,
-    minBarSpacing: 0.5
-  },
-  crosshair: {
-    mode: LightweightCharts.CrosshairMode.Normal,
-  }
-});
-state.series = chart.addCandlestickSeries();
-state.emaSeries = chart.addLineSeries({ color: '#f59e0b', lineWidth: 2 });
-
-// --- Asset Properties ---
-const assetProperties = {
-  // Forex Pairs
-  "EURUSD": { basePrice: 1.0800, volatility: 0.0008, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
-  "GBPUSD": { basePrice: 1.2600, volatility: 0.0010, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
-  "USDJPY": { basePrice: 148.50, volatility: 0.0080, trendStrength: 0.0005, decimals: 3, type: ASSET_TYPES.FOREX },
-  "AUDUSD": { basePrice: 0.6550, volatility: 0.0012, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
-  "USDCAD": { basePrice: 1.3500, volatility: 0.0010, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
-  "NZDUSD": { basePrice: 0.6100, volatility: 0.0012, trendStrength: 0.0001, decimals: 5, type: ASSET_TYPES.FOREX },
-  "EURGBP": { basePrice: 0.8570, volatility: 0.0006, trendStrength: 0.00005, decimals: 5, type: ASSET_TYPES.FOREX },
-  "EURJPY": { basePrice: 160.00, volatility: 0.0090, trendStrength: 0.0005, decimals: 3, type: ASSET_TYPES.FOREX },
-  
-  // Commodities & Crypto
-  "XAUUSD": { basePrice: 1980.00, volatility: 0.005, trendStrength: 0.002, decimals: 2, type: ASSET_TYPES.FOREX },
-  "BTCUSD": { basePrice: 43000.00, volatility: 0.015, trendStrength: 0.005, decimals: 2, type: ASSET_TYPES.CRYPTO },
-  
-  // US Index
-  "US30": { basePrice: 35000.00, volatility: 0.008, trendStrength: 0.003, decimals: 2, type: ASSET_TYPES.FOREX },
-  
-  // Volatility Indices
-  "Volatility 10 Index": { basePrice: 10000, volatility: 0.08, trendStrength: 0.1, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Volatility 25 Index": { basePrice: 10000, volatility: 0.12, trendStrength: 0.15, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Volatility 50 Index": { basePrice: 10000, volatility: 0.18, trendStrength: 0.2, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Volatility 75 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.25, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Volatility 100 Index": { basePrice: 10000, volatility: 0.35, trendStrength: 0.3, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  
-  // Boom & Crash Indices
-  "Boom 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: 0.4, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Boom 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: 0.35, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Crash 1000 Index": { basePrice: 1000, volatility: 0.05, trendStrength: -0.4, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Crash 500 Index": { basePrice: 500, volatility: 0.06, trendStrength: -0.35, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  
-  // Step & Jump Indices
-  "Step Index": { basePrice: 10000, volatility: 0.02, trendStrength: 0.1, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Jump 10 Index": { basePrice: 10000, volatility: 0.15, trendStrength: 0.1, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Jump 25 Index": { basePrice: 10000, volatility: 0.2, trendStrength: 0.15, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Jump 50 Index": { basePrice: 10000, volatility: 0.25, trendStrength: 0.2, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Jump 75 Index": { basePrice: 10000, volatility: 0.3, trendStrength: 0.25, decimals: 2, type: ASSET_TYPES.SYNTHETIC },
-  "Jump 100 Index": { basePrice: 10000, volatility: 0.4, trendStrength: 0.3, decimals: 2, type: ASSET_TYPES.SYNTHETIC }
-};
-
-// --- Time Synchronization Functions ---
-function getCurrentCandleTime(timeframe = 5) {
-  const now = Math.floor(Date.now() / 1000);
-  const alignedTime = now - (now % (timeframe * 60));
-  return alignedTime;
-}
-
-function updateTimeDisplay() {
-  const now = new Date();
-  document.getElementById('systemTime').textContent = now.toLocaleTimeString();
-  
-  if (state.candles.length > 0) {
-    const lastCandleTime = new Date(state.candles[state.candles.length - 1].time * 1000);
-    document.getElementById('chartTime').textContent = lastCandleTime.toLocaleTimeString();
-    
-    const nextCandleTime = new Date((state.candles[state.candles.length - 1].time + 300) * 1000);
-    document.getElementById('nextCandleTime').textContent = nextCandleTime.toLocaleTimeString();
-  }
-}
-
-function updateDebugInfo(message) {
-  state.lastDebug = message;
-  document.getElementById('debugInfo').textContent = `Debug: ${message}`;
-  console.log(`DEBUG: ${message}`);
-}
-
-// --- Advanced SMC Analysis Functions ---
-function detectMarketStructure(candles, pairName) {
-  if (!candles || candles.length < 20) return null;
-  
-  const structure = {
-    higherHighs: 0,
-    higherLows: 0,
-    lowerHighs: 0,
-    lowerLows: 0,
-    trend: 'RANGING',
-    keyLevels: [],
-    orderBlocks: [],
-    fairValueGaps: []
-  };
-  
-  // Analyze last 20 candles for market structure
-  const recentCandles = candles.slice(-20);
-  
-  // Detect Higher Highs and Higher Lows for Uptrend
-  for (let i = 2; i < recentCandles.length; i++) {
-    if (recentCandles[i].high > recentCandles[i-1].high && 
-        recentCandles[i-1].high > recentCandles[i-2].high) {
-      structure.higherHighs++;
-    }
-    if (recentCandles[i].low > recentCandles[i-1].low && 
-        recentCandles[i-1].low > recentCandles[i-2].low) {
-      structure.higherLows++;
-    }
-  }
-  
-  // Detect Lower Highs and Lower Lows for Downtrend
-  for (let i = 2; i < recentCandles.length; i++) {
-    if (recentCandles[i].high < recentCandles[i-1].high && 
-        recentCandles[i-1].high < recentCandles[i-2].high) {
-      structure.lowerHighs++;
-    }
-    if (recentCandles[i].low < recentCandles[i-1].low && 
-        recentCandles[i-1].low < recentCandles[i-2].low) {
-      structure.lowerLows++;
-    }
-  }
-  
-  // Determine trend
-  if (structure.higherHighs >= 2 && structure.higherLows >= 2) {
-    structure.trend = 'BULLISH';
-  } else if (structure.lowerHighs >= 2 && structure.lowerLows >= 2) {
-    structure.trend = 'BEARISH';
-  }
-  
-  // Identify key levels (support/resistance)
-  structure.keyLevels = identifyKeyLevels(candles);
-  
-  // Identify order blocks
-  structure.orderBlocks = identifyOrderBlocks(candles);
-  
-  // Identify fair value gaps
-  structure.fairValueGaps = identifyFairValueGaps(candles);
-  
-  state.marketStructure[pairName] = structure;
-  return structure;
-}
-
-function identifyKeyLevels(candles) {
-  const levels = [];
-  const priceMap = {};
-  
-  // Group prices into levels
-  candles.forEach(candle => {
-    const highLevel = Math.round(candle.high * 100) / 100;
-    const lowLevel = Math.round(candle.low * 100) / 100;
-    
-    priceMap[highLevel] = (priceMap[highLevel] || 0) + 1;
-    priceMap[lowLevel] = (priceMap[lowLevel] || 0) + 1;
-  });
-  
-  // Find significant levels (touched at least 3 times)
-  Object.keys(priceMap).forEach(level => {
-    if (priceMap[level] >= 3) {
-      levels.push(parseFloat(level));
-    }
-  });
-  
-  return levels.sort((a, b) => a - b);
-}
-
-function identifyOrderBlocks(candles) {
-  const blocks = [];
-  
-  for (let i = 2; i < candles.length - 1; i++) {
-    const current = candles[i];
-    const previous = candles[i-1];
-    const next = candles[i+1];
-    
-    // Bullish order block: strong bear candle followed by bullish reaction
-    if (previous.close < previous.open && // Bear candle
-        current.close > current.open &&   // Bull candle
-        current.low < previous.low &&     // New low
-        next.close > next.open) {         // Confirmation
-      blocks.push({
-        type: 'BULLISH',
-        price: current.low,
-        time: current.time
-      });
-    }
-    
-    // Bearish order block: strong bull candle followed by bearish reaction
-    if (previous.close > previous.open && // Bull candle
-        current.close < current.open &&   // Bear candle
-        current.high > previous.high &&   // New high
-        next.close < next.open) {         // Confirmation
-      blocks.push({
-        type: 'BEARISH',
-        price: current.high,
-        time: current.time
-      });
-    }
-  }
-  
-  return blocks.slice(-5); // Return last 5 blocks
-}
-
-function identifyFairValueGaps(candles) {
-  const gaps = [];
-  
-  for (let i = 1; i < candles.length; i++) {
-    const current = candles[i];
-    const previous = candles[i-1];
-    
-    // Bullish FVG: previous low > current high
-    if (previous.low > current.high) {
-      gaps.push({
-        type: 'BULLISH',
-        top: previous.low,
-        bottom: current.high,
-        time: current.time
-      });
-    }
-    
-    // Bearish FVG: previous high < current low
-    if (previous.high < current.low) {
-      gaps.push({
-        type: 'BEARISH',
-        top: current.low,
-        bottom: previous.high,
-        time: current.time
-      });
-    }
-  }
-  
-  return gaps.slice(-3); // Return last 3 gaps
-}
-
-function updateSMCLevelsDisplay(structure, pairName) {
-  const container = document.getElementById('smcLevels');
-  const content = document.getElementById('smcLevelsContent');
-  
-  if (!structure) {
-    container.style.display = 'none';
-    return;
-  }
-  
-  let html = `
-    <div class="smc-level">
-      <span>Market Trend:</span>
-      <span style="color: ${structure.trend === 'BULLISH' ? '#22c55e' : structure.trend === 'BEARISH' ? '#ef4444' : '#f59e0b'}">
-        ${structure.trend}
-      </span>
-    </div>
-    <div class="smc-level">
-      <span>Higher Highs/Lows:</span>
-      <span>${structure.higherHighs}/${structure.higherLows}</span>
-    </div>
-    <div class="smc-level">
-      <span>Lower Highs/Lows:</span>
-      <span>${structure.lowerHighs}/${structure.lowerLows}</span>
-    </div>
-  `;
-  
-  if (structure.orderBlocks.length > 0) {
-    html += `<div style="margin-top: 8px;"><strong>Order Blocks:</strong></div>`;
-    structure.orderBlocks.forEach(block => {
-      html += `<div class="smc-level">
-        <span>${block.type}:</span>
-        <span>${block.price.toFixed(4)}</span>
-      </div>`;
-    });
-  }
-  
-  content.innerHTML = html;
-  container.style.display = 'block';
-}
-
-// --- Update Multi-Pair Signals Display ---
-function updateMultiSignalsDisplay() {
-  const container = document.getElementById('multiSignalsContainer');
-  const activeSignals = Object.values(state.activeSignals);
-  
-  if (activeSignals.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:#888;padding:20px">No active signals - Connect pairs and wait for signals</div>';
-    return;
-  }
-  
-  let html = '';
-  activeSignals.forEach(signal => {
-    const properties = assetProperties[signal.pair] || { decimals: 2 };
-    const decimals = properties.decimals;
-    const signalClass = signal.bias === 'BUY' ? 'multi-buy' : 'multi-sell';
-    
-    html += `
-      <div class="multi-signal-item ${signalClass}">
-        <div>
-          <strong>${signal.pair}</strong> - <strong>${signal.bias}</strong><br>
-          <small>Entry: ${signal.entry.toFixed(decimals)} | TP: ${signal.tp.toFixed(decimals)} | SL: ${signal.sl.toFixed(decimals)}</small>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <h1>Advanced Trading Robot</h1>
+                <p>Multi-pair algorithmic trading system</p>
+            </div>
+            <div class="status-indicators">
+                <div class="status active">CONNECTED</div>
+                <div class="status active">TRADING</div>
+                <div class="status warning">AUTO MODE</div>
+            </div>
+        </header>
+        
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2 class="section-title">
+                    Trading Pairs
+                    <span id="activePairsCount"></span>
+                </h2>
+                <div class="pairs-grid" id="pairsGrid">
+                    <!-- Trading pairs will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="section-title">Robot Controls</h2>
+                <div class="controls">
+                    <button class="btn btn-primary" id="startBtn">Start Trading</button>
+                    <button class="btn btn-danger" id="stopBtn">Stop Trading</button>
+                    <button class="btn btn-warning" id="emergencyBtn">Emergency Stop</button>
+                    
+                    <div class="control-group">
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span class="control-label">Risk Level</span>
+                                <span id="riskValue">2%</span>
+                            </div>
+                            <input type="range" min="0.5" max="5" step="0.5" value="2" class="slider" id="riskSlider">
+                        </div>
+                        
+                        <div class="slider-container">
+                            <div class="slider-label">
+                                <span class="control-label">Trade Frequency</span>
+                                <span id="frequencyValue">Medium</span>
+                            </div>
+                            <input type="range" min="1" max="3" step="1" value="2" class="slider" id="frequencySlider">
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success" id="buyBtn">Manual Buy</button>
+                    <button class="btn btn-danger" id="sellBtn">Manual Sell</button>
+                    
+                    <div class="control-group">
+                        <button class="btn btn-warning" id="clearLogsBtn">Clear Logs</button>
+                        <button class="btn btn-primary" id="exportDataBtn">Export Data</button>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div style="text-align:right">
-          <div style="font-weight:bold">${signal.confidence}%</div>
-          <small>${signal.time}</small>
+        
+        <div class="signals-section">
+            <h2 class="section-title">
+                Active Trading Signals
+                <span id="activeSignalsCount"></span>
+            </h2>
+            <div class="signal-grid" id="signalsGrid">
+                <!-- Trading signals will be populated by JavaScript -->
+            </div>
         </div>
-      </div>
-    `;
-  });
-  
-  container.innerHTML = html;
-}
+        
+        <div class="terminal card">
+            <h2 class="section-title">Trading Terminal</h2>
+            <div class="terminal-output" id="terminalOutput">
+                <div class="log-entry">
+                    <span class="log-time">[10:23:45]</span>
+                    <span class="log-info"> Trading robot initialized successfully</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">[10:24:12]</span>
+                    <span class="log-success"> BUY signal detected for XAUUSD</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">[10:24:13]</span>
+                    <span class="log-info"> Position opened: BUY 0.1 XAUUSD @ 1954.32</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">[10:25:47]</span>
+                    <span class="log-warning"> Volatility spike detected in EURUSD</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">[10:26:22]</span>
+                    <span class="log-success"> SELL signal detected for BTCUSD</span>
+                </div>
+            </div>
+            <div class="terminal-input">
+                <input type="text" placeholder="Enter command..." id="terminalInput">
+                <button id="terminalSend">Send</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>Advanced Trading Robot v2.1.4 | Risk Warning: Trading involves substantial risk of loss</p>
+        </footer>
+    </div>
 
-// --- Update Current Signal Display ---
-function updateCurrentSignal(signal) {
-  const signalElement = document.getElementById('currentSignal');
-  const statsElement = document.getElementById('signalStats');
-  
-  if (signal && (signal.bias === 'BUY' || signal.bias === 'SELL')) {
-    const properties = assetProperties[state.pair] || { decimals: 2 };
-    const decimals = properties.decimals;
-    
-    if (signal.bias === 'BUY') {
-      signalElement.className = 'current-signal signal-buy';
-      signalElement.innerHTML = `🎯 BUY SIGNAL - ${state.pair}<br>Confidence: ${signal.confidence}%`;
-    } else {
-      signalElement.className = 'current-signal signal-sell';
-      signalElement.innerHTML = `🎯 SELL SIGNAL - ${state.pair}<br>Confidence: ${signal.confidence}%`;
-    }
-    
-    document.getElementById('statEntry').textContent = signal.entry.toFixed(decimals);
-    document.getElementById('statTP').textContent = signal.tp.toFixed(decimals);
-    document.getElementById('statSL').textContent = signal.sl.toFixed(decimals);
-    document.getElementById('statConfidence').textContent = signal.confidence + '%';
-    statsElement.style.display = 'flex';
-    
-  } else {
-    signalElement.className = 'current-signal signal-none';
-    
-    if (!isMarketOpenForPair(state.pair)) {
-      signalElement.innerHTML = `🔒 ${state.pair} MARKET CLOSED - No signals until next session`;
-    } else {
-      signalElement.innerHTML = `🟡 NO ACTIVE SIGNALS - Analyzing market structure`;
-    }
-    statsElement.style.display = 'none';
-  }
-}
+    <script>
+        // Trading pairs data
+        const tradingPairs = [
+            { symbol: "XAUUSD", name: "Gold/USD", price: 1954.32, change: 0.42, active: true },
+            { symbol: "EURUSD", name: "Euro/USD", price: 1.0854, change: -0.12, active: true },
+            { symbol: "CRASH500", name: "Crash 500", price: 4521.75, change: 1.24, active: true },
+            { symbol: "CRASH1000", name: "Crash 1000", price: 7823.45, change: 0.87, active: true },
+            { symbol: "BOOM500", name: "Boom 500", price: 5123.67, change: -0.65, active: true },
+            { symbol: "BOOM1000", name: "Boom 1000", price: 8456.23, change: 1.53, active: true },
+            { symbol: "JUMP10", name: "Jump 10", price: 123.45, change: 2.34, active: true },
+            { symbol: "JUMP25", name: "Jump 25", price: 256.78, change: -1.23, active: true },
+            { symbol: "JUMP50", name: "Jump 50", price: 512.34, change: 3.45, active: true },
+            { symbol: "JUMP75", name: "Jump 75", price: 789.12, change: 0.98, active: true },
+            { symbol: "JUMP100", name: "Jump 100", price: 1024.56, change: -0.76, active: true },
+            { symbol: "STEP50", name: "Step Index 50", price: 3456.78, change: 0.34, active: true },
+            { symbol: "VOLATILITY10", name: "Volatility 10", price: 123.45, change: 1.23, active: true },
+            { symbol: "VOLATILITY25", name: "Volatility 25", price: 256.78, change: -0.87, active: true },
+            { symbol: "VOLATILITY50", name: "Volatility 50", price: 512.34, change: 2.12, active: true },
+            { symbol: "VOLATILITY75", name: "Volatility 75", price: 789.12, change: -1.45, active: true },
+            { symbol: "VOLATILITY100", name: "Volatility 100", price: 1024.56, change: 0.67, active: true },
+            { symbol: "BTCUSD", name: "Bitcoin/USD", price: 34256.78, change: 2.34, active: true },
+            { symbol: "US30", name: "US 30 Index", price: 35421.45, change: -0.56, active: true }
+        ];
 
-// --- Update Condition Display ---
-function updateConditionStatus(conditions, pairName) {
-  const conditionElement = document.getElementById('conditionStatus');
-  document.getElementById('currentPairName').textContent = pairName;
-  
-  let html = '';
-  conditions.forEach(condition => {
-    const statusClass = condition.met ? 'condition-met' : 'condition-failed';
-    const icon = condition.met ? '✅' : '❌';
-    html += `<div class="${statusClass}">${icon} ${condition.name}</div>`;
-  });
-  
-  conditionElement.innerHTML = html;
-}
+        // Active trading signals
+        const activeSignals = [
+            { pair: "XAUUSD", type: "BUY", strength: "high", time: "2 min ago", price: 1954.32, lotSize: 0.1 },
+            { pair: "BTCUSD", type: "SELL", strength: "medium", time: "5 min ago", price: 34256.78, lotSize: 0.05 },
+            { pair: "CRASH500", type: "BUY", strength: "low", time: "8 min ago", price: 4521.75, lotSize: 0.2 },
+            { pair: "VOLATILITY25", type: "SELL", strength: "high", time: "12 min ago", price: 256.78, lotSize: 0.15 },
+            { pair: "JUMP10", type: "BUY", strength: "medium", time: "15 min ago", price: 123.45, lotSize: 0.3 }
+        ];
 
-// --- EMA Calculation ---
-function calcEMA(values, period) {
-  if (!values || values.length < period) return [];
-  try {
-    let k = 2 / (period + 1);
-    let ema = [values[0]];
-    for (let i = 1; i < values.length; i++) {
-      ema.push(values[i] * k + ema[i - 1] * (1 - k));
-    }
-    return ema;
-  } catch (error) {
-    console.error('EMA calculation error:', error);
-    return [];
-  }
-}
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            initializePairsGrid();
+            initializeSignalsGrid();
+            setupEventListeners();
+            startPriceUpdates();
+            startSignalUpdates();
+            updateCounts();
+        });
 
-// --- Fixed RSI Calculation ---
-function calcRSI(values, period = 14) {
-  if (!values || values.length <= period) return [];
-  
-  try {
-    let gains = 0;
-    let losses = 0;
-
-    for (let i = 1; i <= period; i++) {
-      const diff = values[i] - values[i - 1];
-      gains += Math.max(diff, 0);
-      losses += Math.max(-diff, 0);
-    }
-
-    let avgGain = gains / period;
-    let avgLoss = losses / period;
-    const rsi = new Array(period).fill(null);
-
-    for (let i = period + 1; i < values.length; i++) {
-      const diff = values[i] - values[i - 1];
-      const currentGain = Math.max(diff, 0);
-      const currentLoss = Math.max(-diff, 0);
-
-      avgGain = (avgGain * (period - 1) + currentGain) / period;
-      avgLoss = (avgLoss * (period - 1) + currentLoss) / period;
-
-      if (avgLoss === 0) {
-        rsi.push(100);
-      } else {
-        const rs = avgGain / avgLoss;
-        rsi.push(100 - (100 / (1 + rs)));
-      }
-    }
-    return rsi;
-  } catch (error) {
-    console.error('RSI calculation error:', error);
-    return [];
-  }
-}
-
-// --- Add signal to log ---
-function addSignal(sig) {
-  try {
-    const div = document.createElement('div');
-    div.className = `signal-card ${sig.bias.toLowerCase()}`;
-    
-    const properties = assetProperties[sig.pair] || { decimals: 2 };
-    const decimals = properties.decimals;
-    
-    div.innerHTML = `<b>${sig.pair}</b> | <b>${sig.bias}</b> | Entry ${sig.entry.toFixed(decimals)} TP ${sig.tp.toFixed(decimals)} SL ${sig.sl.toFixed(decimals)}<br>
-      Reason: ${sig.reason}<br>Conf: ${sig.confidence}% | ${sig.time}`;
-    document.getElementById('signalLog').prepend(div);
-    
-    document.getElementById('signalCount').textContent = `(${state.signals.length})`;
-    state.signalsToday++;
-    document.getElementById('signalsToday').textContent = `${state.signalsToday}`;
-    
-    console.log(`🎯 SIGNAL GENERATED: ${sig.pair} ${sig.bias} at ${sig.time}`);
-    updateDebugInfo(`New ${sig.bias} signal for ${sig.pair} (Total: ${state.signalsToday})`);
-  } catch (error) {
-    console.error('Error adding signal:', error);
-  }
-}
-
-// --- ADVANCED SMC Detection ---
-function detectSMCForPair(pairData, pairName) {
-  try {
-    const { candles } = pairData;
-    
-    // Check minimum data requirements
-    if (!candles || candles.length < 25) {
-      return null;
-    }
-
-    // Check market hours for this specific pair
-    if (!isMarketOpenForPair(pairName)) {
-      return null;
-    }
-
-    const conditions = [];
-    
-    // Get current market data
-    const currentClose = candles[candles.length - 1].close;
-    const currentPrice = currentClose;
-    
-    // Advanced SMC Analysis
-    const marketStructure = detectMarketStructure(candles, pairName);
-    if (!marketStructure) return null;
-    
-    updateSMCLevelsDisplay(marketStructure, pairName);
-    
-    // SMC Conditions - Only generate HIGH QUALITY signals
-    const hasClearStructure = marketStructure.trend !== 'RANGING';
-    conditions.push({ name: `Clear Market Structure (${marketStructure.trend})`, met: hasClearStructure });
-    if (!hasClearStructure) return null;
-    
-    // Check for valid order blocks near current price
-    const recentOrderBlocks = marketStructure.orderBlocks.filter(block => {
-      const priceDiff = Math.abs(block.price - currentPrice) / currentPrice;
-      return priceDiff < 0.02; // Within 2% of current price
-    });
-    
-    const hasValidOrderBlock = recentOrderBlocks.length > 0;
-    conditions.push({ name: `Valid Order Block Present`, met: hasValidOrderBlock });
-    if (!hasValidOrderBlock) return null;
-    
-    // Determine bias based on SMC principles
-    let bias = null;
-    let reason = '';
-    let confidence = 0;
-    
-    // BULLISH SMC Setup
-    if (marketStructure.trend === 'BULLISH' || 
-        (marketStructure.higherHighs >= 2 && marketStructure.higherLows >= 1)) {
-      
-      const bullishBlocks = recentOrderBlocks.filter(block => block.type === 'BULLISH');
-      const nearestBullBlock = bullishBlocks[0];
-      
-      if (nearestBullBlock && currentPrice <= nearestBullBlock.price * 1.01) { // Within 1% of bullish OB
-        bias = 'BUY';
-        reason = 'Bullish Order Block + Market Structure Break';
-        confidence = 75 + Math.min(marketStructure.higherHighs * 5, 15);
-      }
-    }
-    
-    // BEARISH SMC Setup
-    if (marketStructure.trend === 'BEARISH' || 
-        (marketStructure.lowerHighs >= 2 && marketStructure.lowerLows >= 1)) {
-      
-      const bearishBlocks = recentOrderBlocks.filter(block => block.type === 'BEARISH');
-      const nearestBearBlock = bearishBlocks[0];
-      
-      if (nearestBearBlock && currentPrice >= nearestBearBlock.price * 0.99) { // Within 1% of bearish OB
-        bias = 'SELL';
-        reason = 'Bearish Order Block + Market Structure Break';
-        confidence = 75 + Math.min(marketStructure.lowerHighs * 5, 15);
-      }
-    }
-    
-    if (!bias) return null;
-    
-    // Professional risk management with SMC principles
-    const properties = assetProperties[pairName] || { basePrice: 1000, volatility: 0.01 };
-    const riskPercent = 0.01; // 1% risk
-    const rewardPercent = 0.03; // 3% reward (1:3 ratio)
-    
-    let sl, tp;
-    
-    if (bias === 'BUY') {
-      // For BUY: SL below recent low, TP at next resistance
-      const recentLow = Math.min(...candles.slice(-10).map(c => c.low));
-      sl = recentLow * 0.995;
-      tp = currentPrice * (1 + rewardPercent);
-    } else {
-      // For SELL: SL above recent high, TP at next support
-      const recentHigh = Math.max(...candles.slice(-10).map(c => c.high));
-      sl = recentHigh * 1.005;
-      tp = currentPrice * (1 - rewardPercent);
-    }
-    
-    // Ensure proper risk:reward
-    const riskRewardRatio = Math.abs(tp - currentPrice) / Math.abs(sl - currentPrice);
-    if (riskRewardRatio < 2) {
-      // Adjust TP to maintain minimum 1:2 risk:reward
-      if (bias === 'BUY') {
-        tp = currentPrice + (2 * Math.abs(currentPrice - sl));
-      } else {
-        tp = currentPrice - (2 * Math.abs(sl - currentPrice));
-      }
-    }
-    
-    const signal = {
-      pair: pairName,
-      bias: bias,
-      entry: currentPrice,
-      tp: tp,
-      sl: sl,
-      reason: reason,
-      confidence: Math.min(confidence, 90),
-      time: new Date().toLocaleTimeString(),
-      conditions: conditions,
-      marketStructure: marketStructure.trend
-    };
-    
-    updateDebugInfo(`✅ SMC ${bias} signal for ${pairName} - ${marketStructure.trend} structure`);
-    return signal;
-    
-  } catch (error) {
-    console.error(`Error in SMC detection for ${pairName}:`, error);
-    return null;
-  }
-}
-
-// --- Generate Realistic Market Data ---
-function generateRealisticMarketData(pair, timeframe, limit = 50) {
-  const properties = assetProperties[pair] || { basePrice: 1.0, volatility: 0.01, trendStrength: 0.001, decimals: 5 };
-  const { basePrice, volatility, trendStrength, decimals } = properties;
-  
-  let currentTime = getCurrentCandleTime(timeframe) - (limit * timeframe * 60);
-  let lastClose = basePrice;
-  const candles = [];
-  
-  // Initialize trend for this pair
-  if (!state.marketTrends[pair]) {
-    state.marketTrends[pair] = {
-      currentTrend: Math.random() > 0.5 ? 1 : -1,
-      trendStrength: trendStrength,
-      trendDuration: 0,
-      maxTrendDuration: 20 + Math.floor(Math.random() * 25)
-    };
-  }
-  
-  const trend = state.marketTrends[pair];
-  
-  for (let i = 0; i < limit; i++) {
-    // Update trend occasionally
-    trend.trendDuration++;
-    if (trend.trendDuration > trend.maxTrendDuration || Math.random() < 0.08) {
-      trend.currentTrend = Math.random() > 0.5 ? 1 : -1;
-      trend.trendStrength = trendStrength * (0.4 + Math.random() * 0.6);
-      trend.trendDuration = 0;
-      trend.maxTrendDuration = 15 + Math.floor(Math.random() * 20);
-    }
-    
-    // Create realistic price movement with trend
-    const baseChange = (Math.random() - 0.5 + trend.currentTrend * trend.trendStrength) * volatility * lastClose;
-    const open = lastClose;
-    const close = Math.max(open * 0.995, open + baseChange);
-    const high = Math.max(open, close, open * (1 + Math.random() * volatility * 0.4));
-    const low = Math.min(open, close, open * (1 - Math.random() * volatility * 0.4));
-    
-    candles.push({
-      time: currentTime,
-      open: parseFloat(open.toFixed(decimals)),
-      high: parseFloat(high.toFixed(decimals)),
-      low: parseFloat(low.toFixed(decimals)),
-      close: parseFloat(close.toFixed(decimals)),
-      volume: 1000 + Math.random() * 5000
-    });
-    
-    lastClose = close;
-    currentTime += timeframe * 60;
-  }
-  
-  return candles;
-}
-
-// --- Monitor All Pairs for Signals ---
-function monitorAllPairs() {
-  if (!state.auto) return; // Skip if auto mode is off
-  
-  const allPairs = getAllPairs();
-  let activePairsCount = 0;
-  const newActiveSignals = {};
-
-  // Reset daily counter if new day
-  resetDailyCounter();
-  
-  // Update market status
-  const anyMarketOpen = updateMarketStatus();
-  
-  if (!anyMarketOpen) {
-    // Clear active signals when all markets are closed
-    state.activeSignals = {};
-    updateMultiSignalsDisplay();
-    updateCurrentSignal(null);
-    return;
-  }
-
-  allPairs.forEach(pair => {
-    const pairData = state.allPairsData[pair];
-    if (pairData && pairData.candles && pairData.candles.length > 0) {
-      activePairsCount++;
-      
-      // Check for signals only if this pair's market is open
-      if (isMarketOpenForPair(pair)) {
-        const signal = detectSMCForPair(pairData, pair);
-        if (signal) {
-          newActiveSignals[pair] = signal;
-          
-          // Add to main signal log if new (5 minute cooldown per pair)
-          if (!state.activeSignals[pair] || (Date.now() - state.lastSignalTime) > 300000) {
-            state.signals.push(signal);
-            state.lastSignalTime = Date.now();
-            addSignal(signal);
-          }
+        // Initialize trading pairs grid
+        function initializePairsGrid() {
+            const pairsGrid = document.getElementById('pairsGrid');
+            pairsGrid.innerHTML = '';
+            
+            tradingPairs.forEach(pair => {
+                const pairCard = document.createElement('div');
+                pairCard.className = `pair-card ${pair.active ? 'active' : ''}`;
+                
+                const changeClass = pair.change >= 0 ? 'positive' : 'negative';
+                const changeSymbol = pair.change >= 0 ? '+' : '';
+                
+                pairCard.innerHTML = `
+                    <div class="pair-name">
+                        <span>${pair.name}</span>
+                        <span class="pair-symbol">${pair.symbol}</span>
+                    </div>
+                    <div class="pair-price">${formatPrice(pair.price, pair.symbol)}</div>
+                    <div class="pair-change ${changeClass}">${changeSymbol}${pair.change.toFixed(2)}%</div>
+                `;
+                
+                pairsGrid.appendChild(pairCard);
+            });
         }
-      }
-    }
-  });
 
-  // Update active signals
-  state.activeSignals = newActiveSignals;
-  
-  // Update displays
-  document.getElementById('activePairs').textContent = activePairsCount;
-  updateMultiSignalsDisplay();
-  
-  // Update current pair display
-  const currentPairSignal = state.activeSignals[state.pair];
-  updateCurrentSignal(currentPairSignal);
-  
-  if (currentPairSignal) {
-    updateConditionStatus(currentPairSignal.conditions, state.pair);
-  }
-}
-
-// --- Load Historical Data for a Pair ---
-async function loadHistoricalDataForPair(pair, timeframe, limit = 50) {
-  try {
-    return generateRealisticMarketData(pair, timeframe, limit);
-  } catch (error) {
-    console.error(`Error loading data for ${pair}:`, error);
-    return [];
-  }
-}
-
-// --- Initialize All Pairs Data ---
-async function initializeAllPairs() {
-  const allPairs = getAllPairs();
-  document.getElementById('loadingIndicator').style.display = 'block';
-  updateDebugInfo('Loading data for all pairs...');
-  
-  let loadedCount = 0;
-  
-  for (const pair of allPairs) {
-    try {
-      const historical5m = await loadHistoricalDataForPair(pair, 5, 50);
-      const historical15m = await loadHistoricalDataForPair(pair, 15, 25);
-      
-      const closesAll = historical5m.map(x => x.close);
-      const closesHTFAll = historical15m.map(x => x.close);
-      
-      state.allPairsData[pair] = {
-        candles: historical5m,
-        candlesHTF: historical15m,
-        ema: calcEMA(closesAll, 50),
-        emaHTF: calcEMA(closesHTFAll, 50),
-        rsi: calcRSI(closesAll, 14),
-        rsiHTF: calcRSI(closesHTFAll, 14)
-      };
-      
-      loadedCount++;
-      console.log(`✅ Loaded data for: ${pair}`);
-      updateDebugInfo(`Loaded ${loadedCount}/${allPairs.length} pairs...`);
-      
-    } catch (error) {
-      console.error(`❌ Failed to load data for: ${pair}`, error);
-    }
-  }
-  
-  document.getElementById('loadingIndicator').style.display = 'none';
-  updateDebugInfo(`✅ All ${loadedCount} pairs loaded - Advanced SMC Analysis Active`);
-}
-
-// --- Update All Pairs Data ---
-function updateAllPairsData() {
-  const allPairs = getAllPairs();
-  
-  allPairs.forEach(pair => {
-    const pairData = state.allPairsData[pair];
-    if (pairData && pairData.candles && pairData.candles.length > 0) {
-      const now = getCurrentCandleTime(5);
-      const lastCandle = pairData.candles[pairData.candles.length - 1];
-      
-      if (now > lastCandle.time) {
-        // Generate new candle
-        const newCandles = generateRealisticMarketData(pair, 5, 1);
-        if (newCandles.length > 0) {
-          const newCandle = newCandles[0];
-          newCandle.time = now;
-          
-          pairData.candles.push(newCandle);
-          if (pairData.candles.length > 100) pairData.candles.shift();
-          
-          // Update indicators
-          const closesAll = pairData.candles.map(x => x.close);
-          pairData.ema = calcEMA(closesAll, 50);
-          pairData.rsi = calcRSI(closesAll, 14);
+        // Format price based on pair type
+        function formatPrice(price, symbol) {
+            if (symbol === 'XAUUSD') return price.toFixed(2);
+            if (symbol === 'EURUSD') return price.toFixed(4);
+            return price.toFixed(2);
         }
-      }
-    }
-  });
-}
 
-// --- Start Multi-Pair Monitoring ---
-function startMultiPairMonitoring() {
-  if (state.monitoringInterval) {
-    clearInterval(state.monitoringInterval);
-  }
-  
-  if (state.timeSyncInterval) {
-    clearInterval(state.timeSyncInterval);
-  }
-  
-  state.timeSyncInterval = setInterval(() => {
-    updateTimeDisplay();
-    updateMarketStatus();
-    resetDailyCounter();
-  }, 1000);
-  
-  // Update all pairs data and check for signals every 15 seconds
-  state.monitoringInterval = setInterval(() => {
-    updateAllPairsData();
-    monitorAllPairs();
-    updateChartForPair(state.pair);
-  }, 15000); // Check every 15 seconds
-  
-  updateDebugInfo('🚀 Advanced SMC Monitoring Started - Following real market structure');
-}
+        // Initialize signals grid
+        function initializeSignalsGrid() {
+            const signalsGrid = document.getElementById('signalsGrid');
+            signalsGrid.innerHTML = '';
+            
+            activeSignals.forEach(signal => {
+                const signalCard = document.createElement('div');
+                signalCard.className = `signal-card ${signal.type.toLowerCase()}`;
+                
+                const strengthClass = `strength-${signal.strength}`;
+                
+                signalCard.innerHTML = `
+                    <div class="signal-header">
+                        <div class="signal-pair">${signal.pair}</div>
+                        <div class="signal-type ${signal.type.toLowerCase()}">${signal.type}</div>
+                    </div>
+                    <div class="signal-details">
+                        <div>Price:</div>
+                        <div>${formatPrice(signal.price, signal.pair)}</div>
+                        <div>Lot Size:</div>
+                        <div>${signal.lotSize}</div>
+                        <div>Time:</div>
+                        <div>${signal.time}</div>
+                    </div>
+                    <div class="signal-strength">
+                        <div>Strength: ${signal.strength}</div>
+                        <div class="strength-bar">
+                            <div class="strength-fill ${strengthClass}"></div>
+                        </div>
+                    </div>
+                `;
+                
+                signalsGrid.appendChild(signalCard);
+            });
+        }
 
-// --- Update Chart for Selected Pair ---
-function updateChartForPair(pair) {
-  const pairData = state.allPairsData[pair];
-  if (pairData && pairData.candles && pairData.candles.length > 0) {
-    state.series.setData(pairData.candles);
-    
-    if (pairData.ema && pairData.ema.length > 0) {
-      const emaPlot = pairData.candles.slice(-pairData.ema.length).map((x, i) => ({
-        time: x.time,
-        value: pairData.ema[i]
-      }));
-      state.emaSeries.setData(emaPlot);
-    }
-  }
-}
+        // Update counts display
+        function updateCounts() {
+            const activePairs = tradingPairs.filter(p => p.active).length;
+            document.getElementById('activePairsCount').textContent = `${activePairs} Active`;
+            
+            document.getElementById('activeSignalsCount').textContent = `${activeSignals.length} Signals`;
+        }
 
-// --- Event Listeners ---
-document.getElementById('connectFeed').addEventListener('click', async () => {
-  try {
-    document.getElementById('connectionStatus').textContent = 'Loading...';
-    document.getElementById('connectionStatus').className = 'connecting';
-    
-    await initializeAllPairs();
-    startMultiPairMonitoring();
-    
-    document.getElementById('connectionStatus').textContent = 'Connected (All Pairs)';
-    document.getElementById('connectionStatus').className = 'connected';
-    
-    // Update chart with default pair
-    updateChartForPair(state.pair);
-    
-  } catch (error) {
-    console.error('Connection error:', error);
-    document.getElementById('connectionStatus').textContent = 'Connection Failed';
-    document.getElementById('connectionStatus').className = 'disconnected';
-    updateDebugInfo('Connection failed - please try again');
-  }
-});
+        // Set up event listeners for buttons and controls
+        function setupEventListeners() {
+            // Control buttons
+            document.getElementById('startBtn').addEventListener('click', function() {
+                addLogEntry('Trading started manually', 'info');
+                updateStatus('TRADING', true);
+            });
+            
+            document.getElementById('stopBtn').addEventListener('click', function() {
+                addLogEntry('Trading stopped manually', 'warning');
+                updateStatus('TRADING', false);
+            });
+            
+            document.getElementById('emergencyBtn').addEventListener('click', function() {
+                addLogEntry('EMERGENCY STOP ACTIVATED - All positions closed', 'error');
+                updateStatus('TRADING', false);
+                
+                // Simulate closing all positions
+                setTimeout(() => {
+                    addLogEntry('All positions successfully closed', 'success');
+                }, 1000);
+            });
+            
+            document.getElementById('buyBtn').addEventListener('click', function() {
+                addLogEntry('Manual BUY order placed', 'info');
+            });
+            
+            document.getElementById('sellBtn').addEventListener('click', function() {
+                addLogEntry('Manual SELL order placed', 'info');
+            });
+            
+            document.getElementById('clearLogsBtn').addEventListener('click', function() {
+                document.getElementById('terminalOutput').innerHTML = '';
+                addLogEntry('Logs cleared', 'info');
+            });
+            
+            document.getElementById('exportDataBtn').addEventListener('click', function() {
+                addLogEntry('Exporting trading data...', 'info');
+                setTimeout(() => {
+                    addLogEntry('Data exported successfully', 'success');
+                }, 1500);
+            });
+            
+            // Sliders
+            document.getElementById('riskSlider').addEventListener('input', function() {
+                document.getElementById('riskValue').textContent = this.value + '%';
+            });
+            
+            document.getElementById('frequencySlider').addEventListener('input', function() {
+                const values = ['Low', 'Medium', 'High'];
+                document.getElementById('frequencyValue').textContent = values[this.value - 1];
+            });
+            
+            // Terminal input
+            document.getElementById('terminalSend').addEventListener('click', sendTerminalCommand);
+            document.getElementById('terminalInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendTerminalCommand();
+                }
+            });
+        }
 
-document.getElementById('disconnectFeed').addEventListener('click', () => {
-  if (state.monitoringInterval) {
-    clearInterval(state.monitoringInterval);
-    state.monitoringInterval = null;
-  }
-  if (state.timeSyncInterval) {
-    clearInterval(state.timeSyncInterval);
-    state.timeSyncInterval = null;
-  }
-  
-  document.getElementById('connectionStatus').textContent = 'Disconnected';
-  document.getElementById('connectionStatus').className = 'disconnected';
-  document.getElementById('activePairs').textContent = '0';
-  updateCurrentSignal(null);
-  updateDebugInfo('System disconnected');
-});
+        // Update status indicator
+        function updateStatus(status, isActive) {
+            const statusIndicators = document.querySelectorAll('.status');
+            statusIndicators.forEach(indicator => {
+                if (indicator.textContent === status) {
+                    indicator.className = `status ${isActive ? 'active' : 'inactive'}`;
+                }
+            });
+        }
 
-document.getElementById('generateSignal').addEventListener('click', () => {
-  // Force generate a signal for current pair using SMC principles
-  const pairData = state.allPairsData[state.pair];
-  if (pairData && pairData.candles && pairData.candles.length > 0) {
-    const marketStructure = detectMarketStructure(pairData.candles, state.pair);
-    
-    let bias, reason;
-    if (marketStructure && marketStructure.trend === 'BULLISH') {
-      bias = 'BUY';
-      reason = 'Manual Bullish SMC Setup';
-    } else if (marketStructure && marketStructure.trend === 'BEARISH') {
-      bias = 'SELL';
-      reason = 'Manual Bearish SMC Setup';
-    } else {
-      bias = Math.random() > 0.5 ? 'BUY' : 'SELL';
-      reason = 'Manual SMC Test Signal';
-    }
-    
-    const currentPrice = pairData.candles[pairData.candles.length - 1].close;
-    
-    const testSignal = {
-      pair: state.pair,
-      bias: bias,
-      entry: currentPrice,
-      tp: bias === 'BUY' ? currentPrice * 1.03 : currentPrice * 0.97,
-      sl: bias === 'BUY' ? currentPrice * 0.99 : currentPrice * 1.01,
-      reason: reason,
-      confidence: 85,
-      time: new Date().toLocaleTimeString(),
-      conditions: [{ name: 'Manual SMC signal', met: true }]
-    };
-    
-    state.activeSignals[state.pair] = testSignal;
-    state.signals.push(testSignal);
-    addSignal(testSignal);
-    updateMultiSignalsDisplay();
-    updateCurrentSignal(testSignal);
-    updateConditionStatus(testSignal.conditions, state.pair);
-    
-    updateDebugInfo(`✅ Manual ${bias} SMC signal generated for ${state.pair}`);
-  } else {
-    updateDebugInfo('❌ No data available - Connect pairs first');
-  }
-});
+        // Add entry to terminal log
+        function addLogEntry(message, type = 'info') {
+            const terminalOutput = document.getElementById('terminalOutput');
+            const time = new Date().toLocaleTimeString();
+            
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-${type}"> ${message}</span>
+            `;
+            
+            terminalOutput.appendChild(logEntry);
+            terminalOutput.scrollTop = terminalOutput.scrollHeight;
+        }
 
-document.getElementById('clearSignals').addEventListener('click', () => {
-  document.getElementById('signalLog').innerHTML = '';
-  state.signals = [];
-  state.activeSignals = {};
-  state.signalsToday = 0;
-  document.getElementById('signalCount').textContent = '(0)';
-  document.getElementById('signalsToday').textContent = `0`;
-  updateMultiSignalsDisplay();
-  updateCurrentSignal(null);
-  updateDebugInfo('All signals cleared');
-});
+        // Send terminal command
+        function sendTerminalCommand() {
+            const input = document.getElementById('terminalInput');
+            const command = input.value.trim();
+            
+            if (command) {
+                addLogEntry(`> ${command}`, 'info');
+                
+                // Process commands
+                if (command.toLowerCase() === 'help') {
+                    addLogEntry('Available commands: help, status, pairs, signals, clear', 'info');
+                } else if (command.toLowerCase() === 'status') {
+                    addLogEntry('Robot Status: ACTIVE | Trading: ENABLED | Auto Mode: DISABLED', 'info');
+                } else if (command.toLowerCase() === 'pairs') {
+                    const activePairs = tradingPairs.filter(p => p.active).map(p => p.symbol).join(', ');
+                    addLogEntry(`Active pairs: ${activePairs}`, 'info');
+                } else if (command.toLowerCase() === 'signals') {
+                    addLogEntry(`Active signals: ${activeSignals.length}`, 'info');
+                } else if (command.toLowerCase() === 'clear') {
+                    document.getElementById('terminalOutput').innerHTML = '';
+                } else {
+                    addLogEntry(`Unknown command: ${command}`, 'error');
+                }
+                
+                input.value = '';
+            }
+        }
 
-document.getElementById('autoMode').addEventListener('change', (e) => {
-  state.auto = e.target.checked;
-  updateDebugInfo(`Auto mode: ${state.auto ? 'ON' : 'OFF'}`);
-});
+        // Simulate price updates
+        function startPriceUpdates() {
+            setInterval(() => {
+                // Randomly update some prices
+                const randomIndex = Math.floor(Math.random() * tradingPairs.length);
+                const pair = tradingPairs[randomIndex];
+                
+                // Small random price change
+                const change = (Math.random() - 0.5) * 0.5;
+                pair.price *= (1 + change / 100);
+                pair.change += change;
+                
+                // Update the display
+                const pairCards = document.querySelectorAll('.pair-card');
+                if (pairCards[randomIndex]) {
+                    const priceElement = pairCards[randomIndex].querySelector('.pair-price');
+                    const changeElement = pairCards[randomIndex].querySelector('.pair-change');
+                    
+                    if (priceElement) {
+                        priceElement.textContent = formatPrice(pair.price, pair.symbol);
+                    }
+                    
+                    if (changeElement) {
+                        const changeClass = pair.change >= 0 ? 'positive' : 'negative';
+                        const changeSymbol = pair.change >= 0 ? '+' : '';
+                        changeElement.className = `pair-change ${changeClass}`;
+                        changeElement.textContent = `${changeSymbol}${pair.change.toFixed(2)}%`;
+                    }
+                }
+                
+                // Occasionally add a log entry for significant moves
+                if (Math.abs(change) > 0.3) {
+                    addLogEntry(`Price movement for ${pair.symbol}: ${change > 0 ? '+' : ''}${change.toFixed(2)}%`, 'warning');
+                }
+                
+                updateCounts();
+            }, 3000);
+        }
 
-document.getElementById('filterMode').addEventListener('change', (e) => {
-  state.filter = e.target.checked;
-  updateDebugInfo(`Advanced SMC Filter: ${state.filter ? 'ON' : 'OFF'}`);
-});
-
-document.getElementById('pairSelect').addEventListener('change', (e) => {
-  state.pair = e.target.value;
-  updateChartForPair(state.pair);
-  updateDebugInfo(`Switched to ${state.pair}`);
-});
-
-// --- Auto-connect on page load ---
-window.addEventListener('load', () => {
-  document.getElementById('pairSelect').value = 'XAUUSD';
-  state.pair = 'XAUUSD';
-  
-  setTimeout(() => {
-    document.getElementById('connectFeed').click();
-  }, 1000);
-});
-
-window.addEventListener('beforeunload', () => {
-  if (state.monitoringInterval) clearInterval(state.monitoringInterval);
-  if (state.timeSyncInterval) clearInterval(state.timeSyncInterval);
-});
-</script>
+        // Simulate signal updates
+        function startSignalUpdates() {
+            setInterval(() => {
+                // Occasionally add a new signal
+                if (Math.random() > 0.7) {
+                    const randomPairIndex = Math.floor(Math.random() * tradingPairs.length);
+                    const pair = tradingPairs[randomPairIndex];
+                    const type = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                    const strength = ['low', 'medium', 'high'][Math.floor(Math.random() * 3)];
+                    
+                    // Add to active signals (limit to 5)
+                    if (activeSignals.length >= 5) {
+                        activeSignals.shift();
+                    }
+                    
+                    activeSignals.push({
+                        pair: pair.symbol,
+                        type: type,
+                        strength: strength,
+                        time: 'Just now',
+                        price: pair.price,
+                        lotSize: (Math.random() * 0.3 + 0.05).toFixed(2)
+                    });
+                    
+                    // Update the display
+                    initializeSignalsGrid();
+                    
+                    // Add log entry
+                    addLogEntry(`New ${type} signal for ${pair.symbol} (${strength} strength)`, 'success');
+                }
+                
+                // Occasionally remove an old signal
+                if (Math.random() > 0.8 && activeSignals.length > 0) {
+                    const removedSignal = activeSignals.shift();
+                    initializeSignalsGrid();
+                    addLogEntry(`Signal expired for ${removedSignal.pair}`, 'info');
+                }
+                
+                updateCounts();
+            }, 8000);
+        }
+    </script>
 </body>
 </html>
