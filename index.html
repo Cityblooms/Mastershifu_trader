@@ -1,964 +1,727 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Trading Robot</title>
-    <style>
-        :root {
-            --primary: #0f172a;
-            --secondary: #1e293b;
-            --accent: #3b82f6;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-        
-        body {
-            background-color: var(--primary);
-            color: var(--text);
-            line-height: 1.6;
-            font-weight: 400;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 30px;
-        }
-        
-        .logo h1 {
-            font-size: 1.8rem;
-            color: var(--accent);
-            font-weight: 700;
-            letter-spacing: -0.025em;
-        }
-        
-        .logo p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            font-weight: 400;
-        }
-        
-        .status-indicators {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .status {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 500;
-            border: 1px solid;
-        }
-        
-        .status.active {
-            background-color: rgba(16, 185, 129, 0.1);
-            border-color: var(--success);
-            color: var(--success);
-        }
-        
-        .status.inactive {
-            background-color: rgba(239, 68, 68, 0.1);
-            border-color: var(--danger);
-            color: var(--danger);
-        }
-        
-        .status.warning {
-            background-color: rgba(245, 158, 11, 0.1);
-            border-color: var(--warning);
-            color: var(--warning);
-        }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 24px;
-            margin-bottom: 30px;
-        }
-        
-        .card {
-            background-color: var(--secondary);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            border: 1px solid var(--border);
-        }
-        
-        .section-title {
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            color: var(--text);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .performance-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-        
-        .stat-card {
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(16, 185, 129, 0.1));
-            border-radius: 8px;
-            padding: 16px;
-            border: 1px solid var(--border);
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent);
-            margin-bottom: 4px;
-        }
-        
-        .stat-label {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-        
-        .strategy-section {
-            margin-bottom: 30px;
-        }
-        
-        .strategy-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        
-        .strategy-card {
-            background-color: var(--secondary);
-            border-radius: 12px;
-            padding: 20px;
-            border-left: 4px solid var(--accent);
-            transition: all 0.2s ease;
-        }
-        
-        .strategy-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.3);
-        }
-        
-        .strategy-card.breakout {
-            border-left-color: var(--success);
-        }
-        
-        .strategy-card.trend {
-            border-left-color: var(--warning);
-        }
-        
-        .strategy-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 16px;
-        }
-        
-        .strategy-name {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--text);
-        }
-        
-        .strategy-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .strategy-status.active {
-            background-color: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-        }
-        
-        .strategy-params {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-        
-        .param {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-        
-        .param-value {
-            font-weight: 600;
-            color: var(--text);
-        }
-        
-        .conditions-list {
-            margin-top: 16px;
-        }
-        
-        .condition {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-        }
-        
-        .condition-status {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 12px;
-        }
-        
-        .condition-met {
-            background-color: var(--success);
-        }
-        
-        .condition-not-met {
-            background-color: var(--danger);
-        }
-        
-        .signal-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 16px;
-        }
-        
-        .signal-card {
-            background-color: var(--secondary);
-            border-radius: 8px;
-            padding: 16px;
-            border-left: 4px solid var(--accent);
-            transition: all 0.2s ease;
-        }
-        
-        .signal-card:hover {
-            transform: translateY(-1px);
-        }
-        
-        .signal-card.buy {
-            border-left-color: var(--success);
-        }
-        
-        .signal-card.sell {
-            border-left-color: var(--danger);
-        }
-        
-        .signal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 12px;
-        }
-        
-        .signal-pair {
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-        
-        .signal-type {
-            font-size: 0.75rem;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-weight: 600;
-        }
-        
-        .signal-type.buy {
-            background-color: rgba(16, 185, 129, 0.2);
-            color: var(--success);
-        }
-        
-        .signal-type.sell {
-            background-color: rgba(239, 68, 68, 0.2);
-            color: var(--danger);
-        }
-        
-        .signal-details {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-        
-        .signal-strength {
-            margin-top: 12px;
-        }
-        
-        .strength-bar {
-            height: 4px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            overflow: hidden;
-        }
-        
-        .strength-fill {
-            height: 100%;
-            border-radius: 2px;
-        }
-        
-        .strength-high {
-            background-color: var(--success);
-            width: 85%;
-        }
-        
-        .strength-medium {
-            background-color: var(--warning);
-            width: 60%;
-        }
-        
-        .strength-low {
-            background-color: var(--danger);
-            width: 40%;
-        }
-        
-        .terminal {
-            margin-top: 30px;
-        }
-        
-        .terminal-output {
-            height: 200px;
-            background-color: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-            padding: 16px;
-            overflow-y: auto;
-            margin-bottom: 16px;
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
-            font-size: 0.8rem;
-            border: 1px solid var(--border);
-        }
-        
-        .log-entry {
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .log-time {
-            color: var(--text-muted);
-            font-size: 0.75rem;
-        }
-        
-        .log-info {
-            color: var(--text);
-        }
-        
-        .log-success {
-            color: var(--success);
-        }
-        
-        .log-warning {
-            color: var(--warning);
-        }
-        
-        .log-error {
-            color: var(--danger);
-        }
-        
-        .terminal-input {
-            display: flex;
-            gap: 12px;
-        }
-        
-        .terminal-input input {
-            flex-grow: 1;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background-color: rgba(0, 0, 0, 0.2);
-            color: var(--text);
-            font-family: 'JetBrains Mono', 'Fira Code', monospace;
-            font-size: 0.85rem;
-        }
-        
-        .terminal-input input:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-        
-        .terminal-input button {
-            padding: 12px 20px;
-            border-radius: 8px;
-            border: none;
-            background-color: var(--accent);
-            color: white;
-            cursor: pointer;
-            font-weight: 600;
-            transition: background-color 0.2s ease;
-        }
-        
-        .terminal-input button:hover {
-            background-color: #2563eb;
-        }
-        
-        .controls {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        
-        .btn {
-            padding: 14px 20px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            text-align: center;
-            font-size: 0.9rem;
-        }
-        
-        .btn-primary {
-            background-color: var(--accent);
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background-color: #2563eb;
-            transform: translateY(-1px);
-        }
-        
-        .btn-danger {
-            background-color: var(--danger);
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background-color: #dc2626;
-            transform: translateY(-1px);
-        }
-        
-        .btn-warning {
-            background-color: var(--warning);
-            color: white;
-        }
-        
-        .btn-warning:hover {
-            background-color: #d97706;
-            transform: translateY(-1px);
-        }
-        
-        .control-group {
-            margin-bottom: 20px;
-        }
-        
-        .slider-container {
-            margin-bottom: 20px;
-        }
-        
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-        
-        .slider {
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: rgba(255, 255, 255, 0.1);
-            outline: none;
-        }
-        
-        footer {
-            text-align: center;
-            padding: 30px 0;
-            margin-top: 40px;
-            border-top: 1px solid var(--border);
-            color: var(--text-muted);
-            font-size: 0.85rem;
-        }
-        
-        @media (max-width: 1024px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .strategy-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .performance-stats {
-                grid-template-columns: 1fr;
-            }
-            
-            .signal-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 16px;
-            }
-        }
-    </style>
+  <meta charset="utf-8" />
+  <title>Crossing Indicator — Standalone Dashboard</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{
+      --bg:#071021; --card:rgba(255,255,255,0.03); --muted:#9aa4b2; --accent:#6EE7B7; --danger:#ff6b6b;
+    }
+    html,body,#app{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,"Helvetica Neue",Arial;background:linear-gradient(180deg,#071021 0%, #0f1724 100%);color:#e6eef8}
+    .container{max-width:1200px;margin:18px auto;padding:12px;display:grid;grid-template-columns:1fr 360px;gap:16px}
+    header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .logo{font-weight:700;color:var(--accent);letter-spacing:0.6px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:12px;box-shadow:0 6px 18px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    .scanner{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .pair{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,0.02)}
+    .badge{padding:6px 10px;border-radius:999px;background:rgba(0,0,0,0.35);font-weight:600}
+    .badge.buy{background:linear-gradient(90deg,#0ea5a4,#6ee7b7);color:#05282a}
+    .badge.wait{background:rgba(255,255,255,0.03);color:var(--muted)}
+    .controls{display:flex;gap:8px;align-items:center}
+    button{background:var(--card);border:1px solid rgba(255,255,255,0.03);color:var(--accent);padding:8px 12px;border-radius:10px;cursor:pointer}
+    button.secondary{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+    .small{font-size:12px;color:var(--muted)}
+    .history{max-height:340px;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:8px}
+    .history-item{display:flex;justify-content:space-between;gap:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);font-size:13px}
+    .debug{max-height:220px;overflow:auto;background:rgba(0,0,0,0.25);padding:8px;border-radius:8px;font-family:monospace;font-size:12px}
+    label.small{display:flex;align-items:center;gap:8px}
+    textarea{background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.05);border-radius:6px;padding:8px;color:white;font-family:inherit;font-size:12px}
+    input[type="number"]{background:rgba(0,0,0,0.2);border:1px solid rgba(255,255,255,0.05);border-radius:6px;padding:6px;color:white;font-family:inherit}
+    input[type="checkbox"]{accent-color:var(--accent)}
+    @media(max-width:980px){.container{grid-template-columns:1fr;}}
+  </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                <h1>Quantum Trading System</h1>
-                <p>Advanced Algorithmic Trading Platform</p>
-            </div>
-            <div class="status-indicators">
-                <div class="status active">LIVE</div>
-                <div class="status active">AUTO TRADING</div>
-                <div class="status warning">MONITORING</div>
-            </div>
-        </header>
-        
-        <div class="dashboard-grid">
-            <div class="card">
-                <h2 class="section-title">Performance Overview</h2>
-                <div class="performance-stats">
-                    <div class="stat-card">
-                        <div class="stat-value">+14.2%</div>
-                        <div class="stat-label">Total Return</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">76.3%</div>
-                        <div class="stat-label">Win Rate</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">1.8</div>
-                        <div class="stat-label">Profit Factor</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value">2.1</div>
-                        <div class="stat-label">Avg Risk/Reward</div>
-                    </div>
-                </div>
-                
-                <h2 class="section-title">Active Strategies</h2>
-                <div class="strategy-grid">
-                    <div class="strategy-card breakout">
-                        <div class="strategy-header">
-                            <div class="strategy-name">Breakout Pro</div>
-                            <div class="strategy-status active">ACTIVE</div>
-                        </div>
-                        <div class="strategy-params">
-                            <div class="param">Lookback: <span class="param-value">20 bars</span></div>
-                            <div class="param">Buffer: <span class="param-value">5 pips</span></div>
-                            <div class="param">Risk/Reward: <span class="param-value">1.5</span></div>
-                            <div class="param">Timeframe: <span class="param-value">H1</span></div>
-                        </div>
-                        <div class="conditions-list">
-                            <div class="condition">
-                                <div class="condition-status condition-met"></div>
-                                <span>Range breakout confirmed</span>
-                            </div>
-                            <div class="condition">
-                                <div class="condition-status condition-met"></div>
-                                <span>Volume validation</span>
-                            </div>
-                            <div class="condition">
-                                <div class="condition-status condition-met"></div>
-                                <span>Market hours valid</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="strategy-card trend">
-                        <div class="strategy-header">
-                            <div class="strategy-name">Trend Master</div>
-                            <div class="strategy-status active">ACTIVE</div>
-                        </div>
-                        <div class="strategy-params">
-                            <div class="param">Fast EMA: <span class="param-value">14</span></div>
-                            <div class="param">Medium EMA: <span class="param-value">50</span></div>
-                            <div class="param">Slow EMA: <span class="param-value">100</span></div>
-                            <div class="param">ATR Period: <span class="param-value">14</span></div>
-                        </div>
-                        <div class="conditions-list">
-                            <div class="condition">
-                                <div class="condition-status condition-met"></div>
-                                <span>EMA alignment confirmed</span>
-                            </div>
-                            <div class="condition">
-                                <div class="condition-status condition-met"></div>
-                                <span>ADX > 25</span>
-                            </div>
-                            <div class="condition">
-                                <div class="condition-status condition-met"></div>
-                                <span>Momentum confirmed</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2 class="section-title">System Controls</h2>
-                <div class="controls">
-                    <button class="btn btn-primary" id="startBtn">Start Auto Trading</button>
-                    <button class="btn btn-danger" id="stopBtn">Stop Trading</button>
-                    <button class="btn btn-warning" id="emergencyBtn">Emergency Stop</button>
-                    
-                    <div class="control-group">
-                        <div class="slider-container">
-                            <div class="slider-label">
-                                <span>Risk Level</span>
-                                <span id="riskValue">2.0%</span>
-                            </div>
-                            <input type="range" min="0.5" max="5" step="0.1" value="2" class="slider" id="riskSlider">
-                        </div>
-                        
-                        <div class="slider-container">
-                            <div class="slider-label">
-                                <span>Trade Aggression</span>
-                                <span id="aggressionValue">Medium</span>
-                            </div>
-                            <input type="range" min="1" max="3" step="1" value="2" class="slider" id="aggressionSlider">
-                        </div>
-                    </div>
-                    
-                    <div class="control-group">
-                        <button class="btn btn-warning" id="clearLogsBtn">Clear Logs</button>
-                        <button class="btn btn-primary" id="exportDataBtn">Export Report</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="strategy-section">
-            <h2 class="section-title">
-                Active Trading Signals
-                <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: 400;" id="activeSignalsCount">3 Signals</span>
-            </h2>
-            <div class="signal-grid" id="signalsGrid">
-                <!-- Trading signals will be populated by JavaScript -->
-            </div>
-        </div>
-        
-        <div class="terminal card">
-            <h2 class="section-title">Trading Terminal</h2>
-            <div class="terminal-output" id="terminalOutput">
-                <div class="log-entry">
-                    <span class="log-time">[14:23:45]</span>
-                    <span class="log-info"> System initialized - All strategies active</span>
-                </div>
-                <div class="log-entry">
-                    <span class="log-time">[14:24:12]</span>
-                    <span class="log-success"> BREAKOUT: LONG signal generated for XAUUSD</span>
-                </div>
-                <div class="log-entry">
-                    <span class="log-time">[14:24:13]</span>
-                    <span class="log-info"> Position opened: BUY 0.1 XAUUSD @ 1957.32</span>
-                </div>
-                <div class="log-entry">
-                    <span class="log-time">[14:25:47]</span>
-                    <span class="log-warning"> Market volatility increased - adjusting position sizes</span>
-                </div>
-                <div class="log-entry">
-                    <span class="log-time">[14:26:22]</span>
-                    <span class="log-success"> TREND: SELL signal generated for EURUSD</span>
-                </div>
-            </div>
-            <div class="terminal-input">
-                <input type="text" placeholder="Enter system command..." id="terminalInput">
-                <button id="terminalSend">Execute</button>
-            </div>
-        </div>
-        
-        <footer>
-            <p>Quantum Trading System v3.2.1 | Professional Algorithmic Trading Platform</p>
-            <p style="margin-top: 8px; font-size: 0.8rem; color: var(--text-muted);">
-                Risk Warning: Algorithmic trading involves substantial risk of loss. Past performance is not indicative of future results.
-            </p>
-        </footer>
-    </div>
+  <div id="app"></div>
 
-    <script>
-        // Trading signals data
-        const activeSignals = [
-            { 
-                pair: "XAUUSD", 
-                type: "BUY", 
-                strength: "high", 
-                time: "2 min ago", 
-                price: 1957.32, 
-                lotSize: 0.1, 
-                strategy: "Breakout Pro",
-                conditions: "All met"
-            },
-            { 
-                pair: "EURUSD", 
-                type: "SELL", 
-                strength: "medium", 
-                time: "5 min ago", 
-                price: 1.0832, 
-                lotSize: 0.15, 
-                strategy: "Trend Master",
-                conditions: "All met"
-            },
-            { 
-                pair: "BTCUSD", 
-                type: "BUY", 
-                strength: "low", 
-                time: "8 min ago", 
-                price: 34210.50, 
-                lotSize: 0.05, 
-                strategy: "Breakout Pro",
-                conditions: "All met"
+  <script>
+    // ----------------------------------------------------
+    // Crossing Indicator Standalone Dashboard
+    // - 4H main, 1H confirm, Stochastic %K=5 %D=3 slow=3
+    // - Deriv WebSocket helper (optional)
+    // - History trimmed to 10 before auto-refresh
+    // - Debug logging & on-screen debug panel
+    // - Input validation & performance optimizations
+    // ----------------------------------------------------
+
+    /***********************
+     Config & defaults
+    ************************/
+    const DEFAULT_PAIRS = [
+      { id: "EURUSD", apiSymbol: "frxEURUSD", type: "forex" },
+      { id: "XAUUSD", apiSymbol: "gold", type: "index" },
+      { id: "BTCUSD", apiSymbol: "BTCUSD", type: "crypto" },
+      { id: "US30", apiSymbol: "US30", type: "index" },
+      { id: "Boom 1000", apiSymbol: null, type: "synthetic" },
+      { id: "Crash 1000", apiSymbol: null, type: "synthetic" }
+    ];
+
+    const STOCH = { k:5, d:3, slowing:3, high:85, low:15 };
+    const AUTO_INTERVAL_DEFAULT = 15000; // 15s
+    const HISTORY_LIMIT = 10;
+
+    /***********************
+     Application State
+    ************************/
+    let appState = {
+      pairs: [...DEFAULT_PAIRS],
+      auto: false,
+      intervalMs: AUTO_INTERVAL_DEFAULT,
+      history: [],
+      isRunning: false,
+      debugOn: true,
+      consoleLogs: [],
+      derivWS: null,
+      cache: {},
+      timer: null
+    };
+
+    /***********************
+     Utility & validation
+    ************************/
+    function isValidPairList(pairs){
+      if(!Array.isArray(pairs)) return false;
+      return pairs.every(p => p && typeof p.id === 'string' && p.id.length <= 64);
+    }
+    
+    function isPositiveInt(v){ return Number.isInteger(v) && v>0; }
+
+    function logDebug(msg){
+      const ts = new Date().toISOString();
+      console.log("[Crossing Debug]", ts, msg);
+      // maintain on-screen log
+      appState.consoleLogs = (appState.consoleLogs || []).slice(-199);
+      appState.consoleLogs.unshift(ts + " " + msg);
+      renderDebugPanel();
+    }
+
+    /***********************
+     Deriv WebSocket helper
+    ************************/
+    class DerivWS {
+      constructor(app_id = 1089){
+        this.app_id = app_id;
+        this.ws = null;
+        this.requestId = 1;
+        this.pending = new Map();
+        this.connected = false;
+      }
+      
+      connect(){
+        return new Promise((resolve, reject) => {
+          if(this.connected && this.ws) return resolve(this);
+          try{
+            this.ws = new WebSocket(`wss://ws.binaryws.com/websockets/v3?app_id=${this.app_id}`);
+          }catch(err){
+            return reject(err);
+          }
+          this.ws.onopen = () => {
+            this.connected = true;
+            resolve(this);
+          };
+          this.ws.onerror = (e) => {
+            reject(e);
+          };
+          this.ws.onmessage = (ev) => {
+            try{
+              const data = JSON.parse(ev.data);
+              if(data.echo_req && data.req_id){
+                const id = data.req_id;
+                const cb = this.pending.get(id);
+                if(cb){
+                  cb.resolve(data);
+                  this.pending.delete(id);
+                }
+              } else if(data.req_id){
+                const id = data.req_id;
+                const cb = this.pending.get(id);
+                if(cb){
+                  cb.resolve(data);
+                  this.pending.delete(id);
+                }
+              } else {
+                if(data.echo_req && data.echo_req.req_id){
+                  const id = data.echo_req.req_id;
+                  const cb = this.pending.get(id);
+                  if(cb){
+                    cb.resolve(data);
+                    this.pending.delete(id);
+                  }
+                }
+              }
+            }catch(err){
+              // ignore
             }
-        ];
-
-        // Strategy parameters
-        const strategyParams = {
-            riskLevel: 2.0,
-            aggression: "Medium",
-            breakout: {
-                lookbackPeriod: 20,
-                breakoutBuffer: 5,
-                riskRewardRatio: 1.5
-            },
-            trend: {
-                fastEMA: 14,
-                mediumEMA: 50,
-                slowEMA: 100,
-                atrPeriod: 14
-            }
-        };
-
-        // Initialize the dashboard
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeSignalsGrid();
-            setupEventListeners();
-            startSignalUpdates();
-            updateCounts();
+          };
         });
-
-        // Initialize signals grid
-        function initializeSignalsGrid() {
-            const signalsGrid = document.getElementById('signalsGrid');
-            signalsGrid.innerHTML = '';
-            
-            activeSignals.forEach(signal => {
-                const signalCard = document.createElement('div');
-                signalCard.className = `signal-card ${signal.type.toLowerCase()}`;
-                
-                const strengthClass = `strength-${signal.strength}`;
-                
-                signalCard.innerHTML = `
-                    <div class="signal-header">
-                        <div class="signal-pair">${signal.pair}</div>
-                        <div class="signal-type ${signal.type.toLowerCase()}">${signal.type}</div>
-                    </div>
-                    <div class="signal-details">
-                        <div>Strategy:</div>
-                        <div>${signal.strategy}</div>
-                        <div>Price:</div>
-                        <div>${formatPrice(signal.price, signal.pair)}</div>
-                        <div>Lot Size:</div>
-                        <div>${signal.lotSize}</div>
-                        <div>Conditions:</div>
-                        <div style="color: var(--success);">${signal.conditions}</div>
-                        <div>Time:</div>
-                        <div>${signal.time}</div>
-                    </div>
-                    <div class="signal-strength">
-                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">
-                            Signal Strength
-                        </div>
-                        <div class="strength-bar">
-                            <div class="strength-fill ${strengthClass}"></div>
-                        </div>
-                    </div>
-                `;
-                
-                signalsGrid.appendChild(signalCard);
-            });
-        }
-
-        // Format price based on pair type
-        function formatPrice(price, symbol) {
-            if (symbol === 'XAUUSD') return price.toFixed(2);
-            if (symbol === 'EURUSD') return price.toFixed(4);
-            return price.toFixed(2);
-        }
-
-        // Update counts display
-        function updateCounts() {
-            document.getElementById('activeSignalsCount').textContent = `${activeSignals.length} Active Signals`;
-        }
-
-        // Set up event listeners
-        function setupEventListeners() {
-            // Control buttons
-            document.getElementById('startBtn').addEventListener('click', function() {
-                addLogEntry('Auto trading started', 'success');
-                updateStatus('AUTO TRADING', true);
-            });
-            
-            document.getElementById('stopBtn').addEventListener('click', function() {
-                addLogEntry('Trading stopped - system in monitoring mode', 'warning');
-                updateStatus('AUTO TRADING', false);
-            });
-            
-            document.getElementById('emergencyBtn').addEventListener('click', function() {
-                addLogEntry('EMERGENCY STOP - All positions being closed', 'error');
-                updateStatus('AUTO TRADING', false);
-                
-                setTimeout(() => {
-                    addLogEntry('All positions successfully closed', 'success');
-                }, 1000);
-            });
-            
-            document.getElementById('clearLogsBtn').addEventListener('click', function() {
-                document.getElementById('terminalOutput').innerHTML = '';
-                addLogEntry('Terminal logs cleared', 'info');
-            });
-            
-            document.getElementById('exportDataBtn').addEventListener('click', function() {
-                addLogEntry('Generating performance report...', 'info');
-                setTimeout(() => {
-                    addLogEntry('Performance report exported successfully', 'success');
-                }, 1500);
-            });
-            
-            // Sliders
-            document.getElementById('riskSlider').addEventListener('input', function() {
-                const value = parseFloat(this.value);
-                document.getElementById('riskValue').textContent = value.toFixed(1) + '%';
-                strategyParams.riskLevel = value;
-            });
-            
-            document.getElementById('aggressionSlider').addEventListener('input', function() {
-                const values = ['Low', 'Medium', 'High'];
-                const value = values[this.value - 1];
-                document.getElementById('aggressionValue').textContent = value;
-                strategyParams.aggression = value;
-            });
-            
-            // Terminal input
-            document.getElementById('terminalSend').addEventListener('click', sendTerminalCommand);
-            document.getElementById('terminalInput').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    sendTerminalCommand();
-                }
-            });
-        }
-
-        // Update status indicator
-        function updateStatus(status, isActive) {
-            const statusIndicators = document.querySelectorAll('.status');
-            statusIndicators.forEach(indicator => {
-                if (indicator.textContent === status) {
-                    indicator.className = `status ${isActive ? 'active' : 'inactive'}`;
-                }
-            });
-        }
-
-        // Add entry to terminal log
-        function addLogEntry(message, type = 'info') {
-            const terminalOutput = document.getElementById('terminalOutput');
-            const time = new Date().toLocaleTimeString();
-            
-            const logEntry = document.createElement('div');
-            logEntry.className = 'log-entry';
-            logEntry.innerHTML = `
-                <span class="log-time">[${time}]</span>
-                <span class="log-${type}"> ${message}</span>
-            `;
-            
-            terminalOutput.appendChild(logEntry);
-            terminalOutput.scrollTop = terminalOutput.scrollHeight;
-        }
-
-        // Send terminal command
-        function sendTerminalCommand() {
-            const input = document.getElementById('terminalInput');
-            const command = input.value.trim();
-            
-            if (command) {
-                addLogEntry(`> ${command}`, 'info');
-                
-                // Process commands
-                if (command.toLowerCase() === 'help') {
-                    addLogEntry('Available commands: status, strategies, performance, clear', 'info');
-                } else if (command.toLowerCase() === 'status') {
-                    addLogEntry('System Status: ACTIVE | Auto Trading: ENABLED | Monitoring: ACTIVE', 'info');
-                    addLogEntry(`Risk Level: ${strategyParams.riskLevel}% | Aggression: ${strategyParams.aggression}`, 'info');
-                } else if (command.toLowerCase() === 'strategies') {
-                    addLogEntry('Active Strategies: Breakout Pro, Trend Master', 'info');
-                    addLogEntry('Breakout: Lookback=20, Buffer=5pips, RR=1.5', 'info');
-                    addLogEntry('Trend: EMA=14/50/100, ATR=14', 'info');
-                } else if (command.toLowerCase() === 'performance') {
-                    addLogEntry('Performance Metrics: Win Rate=76.3%, Profit Factor=1.8, Total Return=+14.2%', 'info');
-                } else if (command.toLowerCase() === 'clear') {
-                    document.getElementById('terminalOutput').innerHTML = '';
-                } else {
-                    addLogEntry(`Unknown command: ${command}`, 'error');
-                }
-                
-                input.value = '';
+      }
+      
+      send(reqObj, timeoutMs = 7000){
+        return new Promise(async (resolve, reject) => {
+          try{
+            if(!this.ws || this.ws.readyState !== WebSocket.OPEN){
+              await this.connect();
             }
-        }
+            const req_id = (++this.requestId);
+            reqObj.req_id = req_id;
+            const payload = JSON.stringify(reqObj);
+            let settled = false;
+            const timer = setTimeout(()=>{
+              if(!settled){
+                settled = true;
+                this.pending.delete(req_id);
+                reject(new Error("DerivWS: request timed out"));
+              }
+            }, timeoutMs);
+            this.pending.set(req_id, {
+              resolve: (data) => { if(!settled){ settled=true; clearTimeout(timer); resolve(data);} },
+              reject: (err) => { if(!settled){ settled=true; clearTimeout(timer); reject(err);} }
+            });
+            this.ws.send(payload);
+          }catch(err){
+            reject(err);
+          }
+        });
+      }
+      
+      async close(){
+        try{ if(this.ws) this.ws.close(); }catch(e){}
+        this.connected = false;
+      }
+    }
 
-        // Simulate signal updates
-        function startSignalUpdates() {
-            setInterval(() => {
-                // Occasionally add a new signal
-                if (Math.random() > 0.8 && activeSignals.length < 5) {
-                    const pairs = ['XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'BTCUSD'];
-                    const strategies = ['Breakout Pro', 'Trend Master'];
-                    const types = ['BUY', 'SELL'];
-                    const strengths = ['low', 'medium', 'high'];
-                    
-                    const newSignal = {
-                        pair: pairs[Math.floor(Math.random() * pairs.length)],
-                        type: types[Math.floor(Math.random() * types.length)],
-                        strength: strengths[Math.floor(Math.random() * strengths.length)],
-                        time: 'Just now',
-                        price: Math.random() * 1000 + 1000,
-                        lotSize: (Math.random() * 0.3 + 0.05).toFixed(2),
-                        strategy: strategies[Math.floor(Math.random() * strategies.length)],
-                        conditions: 'All met'
-                    };
-                    
-                    activeSignals.push(newSignal);
-                    initializeSignalsGrid();
-                    addLogEntry(`New ${newSignal.strategy} ${newSignal.type} signal for ${newSignal.pair}`, 'success');
-                }
-                
-                // Occasionally remove an old signal
-                if (Math.random() > 0.9 && activeSignals.length > 0) {
-                    const removedSignal = activeSignals.shift();
-                    initializeSignalsGrid();
-                    addLogEntry(`Signal expired for ${removedSignal.pair}`, 'info');
-                }
-                
-                updateCounts();
-            }, 10000);
+    /***********************
+     Candles & Stochastic
+    ************************/
+    async function fetchCandlesDerivOrDemo(apiSymbol, timeframeMinutes, count=300, derivWS=null){
+      if(!apiSymbol) {
+        logDebug(`fetchCandles: no apiSymbol for demo (${timeframeMinutes}m, ${count} bars)`);
+        return generateDemoCandles(count, 1000 + Math.random()*500, 0.006, timeframeMinutes);
+      }
+
+      try{
+        const granularity = timeframeMinutes*60;
+        const request = {
+          ticks_history: apiSymbol,
+          start: 1,
+          end: "latest",
+          style: "candles",
+          granularity: granularity,
+          count: count
+        };
+        const resp = await derivWS.send(request, 8000);
+        if(resp && resp.candles && Array.isArray(resp.candles) && resp.candles.length>0){
+          const arr = resp.candles.map(c => ({ t: c.epoch*1000, o:+c.open, h:+c.high, l:+c.low, c:+c.close, v:0 }));
+          return arr;
+        } else if(resp && resp.history && resp.history.candles){
+          const arr = resp.history.candles.map(c => ({ t:c.time*1000, o:+c.open, h:+c.high, l:+c.low, c:+c.close, v:0 }));
+          return arr;
+        } else {
+          logDebug(`Deriv returned no candles for ${apiSymbol}, falling back demo`);
+          return generateDemoCandles(count, 1000 + Math.random()*500, 0.006, timeframeMinutes);
         }
-    </script>
+      }catch(err){
+        logDebug(`Deriv fetch failed for ${apiSymbol}: ${err.message || err}`);
+        return generateDemoCandles(count, 1000 + Math.random()*500, 0.006, timeframeMinutes);
+      }
+    }
+
+    function generateDemoCandles(bars=200, startPrice=1000, volatility=0.01, timeframeMinutes=60){
+      const out = [];
+      let price = startPrice;
+      const now = Date.now();
+      for(let i = bars-1; i>=0; i--){
+        const time = now - i * timeframeMinutes * 60 * 1000;
+        const change = (Math.random()*2 -1) * volatility * price;
+        const o = price;
+        const c = Math.max(0.0001, price + change);
+        const h = Math.max(o,c) + Math.abs((Math.random())*volatility*price*0.5);
+        const l = Math.min(o,c) - Math.abs((Math.random())*volatility*price*0.5);
+        out.push({t:time,o:o,h:h,l:l,c:c,v:Math.random()*10});
+        price = c;
+      }
+      return out;
+    }
+
+    function computeStochastic(candles, kPeriod=5, dPeriod=3, slowing=3){
+      const n = candles.length;
+      const kRaw = new Array(n).fill(null);
+      for(let i=0;i<n;i++){
+        if(i - (kPeriod -1) < 0){ kRaw[i] = null; continue; }
+        let low = Infinity, high = -Infinity;
+        for(let j=i-(kPeriod-1); j<=i; j++){ low = Math.min(low, candles[j].l); high = Math.max(high, candles[j].h); }
+        const close = candles[i].c;
+        kRaw[i] = (high - low) === 0 ? 50 : ((close - low) / (high - low)) * 100;
+      }
+      const sma = (arr, idx, len) => {
+        if(idx - (len-1) < 0) return null;
+        let sum=0,cnt=0;
+        for(let i=idx-(len-1); i<=idx; i++){ if(arr[i] !== null){ sum+=arr[i]; cnt++; } }
+        return cnt===0 ? null : sum/cnt;
+      };
+      const kSmoothed = new Array(n).fill(null);
+      for(let i=0;i<n;i++) kSmoothed[i] = sma(kRaw, i, slowing);
+      const dLine = new Array(n).fill(null);
+      for(let i=0;i<n;i++) dLine[i] = sma(kSmoothed, i, dPeriod);
+      return { kSmoothed, dLine };
+    }
+
+    /***********************
+     Signal detection
+    ************************/
+    function detectSignalSingle(candles){
+      const n = candles.length;
+      if(n < Math.max(STOCH.k, STOCH.d, STOCH.slowing) + 2) {
+        logDebug("Not enough bars for stochastic");
+        return { signal:null, reason: "InsufficientBars", k:null, d:null, passed:[] , failed:[] };
+      }
+      const st = computeStochastic(candles, STOCH.k, STOCH.d, STOCH.slowing);
+      const i = n-1;
+      const kNow = st.kSmoothed[i];
+      const dNow = st.dLine[i];
+      const kPrev = st.kSmoothed[i-1];
+      const dPrev = st.dLine[i-1];
+      const reasonsPassed = [];
+      const reasonsFailed = [];
+
+      if(kNow === null || dNow === null) {
+        reasonsFailed.push("NullLines");
+        return { signal:null, reason:"NullLines", k:kNow, d:dNow, passed:reasonsPassed, failed:reasonsFailed };
+      }
+
+      // Rule A: touched below low (15) in recent window AND now K rising
+      let touchedBelow = false;
+      for(let j = Math.max(0, n-20); j < n; j++){
+        if(st.kSmoothed[j] !== null && st.dLine[j] !== null && st.kSmoothed[j] <= STOCH.low && st.dLine[j] <= STOCH.low){
+          touchedBelow = true; break;
+        }
+      }
+      if(touchedBelow) reasonsPassed.push("TouchedBelow");
+      else reasonsFailed.push("TouchedBelow");
+
+      const nowRising = (kPrev !== null && kNow > kPrev);
+      if(nowRising) reasonsPassed.push("NowRising"); else reasonsFailed.push("NowRising");
+
+      if(touchedBelow && nowRising){
+        logDebug(`Signal Rule A passed (TouchedBelow + NowRising). k:${kNow.toFixed(2)} d:${dNow.toFixed(2)}`);
+        return { signal:"BUY", reason:"TouchedBelowThenRising", k:kNow, d:dNow, passed:reasonsPassed, failed:reasonsFailed };
+      }
+
+      // Rule B: crossover up while both < 50
+      if(kPrev !== null && dPrev !== null && kPrev <= dPrev && kNow > dNow && kNow < 50 && dNow < 50){
+        reasonsPassed.push("CrossUpBelow50");
+        logDebug(`Signal Rule B passed (CrossUpBelow50). k:${kNow.toFixed(2)} d:${dNow.toFixed(2)}`);
+        return { signal:"BUY", reason:"CrossUpBelow50", k:kNow, d:dNow, passed:reasonsPassed, failed:reasonsFailed };
+      } else {
+        reasonsFailed.push("CrossUpBelow50");
+      }
+
+      return { signal:null, reason:"NoRule", k:kNow, d:dNow, passed:reasonsPassed, failed:reasonsFailed };
+    }
+
+    /***********************
+     Trade execution (simulated)
+    ************************/
+    async function attemptTradeExecute(pairId, side){
+      try{
+        logDebug(`Trade attempt: ${pairId} ${side} — (SIMULATED)`);
+        const success = Math.random() > 0.15;
+        await new Promise(r=>setTimeout(r, 300 + Math.random()*200));
+        if(success){
+          logDebug(`Trade executed SUCCESS for ${pairId}`);
+          return { success:true, id: "SIM-"+Date.now() };
+        } else {
+          logDebug(`Trade executed FAILED for ${pairId}`);
+          return { success:false, error:"simulated-reject" };
+        }
+      }catch(err){
+        logDebug(`Trade execution exception for ${pairId}: ${err.message||err}`);
+        return { success:false, error:err.message || err };
+      }
+    }
+
+    /***********************
+     Core scanning logic
+    ************************/
+    async function startScan(){
+      if(appState.isRunning) {
+        logDebug("Scan already running — skipping concurrent start");
+        return;
+      }
+      appState.isRunning = true;
+      logDebug("Scanner: Starting scan pass");
+
+      const derivWS = appState.derivWS;
+      const fetchTasks = [];
+      const concurrencyLimit = 4;
+      const pairChunks = [];
+      for(let i=0;i<appState.pairs.length;i+=concurrencyLimit) pairChunks.push(appState.pairs.slice(i, i+concurrencyLimit));
+
+      for(const chunk of pairChunks){
+        const promises = chunk.map(async pair => {
+          try{
+            const cacheKey4h = pair.id + "|4h";
+            const cacheKey1h = pair.id + "|1h";
+            const nowTs = Date.now();
+            let candles4h = null, candles1h = null;
+            
+            if(appState.cache[cacheKey4h] && (nowTs - appState.cache[cacheKey4h].ts < 15*1000)){
+              candles4h = appState.cache[cacheKey4h].value;
+              logDebug(`Cache hit 4H for ${pair.id}`);
+            } else {
+              candles4h = await fetchCandlesDerivOrDemo(pair.apiSymbol, 240, 300, derivWS);
+              appState.cache[cacheKey4h] = { value:candles4h, ts:Date.now() };
+            }
+            
+            if(appState.cache[cacheKey1h] && (nowTs - appState.cache[cacheKey1h].ts < 15*1000)){
+              candles1h = appState.cache[cacheKey1h].value;
+              logDebug(`Cache hit 1H for ${pair.id}`);
+            } else {
+              candles1h = await fetchCandlesDerivOrDemo(pair.apiSymbol, 60, 300, derivWS);
+              appState.cache[cacheKey1h] = { value:candles1h, ts:Date.now() };
+            }
+
+            const sig4 = detectSignalSingle(candles4h);
+            const sig1 = detectSignalSingle(candles1h);
+
+            logDebug(`Eval ${pair.id} 4H: ${sig4.signal||'NO'} (${sig4.reason}) 1H: ${sig1.signal||'NO'} (${sig1.reason})`);
+
+            // Session enforcement for EURUSD & XAUUSD
+            const enforceSessions = true;
+            if(enforceSessions && (pair.id === 'EURUSD' || pair.id === 'XAUUSD')){
+              const s = sessionForNowUTC();
+              if(!(s === 'London' || s === 'NY')){
+                logDebug(`${pair.id}: out of allowed sessions (${s}) — skipping`);
+                return { pair, result:null };
+              }
+            }
+
+            // Confirm: both must be BUY
+            if(sig4.signal === 'BUY' && sig1.signal === 'BUY'){
+              logDebug(`Entry signal detected for ${pair.id} (4H + 1H). Preparing trade attempt`);
+              const exec = await attemptTradeExecute(pair.id, "BUY");
+              const entry = {
+                time: new Date().toISOString(),
+                pair: pair.id,
+                action: "BUY",
+                exec,
+                reason: `${sig4.reason} / ${sig1.reason}`,
+                k4: sig4.k, d4: sig4.d, k1: sig1.k, d1: sig1.d
+              };
+              
+              appState.history = [entry, ...appState.history].slice(0, HISTORY_LIMIT);
+              renderHistory();
+              return { pair, result: entry };
+            } else {
+              return { pair, result: null, debug: { sig4, sig1 } };
+            }
+          }catch(err){
+            logDebug(`Error fetching/evaluating ${pair.id}: ${err.message || err}`);
+            return { pair, result:null };
+          }
+        });
+        
+        const chunkResults = await Promise.all(promises);
+        fetchTasks.push(...chunkResults);
+      }
+
+      appState.history = appState.history.slice(0, HISTORY_LIMIT);
+      renderHistory();
+      
+      logDebug("Scanner: Scan pass complete");
+      appState.isRunning = false;
+      return;
+    }
+
+    /***********************
+     Session detection
+    ************************/
+    function isLondonUTC(d){ const h = d.getUTCHours(); return h >=7 && h < 16;}
+    function isNewYorkUTC(d){ const h = d.getUTCHours(); return h >=12 && h < 21; }
+    function sessionForNowUTC(){ const d = new Date(); if(isNewYorkUTC(d)) return "NY"; if(isLondonUTC(d)) return "London"; return "Closed"; }
+
+    /***********************
+     UI Rendering Functions
+    ************************/
+    function renderHeader() {
+      return `
+        <header>
+          <div>
+            <div class="logo">Crossing Dashboard (Standalone)</div>
+            <div class="small">Stochastic %K=5 %D=3 slow=3 · 4H main + 1H confirm · History up to ${HISTORY_LIMIT}</div>
+          </div>
+          <div class="controls">
+            <div class="card small" style="padding:8px 12px; display:flex;align-items:center; gap:8px">
+              <div style="width:10px;height:10px;border-radius:50%;background: ${sessionForNowUTC() === 'Closed' ? '#333' : '#6ee7b7'}"></div>
+              <div>Session: ${sessionForNowUTC()}</div>
+            </div>
+            <button onclick="manualRefresh()">Refresh</button>
+            <button class="secondary" onclick="toggleAuto()">${appState.auto ? "Auto ON" : "Auto OFF"}</button>
+            <button class="secondary" onclick="clearHistory()">Clear History</button>
+          </div>
+        </header>
+      `;
+    }
+
+    function renderScanner() {
+      return `
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-weight:700">Scanner</div>
+            <div class="small">${appState.pairs.length} pairs</div>
+          </div>
+          <div class="scanner">
+            ${appState.pairs.map(p => `
+              <div class="pair">
+                <div>
+                  <div style="font-weight:600">${p.id}</div>
+                  <div class="small">TF: 4H / 1H · ${p.type}</div>
+                </div>
+                <div style="text-align:right">
+                  <div class="badge wait" style="min-width:80px;text-align:center">WAIT</div>
+                  <div style="height:6px"></div>
+                  <div class="small">apiSymbol: ${p.apiSymbol||'—'}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderHistory() {
+      const historyElement = document.getElementById('history-content');
+      if (historyElement) {
+        historyElement.innerHTML = appState.history.length === 0 
+          ? '<div class="small">No signals yet.</div>'
+          : appState.history.map(h => `
+              <div class="history-item">
+                <div>
+                  <strong>${h.pair}</strong>
+                  <div class="small">${h.reason}</div>
+                  <div class="small">${new Date(h.time).toLocaleString()}</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-weight:700;color:#05282a;background:linear-gradient(90deg,#0ea5a4,#6ee7b7);padding:6px 10px;border-radius:8px">${h.action}</div>
+                  <div class="small">${h.exec && h.exec.success ? 'exec:ok' : 'exec:fail'}</div>
+                </div>
+              </div>
+            `).join('');
+      }
+    }
+
+    function renderDebugPanel() {
+      const debugElement = document.getElementById('debug-content');
+      if (debugElement && appState.debugOn) {
+        const debugLines = (appState.consoleLogs || []).slice(0, 200);
+        debugElement.innerHTML = debugLines.length === 0 
+          ? '<div class="small">No debug logs yet</div>' 
+          : debugLines.map(l => `<div>${l}</div>`).join('');
+      }
+    }
+
+    function renderSettings() {
+      return `
+        <div>
+          <div style="font-weight:700">Settings</div>
+          <div class="small" style="margin-top:6px">Refine params & pairs (one per line: ID|apiSymbol|type )</div>
+          <textarea id="pairsTextarea" rows="6" style="width:100%;margin-top:8px">${appState.pairs.map(p=> `${p.id}|${p.apiSymbol||''}|${p.type}`).join("\n")}</textarea>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="applyPairs()">Apply Pairs</button>
+            <button class="secondary" onclick="resetPairs()">Reset</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <label class="small">Auto-interval (ms)</label>
+            <input type="number" id="intervalInput" value="${appState.intervalMs}" style="width:120px">
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <label class="small"><input type="checkbox" id="autoCheckbox" ${appState.auto ? 'checked' : ''}> Auto-refresh</label>
+            <label class="small"><input type="checkbox" id="debugCheckbox" ${appState.debugOn ? 'checked' : ''}> Debug</label>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderActions() {
+      return `
+        <div>
+          <div style="font-weight:700">Actions</div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button onclick="manualScan()">Run Scan Now</button>
+            <button class="secondary" onclick="clearHistory()">Clear History</button>
+            <button class="secondary" onclick="connectDeriv()">Connect Deriv</button>
+          </div>
+          <div style="margin-top:10px" class="small">Note: For real Deriv connectivity, ensure symbol names match Deriv's API format and the account permissions allow ticks_history calls.</div>
+        </div>
+      `;
+    }
+
+    function renderApp() {
+      document.getElementById('app').innerHTML = `
+        <div class="container">
+          ${renderHeader()}
+          
+          <main style="grid-column:1/2">
+            ${renderScanner()}
+            
+            <div class="card" style="margin-top:12px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:700">Signal Notifications</div>
+                <div class="small">Only shows when 4H + 1H confirm</div>
+              </div>
+              <div id="history-content" style="margin-top:8px">
+                ${appState.history.length === 0 ? '<div class="small">No signals yet.</div>' : ''}
+              </div>
+            </div>
+          </main>
+
+          <aside class="card" style="display:flex;flex-direction:column;gap:12px">
+            ${renderSettings()}
+            
+            <div>
+              <div style="font-weight:700">Debug Panel</div>
+              <div class="small" style="margin-top:6px">On-screen logs (latest first)</div>
+              <div class="debug" style="margin-top:8px">
+                <div id="debug-content"></div>
+              </div>
+            </div>
+            
+            ${renderActions()}
+          </aside>
+        </div>
+      `;
+      
+      renderHistory();
+      renderDebugPanel();
+      
+      // Add event listeners for checkboxes and input
+      const autoCheckbox = document.getElementById('autoCheckbox');
+      const debugCheckbox = document.getElementById('debugCheckbox');
+      const intervalInput = document.getElementById('intervalInput');
+      
+      if (autoCheckbox) {
+        autoCheckbox.addEventListener('change', (e) => {
+          appState.auto = e.target.checked;
+          updateAutoRefresh();
+        });
+      }
+      
+      if (debugCheckbox) {
+        debugCheckbox.addEventListener('change', (e) => {
+          appState.debugOn = e.target.checked;
+          renderDebugPanel();
+        });
+      }
+      
+      if (intervalInput) {
+        intervalInput.addEventListener('change', (e) => {
+          const v = parseInt(e.target.value || '0', 10);
+          if (isPositiveInt(v)) {
+            appState.intervalMs = v;
+            updateAutoRefresh();
+          } else {
+            alert("Interval must be positive integer ms");
+          }
+        });
+      }
+    }
+
+    /***********************
+     UI Event Handlers
+    ************************/
+    function handlePairsUpdate(rawText){
+      const lines = rawText.split("\n").map(l => l.trim()).filter(Boolean);
+      const newPairs = [];
+      for(const ln of lines){
+        const parts = ln.split("|").map(p=>p.trim());
+        if(parts.length === 1){
+          newPairs.push({ id: parts[0], apiSymbol: null, type: "synthetic" });
+        } else {
+          newPairs.push({ id: parts[0], apiSymbol: parts[1] || null, type: parts[2] || "forex" });
+        }
+      }
+      if(isValidPairList(newPairs)){
+        appState.pairs = newPairs;
+        logDebug(`Pairs updated: ${newPairs.map(p=>p.id).join(",")}`);
+        renderApp();
+      } else {
+        alert("Invalid pairs list. Each line must present a pair name. Format per-line: ID|apiSymbol|type (apiSymbol optional).");
+      }
+    }
+
+    function applyPairs() {
+      const txt = document.getElementById('pairsTextarea').value;
+      handlePairsUpdate(txt);
+    }
+
+    function resetPairs() {
+      document.getElementById('pairsTextarea').value = DEFAULT_PAIRS.map(p=> `${p.id}|${p.apiSymbol||''}|${p.type}`).join("\n");
+      handlePairsUpdate(document.getElementById('pairsTextarea').value);
+    }
+
+    function toggleAuto() {
+      appState.auto = !appState.auto;
+      updateAutoRefresh();
+      renderApp();
+    }
+
+    function updateAutoRefresh() {
+      if (appState.timer) clearInterval(appState.timer);
+      
+      if (appState.auto) {
+        appState.timer = setInterval(() => startScan(), appState.intervalMs || AUTO_INTERVAL_DEFAULT);
+      }
+    }
+
+    function manualRefresh() {
+      startScan();
+    }
+
+    function manualScan() {
+      startScan();
+      logDebug("Manual scan triggered by user");
+    }
+
+    function clearHistory() {
+      appState.history = [];
+      renderHistory();
+      logDebug("History cleared by user");
+    }
+
+    function connectDeriv() {
+      if (appState.derivWS) {
+        appState.derivWS.connect()
+          .then(() => logDebug("DerivWS reconnect attempted"))
+          .catch(e => logDebug("Deriv reconnect failed: " + e));
+      }
+    }
+
+    /***********************
+     Application Initialization
+    ************************/
+    function initApp() {
+      logDebug("OnInit: App initializing");
+      
+      // Initialize Deriv WS connection
+      appState.derivWS = new DerivWS(1089);
+      appState.derivWS.connect()
+        .then(() => logDebug("DerivWS connected"))
+        .catch(err => logDebug("DerivWS connect failed: " + (err.message||err)));
+      
+      // Run initial scan
+      startScan();
+      
+      // Render the application
+      renderApp();
+    }
+
+    // Start the application when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
 </body>
 </html>
