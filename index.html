@@ -644,6 +644,30 @@
             background: var(--primary-dark);
         }
 
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         /* Responsive Design */
         @media (max-width: 1024px) {
             .dashboard {
@@ -776,4 +800,869 @@
         <aside class="sidebar">
             <div class="logo">
                 <div class="logo-icon">QT</div>
-                <div class="logo-text">QuantumTrader</
+                <div class="logo-text">QuantumTrader</div>
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="nav-link active">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-bolt"></i> Scanner
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-history"></i> History
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-chart-bar"></i> Analytics
+                </a>
+                <a href="#" class="nav-link" id="settingsSidebarBtn">
+                    <i class="fas fa-cog"></i> Settings
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-question-circle"></i> Help
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Stats Cards -->
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Active Signals</div>
+                        <div class="stat-icon" style="background: rgba(108, 99, 255, 0.2); color: var(--primary);">
+                            <i class="fas fa-bell"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="activeSignals">0</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> <span id="signalChange">0%</span> from last scan
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Successful Trades</div>
+                        <div class="stat-icon" style="background: rgba(0, 212, 170, 0.2); color: var(--success);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="successRate">84%</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> <span id="successChange">2.1%</span> improvement
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Avg. Return</div>
+                        <div class="stat-icon" style="background: rgba(255, 107, 139, 0.2); color: var(--danger);">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="avgReturn">3.7%</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i> <span id="returnChange">0.4%</span> from yesterday
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Scan Frequency</div>
+                        <div class="stat-icon" style="background: rgba(255, 183, 77, 0.2); color: var(--warning);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value" id="scanFrequency">15s</div>
+                    <div class="stat-change negative">
+                        <i class="fas fa-pause"></i> Auto-scan paused
+                    </div>
+                </div>
+            </div>
+
+            <!-- Asset Class Tabs -->
+            <div class="asset-tabs" id="assetTabs">
+                <div class="asset-tab active" data-category="all">All Instruments</div>
+                <div class="asset-tab" data-category="forex">Forex</div>
+                <div class="asset-tab" data-category="commodities">Commodities</div>
+                <div class="asset-tab" data-category="crypto">Cryptocurrencies</div>
+                <div class="asset-tab" data-category="indices">Indices</div>
+                <div class="asset-tab" data-category="synthetics">Synthetics</div>
+                <div class="asset-tab" data-category="volatility">Volatility</div>
+            </div>
+
+            <!-- Scanner Card -->
+            <div class="scanner-card">
+                <div class="card-header">
+                    <div class="card-title">Market Scanner</div>
+                    <div class="card-actions">
+                        <button class="btn btn-secondary" id="filterBtn">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <button class="btn btn-primary" id="refreshBtn">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="loading" id="loadingIndicator">
+                        <div class="loading-spinner"></div>
+                        <span>Loading market data...</span>
+                    </div>
+                    <div class="pairs-grid" id="pairsContainer" style="display: none;">
+                        <!-- Pairs will be dynamically generated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- History & Settings Row -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <!-- History Card -->
+                <div class="scanner-card">
+                    <div class="card-header">
+                        <div class="card-title">Recent Signals</div>
+                        <button class="btn btn-secondary" id="clearHistoryBtn">
+                            <i class="fas fa-times"></i> Clear
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="history-container" id="historyContainer">
+                            <div class="loading">
+                                <span>No signals yet. Run a scan to see signals.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Card -->
+                <div class="settings-panel">
+                    <div class="card-header">
+                        <div class="card-title">Scanner Settings</div>
+                    </div>
+                    <div class="settings-grid">
+                        <div class="setting-group">
+                            <div class="setting-title">Trading Pairs</div>
+                            <div class="form-group">
+                                <label class="form-label">Pair Configuration</label>
+                                <textarea class="form-control" id="pairsConfig" rows="8">Loading all Deriv instruments...</textarea>
+                            </div>
+                        </div>
+                        <div class="setting-group">
+                            <div class="setting-title">Scanner Settings</div>
+                            <div class="form-group">
+                                <label class="form-label">Auto-refresh Interval (ms)</label>
+                                <input type="number" class="form-control" id="refreshInterval" value="15000">
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" class="checkbox" id="autoScan" checked>
+                                    <label for="autoScan">Enable Auto-scan</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" class="checkbox" id="sessionFilter" checked>
+                                    <label for="sessionFilter">Enable Session Filtering</label>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <button class="btn btn-primary" id="applySettingsBtn">
+                                    <i class="fas fa-check"></i> Apply Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Filter Modal -->
+    <div class="modal" id="filterModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Filter Settings</div>
+                <button class="close-modal" id="closeFilterModal">&times;</button>
+            </div>
+            <div class="settings-grid">
+                <div class="setting-group">
+                    <div class="setting-title">Signal Types</div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterBuy" checked>
+                            <label for="filterBuy">Show Buy Signals</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterSell" checked>
+                            <label for="filterSell">Show Sell Signals</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterWaiting" checked>
+                            <label for="filterWaiting">Show Waiting Signals</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-group">
+                    <div class="setting-title">Asset Classes</div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterForex" checked>
+                            <label for="filterForex">Forex</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterCommodities" checked>
+                            <label for="filterCommodities">Commodities</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterIndices" checked>
+                            <label for="filterIndices">Indices</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterCrypto" checked>
+                            <label for="filterCrypto">Cryptocurrencies</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterSynthetics" checked>
+                            <label for="filterSynthetics">Synthetics</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" class="checkbox" id="filterVolatility" checked>
+                            <label for="filterVolatility">Volatility</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn btn-primary" id="applyFilterBtn">Apply Filters</button>
+                <button class="btn btn-secondary" id="resetFilterBtn">Reset Filters</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Complete Deriv instruments data
+        const tradingPairs = [
+            // Requested pairs
+            { id: "XAUUSD", apiSymbol: "gold", type: "commodity", price: 2341.50, change: 1.12, stoch4H: 68.5, stoch1H: 72.1 },
+            { id: "BTCUSD", apiSymbol: "BTCUSD", type: "crypto", price: 63458, change: -2.35, stoch4H: 28.3, stoch1H: 41.6 },
+            { id: "US30", apiSymbol: "US30", type: "index", price: 39245, change: 0.67, stoch4H: 15.8, stoch1H: 22.4 },
+            
+            // Major Forex pairs
+            { id: "EURUSD", apiSymbol: "frxEURUSD", type: "forex", price: 1.0874, change: 0.24, stoch4H: 45.2, stoch1H: 32.7 },
+            { id: "GBPUSD", apiSymbol: "frxGBPUSD", type: "forex", price: 1.2745, change: 0.32, stoch4H: 61.8, stoch1H: 55.4 },
+            { id: "USDJPY", apiSymbol: "frxUSDJPY", type: "forex", price: 157.23, change: -0.18, stoch4H: 42.1, stoch1H: 38.9 },
+            { id: "USDCHF", apiSymbol: "frxUSDCHF", type: "forex", price: 0.8956, change: 0.08, stoch4H: 47.3, stoch1H: 51.2 },
+            { id: "USDCAD", apiSymbol: "frxUSDCAD", type: "forex", price: 1.3678, change: -0.12, stoch4H: 43.6, stoch1H: 39.8 },
+            { id: "AUDUSD", apiSymbol: "frxAUDUSD", type: "forex", price: 0.6589, change: 0.15, stoch4H: 52.3, stoch1H: 48.7 },
+            { id: "NZDUSD", apiSymbol: "frxNZDUSD", type: "forex", price: 0.6123, change: 0.25, stoch4H: 56.7, stoch1H: 59.4 },
+            
+            // Additional Commodities
+            { id: "XAGUSD", apiSymbol: "silver", type: "commodity", price: 28.45, change: 0.89, stoch4H: 71.2, stoch1H: 65.8 },
+            { id: "XPTUSD", apiSymbol: "platinum", type: "commodity", price: 985.60, change: 1.45, stoch4H: 58.9, stoch1H: 62.3 },
+            { id: "XPDUSD", apiSymbol: "palladium", type: "commodity", price: 920.30, change: -0.75, stoch4H: 34.7, stoch1H: 41.2 },
+            { id: "XCUUSD", apiSymbol: "copper", type: "commodity", price: 4.52, change: 0.22, stoch4H: 49.8, stoch1H: 53.6 },
+            { id: "WTI原油", apiSymbol: "WTI_OIL", type: "commodity", price: 78.45, change: -1.25, stoch4H: 39.2, stoch1H: 44.7 },
+            { id: "布伦特原油", apiSymbol: "BRENT_OIL", type: "commodity", price: 82.60, change: -1.05, stoch4H: 41.8, stoch1H: 46.3 },
+            { id: "天然气", apiSymbol: "NATGAS", type: "commodity", price: 2.85, change: 3.45, stoch4H: 67.4, stoch1H: 72.9 },
+            
+            // Additional Cryptocurrencies
+            { id: "ETHUSD", apiSymbol: "ETHUSD", type: "crypto", price: 3450, change: -1.25, stoch4H: 32.8, stoch1H: 38.4 },
+            { id: "LTCUSD", apiSymbol: "LTCUSD", type: "crypto", price: 78.90, change: 0.45, stoch4H: 51.2, stoch1H: 56.7 },
+            { id: "XRPUSD", apiSymbol: "XRPUSD", type: "crypto", price: 0.52, change: -0.85, stoch4H: 29.6, stoch1H: 34.1 },
+            
+            // Additional Indices
+            { id: "SPX500", apiSymbol: "SPX500", type: "index", price: 5420, change: 0.45, stoch4H: 48.7, stoch1H: 52.3 },
+            { id: "NAS100", apiSymbol: "NAS100", type: "index", price: 18765, change: 0.78, stoch4H: 56.4, stoch1H: 59.8 },
+            { id: "JP225", apiSymbol: "JP225", type: "index", price: 38650, change: -0.35, stoch4H: 41.2, stoch1H: 37.6 },
+            { id: "HK50", apiSymbol: "HK50", type: "index", price: 18420, change: 0.92, stoch4H: 62.8, stoch1H: 66.3 },
+            { id: "AUS200", apiSymbol: "AUS200", type: "index", price: 7750, change: 0.25, stoch4H: 53.4, stoch1H: 57.1 },
+            
+            // Crash/Boom Indices
+            { id: "BOOM1000", apiSymbol: "BOOM1000", type: "synthetics", price: 450.25, change: 12.45, stoch4H: 82.3, stoch1H: 78.9 },
+            { id: "BOOM500", apiSymbol: "BOOM500", type: "synthetics", price: 320.75, change: 8.90, stoch4H: 76.8, stoch1H: 72.4 },
+            { id: "BOOM300", apiSymbol: "BOOM300", type: "synthetics", price: 280.45, change: 6.75, stoch4H: 71.5, stoch1H: 68.2 },
+            { id: "CRASH1000", apiSymbol: "CRASH1000", type: "synthetics", price: 120.80, change: -15.25, stoch4H: 18.7, stoch1H: 22.4 },
+            { id: "CRASH500", apiSymbol: "CRASH500", type: "synthetics", price: 85.60, change: -12.80, stoch4H: 22.3, stoch1H: 26.1 },
+            { id: "CRASH300", apiSymbol: "CRASH300", type: "synthetics", price: 65.25, change: -9.45, stoch4H: 25.8, stoch1H: 29.6 },
+            
+            // Jump Indices
+            { id: "JUMP10", apiSymbol: "JUMP10", type: "synthetics", price: 1050.75, change: 25.80, stoch4H: 85.2, stoch1H: 81.6 },
+            { id: "JUMP25", apiSymbol: "JUMP25", type: "synthetics", price: 1250.45, change: 32.15, stoch4H: 88.7, stoch1H: 84.3 },
+            { id: "JUMP50", apiSymbol: "JUMP50", type: "synthetics", price: 1520.80, change: 45.60, stoch4H: 92.4, stoch1H: 89.1 },
+            { id: "JUMP75", apiSymbol: "JUMP75", type: "synthetics", price: 1780.25, change: 52.35, stoch4H: 94.8, stoch1H: 91.5 },
+            { id: "JUMP100", apiSymbol: "JUMP100", type: "synthetics", price: 2050.90, change: 68.90, stoch4H: 96.3, stoch1H: 93.7 },
+            
+            // Step Indices
+            { id: "STEP5", apiSymbol: "STEP5", type: "synthetics", price: 550.45, change: 5.25, stoch4H: 65.8, stoch1H: 62.4 },
+            { id: "STEP50", apiSymbol: "STEP50", type: "synthetics", price: 1050.75, change: 50.80, stoch4H: 72.3, stoch1H: 68.9 },
+            { id: "STEP100", apiSymbol: "STEP100", type: "synthetics", price: 1550.25, change: 100.45, stoch4H: 78.6, stoch1H: 75.2 },
+            { id: "STEP150", apiSymbol: "STEP150", type: "synthetics", price: 2050.80, change: 150.75, stoch4H: 82.1, stoch1H: 78.7 },
+            { id: "STEP200", apiSymbol: "STEP200", type: "synthetics", price: 2550.45, change: 200.90, stoch4H: 85.4, stoch1H: 81.9 },
+            
+            // Volatility Indices
+            { id: "V10", apiSymbol: "V10", type: "volatility", price: 12.45, change: 1.25, stoch4H: 68.9, stoch1H: 72.5 },
+            { id: "V25", apiSymbol: "V25", type: "volatility", price: 15.80, change: 2.10, stoch4H: 72.4, stoch1H: 76.1 },
+            { id: "V50", apiSymbol: "V50", type: "volatility", price: 18.75, change: 3.45, stoch4H: 76.8, stoch1H: 80.3 },
+            { id: "V75", apiSymbol: "V75", type: "volatility", price: 22.90, change: 4.80, stoch4H: 81.2, stoch1H: 84.7 },
+            { id: "V100", apiSymbol: "V100", type: "volatility", price: 26.45, change: 6.25, stoch4H: 85.6, stoch1H: 88.9 },
+            
+            // Additional Volatility Pairs
+            { id: "VOLATILITY10", apiSymbol: "VOLATILITY10", type: "volatility", price: 8.75, change: 0.85, stoch4H: 62.3, stoch1H: 65.9 },
+            { id: "VOLATILITY25", apiSymbol: "VOLATILITY25", type: "volatility", price: 11.20, change: 1.45, stoch4H: 66.7, stoch1H: 70.4 },
+            { id: "VOLATILITY50", apiSymbol: "VOLATILITY50", type: "volatility", price: 14.85, change: 2.35, stoch4H: 71.5, stoch1H: 75.2 },
+            { id: "VOLATILITY75", apiSymbol: "VOLATILITY75", type: "volatility", price: 18.40, change: 3.65, stoch4H: 76.8, stoch1H: 80.5 },
+            { id: "VOLATILITY100", apiSymbol: "VOLATILITY100", type: "volatility", price: 22.75, change: 4.95, stoch4H: 82.1, stoch1H: 85.7 }
+        ];
+
+        // Application state
+        const state = {
+            pairs: [...tradingPairs],
+            history: [],
+            activeSignals: 0,
+            autoScan: true,
+            scanInterval: null,
+            currentCategory: 'all',
+            filters: {
+                buy: true,
+                sell: true,
+                waiting: true,
+                forex: true,
+                commodities: true,
+                indices: true,
+                crypto: true,
+                synthetics: true,
+                volatility: true
+            }
+        };
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Initializing QuantumTrader Pro...");
+            initializeApp();
+            setupEventListeners();
+            
+            // Simulate initial data load
+            setTimeout(() => {
+                document.getElementById('loadingIndicator').style.display = 'none';
+                document.getElementById('pairsContainer').style.display = 'grid';
+                renderPairs();
+                startAutoScan();
+                updatePairsConfig();
+                console.log("Dashboard initialized successfully!");
+            }, 2000);
+        });
+
+        function initializeApp() {
+            console.log("Loading saved settings...");
+            // Load any saved settings from localStorage
+            const savedSettings = localStorage.getItem('quantumTraderSettings');
+            if (savedSettings) {
+                try {
+                    const settings = JSON.parse(savedSettings);
+                    if (settings.filters) state.filters = settings.filters;
+                    if (settings.autoScan !== undefined) state.autoScan = settings.autoScan;
+                    
+                    // Update UI to reflect saved settings
+                    document.getElementById('autoScan').checked = state.autoScan;
+                    document.getElementById('sessionFilter').checked = settings.sessionFilter || true;
+                    document.getElementById('refreshInterval').value = settings.refreshInterval || 15000;
+                    
+                    // Update filter checkboxes
+                    document.getElementById('filterBuy').checked = state.filters.buy;
+                    document.getElementById('filterSell').checked = state.filters.sell;
+                    document.getElementById('filterWaiting').checked = state.filters.waiting;
+                    document.getElementById('filterForex').checked = state.filters.forex;
+                    document.getElementById('filterCommodities').checked = state.filters.commodities;
+                    document.getElementById('filterIndices').checked = state.filters.indices;
+                    document.getElementById('filterCrypto').checked = state.filters.crypto;
+                    document.getElementById('filterSynthetics').checked = state.filters.synthetics;
+                    document.getElementById('filterVolatility').checked = state.filters.volatility;
+                    
+                    console.log("Settings loaded successfully");
+                } catch (e) {
+                    console.error("Error loading settings:", e);
+                }
+            }
+            
+            // Load any saved history
+            const savedHistory = localStorage.getItem('quantumTraderHistory');
+            if (savedHistory) {
+                try {
+                    state.history = JSON.parse(savedHistory);
+                    renderHistory();
+                    console.log("History loaded successfully");
+                } catch (e) {
+                    console.error("Error loading history:", e);
+                }
+            }
+            
+            updateStats();
+        }
+
+        function setupEventListeners() {
+            console.log("Setting up event listeners...");
+            
+            // Scan and refresh buttons
+            document.getElementById('scanNowBtn').addEventListener('click', performScan);
+            document.getElementById('refreshBtn').addEventListener('click', performScan);
+            
+            // Settings buttons
+            document.getElementById('settingsBtn').addEventListener('click', toggleSettings);
+            document.getElementById('settingsSidebarBtn').addEventListener('click', toggleSettings);
+            document.getElementById('applySettingsBtn').addEventListener('click', applySettings);
+            
+            // Filter buttons
+            document.getElementById('filterBtn').addEventListener('click', openFilterModal);
+            document.getElementById('closeFilterModal').addEventListener('click', closeFilterModal);
+            document.getElementById('applyFilterBtn').addEventListener('click', applyFilters);
+            document.getElementById('resetFilterBtn').addEventListener('click', resetFilters);
+            
+            // History button
+            document.getElementById('clearHistoryBtn').addEventListener('click', clearHistory);
+            
+            // Auto-scan toggle
+            document.getElementById('autoScan').addEventListener('change', function() {
+                state.autoScan = this.checked;
+                if (state.autoScan) {
+                    startAutoScan();
+                } else {
+                    stopAutoScan();
+                }
+                saveSettings();
+            });
+            
+            // Asset class tabs
+            document.querySelectorAll('.asset-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.asset-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    state.currentCategory = this.getAttribute('data-category');
+                    renderPairs();
+                });
+            });
+            
+            console.log("Event listeners setup complete");
+        }
+
+        function performScan() {
+            console.log("Performing market scan...");
+            
+            // Show loading state
+            const refreshBtn = document.getElementById('refreshBtn');
+            const originalHTML = refreshBtn.innerHTML;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...';
+            refreshBtn.disabled = true;
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                // Update prices and signals for all pairs
+                state.pairs.forEach(pair => {
+                    // Random price fluctuation
+                    const fluctuation = (Math.random() - 0.5) * 0.5;
+                    pair.price = parseFloat((pair.price * (1 + fluctuation / 100)).toFixed(pair.type === 'forex' ? 4 : 2));
+                    pair.change = parseFloat((pair.change + fluctuation).toFixed(2));
+                    
+                    // Update stochastic values
+                    pair.stoch4H = parseFloat((pair.stoch4H + (Math.random() - 0.5) * 10).toFixed(1));
+                    pair.stoch1H = parseFloat((pair.stoch1H + (Math.random() - 0.5) * 10).toFixed(1));
+                    
+                    // Ensure values stay within reasonable bounds
+                    if (pair.stoch4H < 0) pair.stoch4H = 0;
+                    if (pair.stoch4H > 100) pair.stoch4H = 100;
+                    if (pair.stoch1H < 0) pair.stoch1H = 0;
+                    if (pair.stoch1H > 100) pair.stoch1H = 100;
+                });
+                
+                // Render updated pairs
+                renderPairs();
+                
+                // Update stats
+                updateStats();
+                
+                // Restore button state
+                refreshBtn.innerHTML = originalHTML;
+                refreshBtn.disabled = false;
+                
+                console.log("Market scan completed");
+            }, 1500);
+        }
+
+        function renderPairs() {
+            console.log("Rendering trading pairs...");
+            const container = document.getElementById('pairsContainer');
+            container.innerHTML = '';
+            
+            let activeSignalsCount = 0;
+            let renderedPairs = 0;
+            
+            state.pairs.forEach(pair => {
+                // Check if this pair type should be shown based on category
+                if (state.currentCategory !== 'all' && state.currentCategory !== pair.type) {
+                    return; // Skip this pair if not in current category
+                }
+                
+                // Check if this pair type should be shown based on filters
+                if (!state.filters[pair.type]) {
+                    return; // Skip this pair if filtered out
+                }
+                
+                // Determine signal based on stochastic values
+                let signal = 'wait';
+                let signalClass = 'wait';
+                let pulseSignal = '';
+                
+                // Buy signal conditions: 
+                // - Both 4H and 1H stochastic are below 20 (oversold) and rising
+                // - Or 1H stochastic crosses above 4H stochastic from below
+                if ((pair.stoch4H < 20 && pair.stoch1H < 20 && pair.stoch1H > pair.stoch4H) ||
+                    (pair.stoch1H > pair.stoch4H && pair.stoch1H < 30)) {
+                    signal = 'buy';
+                    signalClass = 'buy';
+                    pulseSignal = 'pulse-signal';
+                    activeSignalsCount++;
+                } 
+                // Sell signal conditions:
+                // - Both 4H and 1H stochastic are above 80 (overbought) and falling
+                // - Or 1H stochastic crosses below 4H stochastic from above
+                else if ((pair.stoch4H > 80 && pair.stoch1H > 80 && pair.stoch1H < pair.stoch4H) ||
+                         (pair.stoch1H < pair.stoch4H && pair.stoch1H > 70)) {
+                    signal = 'sell';
+                    signalClass = 'sell';
+                    pulseSignal = 'pulse-signal';
+                    activeSignalsCount++;
+                }
+                
+                // Check if this signal type should be shown based on filters
+                if ((signal === 'buy' && !state.filters.buy) || 
+                    (signal === 'sell' && !state.filters.sell) ||
+                    (signal === 'wait' && !state.filters.waiting)) {
+                    return; // Skip this pair if signal type is filtered out
+                }
+                
+                const pairElement = document.createElement('div');
+                pairElement.className = 'pair-card';
+                pairElement.innerHTML = `
+                    <div class="pair-header">
+                        <div class="pair-name">${pair.id}</div>
+                        <div class="pair-type">${pair.type}</div>
+                    </div>
+                    <div class="pair-details">
+                        <div class="pair-price">${formatPrice(pair.price, pair.type)}</div>
+                        <div class="pair-change ${pair.change >= 0 ? 'positive' : 'negative'}">
+                            <i class="fas fa-arrow-${pair.change >= 0 ? 'up' : 'down'}"></i> ${Math.abs(pair.change)}%
+                        </div>
+                    </div>
+                    <div class="pair-stats">
+                        <div>4H: ${pair.stoch4H}</div>
+                        <div>1H: ${pair.stoch1H}</div>
+                    </div>
+                    <div class="signal-badge ${signalClass} ${pulseSignal}">${signal.toUpperCase()} SIGNAL</div>
+                `;
+                
+                container.appendChild(pairElement);
+                renderedPairs++;
+                
+                // If this is a new signal, add to history
+                if (signal !== 'wait') {
+                    addToHistory(pair, signal);
+                }
+            });
+            
+            // Update active signals count
+            state.activeSignals = activeSignalsCount;
+            document.getElementById('activeSignals').textContent = activeSignalsCount;
+            
+            console.log(`Rendered ${renderedPairs} pairs with ${activeSignalsCount} active signals`);
+        }
+
+        function formatPrice(price, type) {
+            if (type === 'forex') {
+                return price.toFixed(4);
+            } else if (type === 'crypto' && price > 1000) {
+                return price.toFixed(0);
+            } else if (type === 'crypto') {
+                return price.toFixed(2);
+            } else if (type === 'commodity' && price < 10) {
+                return price.toFixed(3);
+            } else if (type === 'volatility') {
+                return price.toFixed(2);
+            } else if (type === 'synthetics') {
+                return price.toFixed(2);
+            } else {
+                return price.toFixed(2);
+            }
+        }
+
+        function addToHistory(pair, signal) {
+            // Check if this signal is already in recent history
+            const recentSignal = state.history.find(
+                item => item.pair === pair.id && 
+                new Date() - new Date(item.time) < 60000 // Within the last minute
+            );
+            
+            if (!recentSignal) {
+                const historyItem = {
+                    pair: pair.id,
+                    signal: signal,
+                    time: new Date().toISOString(),
+                    price: pair.price,
+                    status: Math.random() > 0.2 ? 'success' : 'failed' // Simulate execution status
+                };
+                
+                state.history.unshift(historyItem);
+                
+                // Keep only the last 50 history items
+                if (state.history.length > 50) {
+                    state.history = state.history.slice(0, 50);
+                }
+                
+                renderHistory();
+                saveHistory();
+            }
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = '';
+            
+            if (state.history.length === 0) {
+                container.innerHTML = '<div class="loading"><span>No signals yet. Run a scan to see signals.</span></div>';
+                return;
+            }
+            
+            state.history.forEach(item => {
+                const historyElement = document.createElement('div');
+                historyElement.className = 'history-item';
+                
+                const iconClass = getIconClass(item.pair);
+                const time = new Date(item.time);
+                const timeString = `${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+                
+                historyElement.innerHTML = `
+                    <div class="history-pair">
+                        <div class="history-icon">
+                            <i class="${iconClass}"></i>
+                        </div>
+                        <div class="history-details">
+                            <div class="history-pair-name">${item.pair}</div>
+                            <div class="history-time">${timeString}</div>
+                        </div>
+                    </div>
+                    <div class="history-action ${item.signal}">${item.signal.toUpperCase()}</div>
+                    <div class="history-status">
+                        <div class="status-dot ${item.status}"></div>
+                        <span>${item.status === 'success' ? 'Executed' : 'Failed'}</span>
+                    </div>
+                `;
+                
+                container.appendChild(historyElement);
+            });
+        }
+
+        function getIconClass(pair) {
+            if (pair.includes('EUR') || pair.includes('USD')) return 'fas fa-euro-sign';
+            if (pair.includes('XAU') || pair.includes('gold')) return 'fas fa-gem';
+            if (pair.includes('BTC') || pair.includes('ETH')) return 'fab fa-bitcoin';
+            if (pair.includes('XAG') || pair.includes('silver')) return 'fas fa-coins';
+            if (pair.includes('XPT') || pair.includes('platinum')) return 'fas fa-ring';
+            if (pair.includes('XPD') || pair.includes('palladium')) return 'fas fa-cog';
+            if (pair.includes('XCU') || pair.includes('copper')) return 'fas fa-bolt';
+            if (pair.includes('OIL') || pair.includes('原油')) return 'fas fa-gas-pump';
+            if (pair.includes('NATGAS') || pair.includes('天然气')) return 'fas fa-fire';
+            if (pair.includes('BOOM')) return 'fas fa-rocket';
+            if (pair.includes('CRASH')) return 'fas fa-chart-line-down';
+            if (pair.includes('JUMP')) return 'fas fa-arrow-up';
+            if (pair.includes('STEP')) return 'fas fa-stairs';
+            if (pair.includes('VOL') || pair.includes('V')) return 'fas fa-wave-square';
+            return 'fas fa-chart-line';
+        }
+
+        function updateStats() {
+            // Update active signals
+            document.getElementById('activeSignals').textContent = state.activeSignals;
+            
+            // Simulate some random changes for demo purposes
+            const signalChange = (Math.random() * 5).toFixed(1);
+            document.getElementById('signalChange').textContent = `${signalChange}%`;
+            
+            const successChange = (Math.random() * 2).toFixed(1);
+            document.getElementById('successChange').textContent = `${successChange}%`;
+            
+            const returnChange = (Math.random() * 0.5).toFixed(1);
+            document.getElementById('returnChange').textContent = `${returnChange}%`;
+            
+            // Update scan frequency display
+            const scanFrequency = document.getElementById('scanFrequency');
+            if (state.autoScan) {
+                const interval = parseInt(document.getElementById('refreshInterval').value) / 1000;
+                scanFrequency.textContent = `${interval}s`;
+                
+                const scanStatus = document.querySelector('.stat-card:nth-child(4) .stat-change');
+                scanStatus.innerHTML = '<i class="fas fa-play"></i> Auto-scan active';
+                scanStatus.classList.remove('negative');
+                scanStatus.classList.add('positive');
+            }
+        }
+
+        function startAutoScan() {
+            if (state.autoScan && !state.scanInterval) {
+                const interval = parseInt(document.getElementById('refreshInterval').value);
+                state.scanInterval = setInterval(performScan, interval);
+                console.log(`Auto-scan started with ${interval}ms interval`);
+            }
+        }
+
+        function stopAutoScan() {
+            if (state.scanInterval) {
+                clearInterval(state.scanInterval);
+                state.scanInterval = null;
+                
+                const scanStatus = document.querySelector('.stat-card:nth-child(4) .stat-change');
+                scanStatus.innerHTML = '<i class="fas fa-pause"></i> Auto-scan paused';
+                scanStatus.classList.remove('positive');
+                scanStatus.classList.add('negative');
+                
+                console.log("Auto-scan stopped");
+            }
+        }
+
+        function toggleSettings() {
+            // This would toggle a settings modal in a real app
+            alert('Settings panel would open here in a full implementation');
+        }
+
+        function applySettings() {
+            const interval = parseInt(document.getElementById('refreshInterval').value);
+            if (interval < 5000) {
+                alert('Refresh interval must be at least 5000ms (5 seconds)');
+                return;
+            }
+            
+            // Update auto-scan if needed
+            if (state.autoScan) {
+                stopAutoScan();
+                startAutoScan();
+            }
+            
+            // Save settings
+            saveSettings();
+            
+            alert('Settings applied successfully!');
+        }
+
+        function updatePairsConfig() {
+            const configTextarea = document.getElementById('pairsConfig');
+            const configText = state.pairs.map(pair => 
+                `${pair.id}|${pair.apiSymbol}|${pair.type}`
+            ).join('\n');
+            configTextarea.value = configText;
+        }
+
+        function openFilterModal() {
+            document.getElementById('filterModal').style.display = 'flex';
+        }
+
+        function closeFilterModal() {
+            document.getElementById('filterModal').style.display = 'none';
+        }
+
+        function applyFilters() {
+            // Update filters from modal
+            state.filters.buy = document.getElementById('filterBuy').checked;
+            state.filters.sell = document.getElementById('filterSell').checked;
+            state.filters.waiting = document.getElementById('filterWaiting').checked;
+            state.filters.forex = document.getElementById('filterForex').checked;
+            state.filters.commodities = document.getElementById('filterCommodities').checked;
+            state.filters.indices = document.getElementById('filterIndices').checked;
+            state.filters.crypto = document.getElementById('filterCrypto').checked;
+            state.filters.synthetics = document.getElementById('filterSynthetics').checked;
+            state.filters.volatility = document.getElementById('filterVolatility').checked;
+            
+            // Re-render pairs with new filters
+            renderPairs();
+            
+            // Save settings
+            saveSettings();
+            
+            closeFilterModal();
+        }
+
+        function resetFilters() {
+            // Reset all filters to default (checked)
+            document.getElementById('filterBuy').checked = true;
+            document.getElementById('filterSell').checked = true;
+            document.getElementById('filterWaiting').checked = true;
+            document.getElementById('filterForex').checked = true;
+            document.getElementById('filterCommodities').checked = true;
+            document.getElementById('filterIndices').checked = true;
+            document.getElementById('filterCrypto').checked = true;
+            document.getElementById('filterSynthetics').checked = true;
+            document.getElementById('filterVolatility').checked = true;
+            
+            // Apply the reset filters
+            applyFilters();
+        }
+
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all history?')) {
+                state.history = [];
+                renderHistory();
+                saveHistory();
+            }
+        }
+
+        function saveSettings() {
+            const settings = {
+                filters: state.filters,
+                autoScan: state.autoScan,
+                sessionFilter: document.getElementById('sessionFilter').checked,
+                refreshInterval: parseInt(document.getElementById('refreshInterval').value)
+            };
+            
+            localStorage.setItem('quantumTraderSettings', JSON.stringify(settings));
+        }
+
+        function saveHistory() {
+            localStorage.setItem('quantumTraderHistory', JSON.stringify(state.history));
+        }
+
+        // Session indicator update (simulated)
+        function updateSessionIndicator() {
+            const sessionDot = document.querySelector('.session-dot');
+            const sessionText = document.querySelector('.session-indicator span');
+            const sessions = ['London', 'NY', 'Tokyo', 'Closed'];
+            const activeSessions = ['London', 'NY', 'Tokyo'];
+            
+            // Simulate session changes for demo
+            const randomSession = Math.floor(Math.random() * 4);
+            const isActive = randomSession < 3;
+            
+            sessionText.textContent = sessions[randomSession] + ' Session ' + 
+                (isActive ? 'Active' : '');
+            
+            if (isActive) {
+                sessionDot.classList.remove('closed');
+                sessionDot.classList.add('pulse');
+            } else {
+                sessionDot.classList.add('closed');
+                sessionDot.classList.remove('pulse');
+            }
+        }
+
+        // Update session every 30 seconds for demo
+        setInterval(updateSessionIndicator, 30000);
+    </script>
+</body>
+</html>
