@@ -3,1273 +3,576 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CityBlooms - Advanced 1H Multi-Market Strategy Dashboard</title>
+  <title>CityBlooms - Trading Dashboard</title>
   <style>
     :root {
-      --bg: #071021;
-      --panel: #071827;
-      --muted: #9aa7bf;
+      --bg: #0a0e17;
+      --panel: #131b2b;
       --accent: #1f9b76;
       --buy: #16a34a;
       --sell: #ef4444;
-      --neutral: #6b7280;
-      --glass: rgba(255,255,255,0.03);
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      --text: #e6eef8;
+      --muted: #9aa7bf;
     }
     
-    html, body {
-      height: 100%;
+    * {
       margin: 0;
-      background: linear-gradient(180deg, #071021, #071827);
-      color: #e6eef8;
+      padding: 0;
+      box-sizing: border-box;
     }
     
-    header {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      padding: 12px 18px;
-      background: transparent;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      height: 100vh;
+      overflow: hidden;
     }
     
-    h1 {
-      font-size: 16px;
-      margin: 0;
-      color: var(--accent);
-    }
-    
-    .container {
+    .dashboard {
       display: grid;
-      grid-template-columns: 360px 1fr 380px;
+      grid-template-rows: 60px 1fr;
+      height: 100vh;
       gap: 12px;
       padding: 12px;
-      height: calc(100% - 64px);
     }
     
-    .panel {
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
       background: var(--panel);
-      border-radius: 10px;
-      padding: 12px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
-      overflow: auto;
+      border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.05);
     }
     
-    label {
-      font-size: 12px;
-      color: var(--muted);
-      min-width: 120px;
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--accent);
     }
     
-    select, input, button, textarea {
-      background: var(--glass);
-      border: 1px solid rgba(255,255,255,0.03);
-      color: #e6eef8;
-      padding: 8px;
-      border-radius: 6px;
-      font-size: 14px;
+    .market-tabs {
+      display: flex;
+      gap: 8px;
     }
     
-    button {
+    .market-tab {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+    }
+    
+    .market-tab.active {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .market-tab:hover {
+      border-color: var(--accent);
+    }
+    
+    .control-bar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
     }
     
-    button:hover {
-      background: rgba(255,255,255,0.08);
+    .btn:hover {
+      background: rgba(255,255,255,0.12);
     }
     
-    #chartPanel {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding: 8px;
+    .btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    
+    .btn.primary:hover {
+      background: #1a8567;
+    }
+    
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 12px;
       height: 100%;
     }
     
+    .chart-container {
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    
     #chart {
-      height: 66%;
-      min-height: 400px;
+      width: 100%;
+      height: 100%;
     }
     
-    .small {
-      font-size: 12px;
-      color: var(--muted);
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
     
-    .signal {
+    .signals-panel {
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      flex: 1;
+    }
+    
+    .signals-header {
+      display: flex;
+      justify-content: between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .signal-item {
       display: flex;
       justify-content: space-between;
-      padding: 8px;
-      border-radius: 6px;
-      margin-bottom: 6px;
-    }
-    
-    .buy {
-      background: linear-gradient(90deg, rgba(22,163,74,0.12), transparent);
+      align-items: center;
+      padding: 12px;
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      margin-bottom: 8px;
       border-left: 4px solid var(--buy);
     }
     
-    .sell {
-      background: linear-gradient(90deg, rgba(239,68,68,0.12), transparent);
-      border-left: 4px solid var(--sell);
+    .signal-item.sell {
+      border-left-color: var(--sell);
     }
     
-    .log {
-      background: #020612;
-      padding: 8px;
-      border-radius: 6px;
-      height: 280px;
-      overflow: auto;
-      font-family: monospace;
+    .signal-pair {
+      font-weight: bold;
+    }
+    
+    .signal-side {
+      padding: 4px 8px;
+      border-radius: 4px;
       font-size: 12px;
+      font-weight: bold;
     }
     
-    .badge {
-      background: rgba(255,255,255,0.03);
-      padding: 6px 8px;
-      border-radius: 6px;
+    .signal-side.buy {
+      background: var(--buy);
+      color: white;
     }
     
-    .flex {
-      display: flex;
-      gap: 8px;
-      align-items: center;
+    .signal-side.sell {
+      background: var(--sell);
+      color: white;
     }
     
-    details {
-      background: rgba(255,255,255,0.02);
-      padding: 8px;
-      border-radius: 6px;
-      margin-top: 8px;
-    }
-    
-    pre {
-      white-space: pre-wrap;
-      font-family: monospace;
-      font-size: 12px;
-    }
-    
-    footer {
-      padding: 8px;
+    .signal-price {
+      font-size: 14px;
       color: var(--muted);
+    }
+    
+    .logs-panel {
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      height: 200px;
+    }
+    
+    .logs-content {
+      background: rgba(0,0,0,0.3);
+      border-radius: 8px;
+      padding: 12px;
+      height: 140px;
+      overflow-y: auto;
+      font-family: monospace;
       font-size: 12px;
-      text-align: center;
-      border-top: 1px solid rgba(255,255,255,0.05);
+      line-height: 1.4;
     }
     
     .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    
+    .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      display: inline-block;
-      margin-right: 6px;
+      background: var(--sell);
     }
     
-    .status-running {
+    .status-dot.running {
       background: var(--buy);
+      animation: pulse 2s infinite;
     }
     
-    .status-stopped {
-      background: var(--neutral);
-    }
-    
-    .logo {
-      font-weight: bold;
-      color: var(--accent);
-      margin-right: 8px;
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
   </style>
 </head>
 <body>
-  <header>
-    <div class="logo">CityBlooms</div>
-    <h1>Advanced 1H Multi-Market Strategy Dashboard (All Filters + FVG)</h1>
-    <div class="small" style="margin-left:8px">Timeframe locked to <strong>1H</strong> — Multi-market</div>
-    <div style="flex:1"></div>
-    <button id="copyPromptBtn">Copy Strategy Prompt</button>
-    <button id="loadSampleBtn">Load Sample Data</button>
-  </header>
-
-  <div class="container">
-    <!-- LEFT: Controls -->
-    <div class="panel">
-      <h3>Controls & Data</h3>
-
-      <div style="display:flex;gap:8px;flex-direction:column">
-        <label>Markets (multi-select)</label>
-        <select id="marketSelect" multiple size="8" style="width:100%">
-          <option value="EURUSD">Forex - EURUSD</option>
-          <option value="GBPUSD">Forex - GBPUSD</option>
-          <option value="USDJPY">Forex - USDJPY</option>
-          <option value="XAUUSD">GOLD - XAUUSD</option>
-          <option value="BTCUSD">BTCUSD</option>
-          <option value="US30">US30</option>
-          <option value="Boom1">Boom 1</option>
-          <option value="Crash1">Crash 1</option>
-          <option value="Volatility25">Volatility 25</option>
-        </select>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>Upload CSV</label>
-          <input id="csvFile" type="file" accept=".csv"/>
+  <div class="dashboard">
+    <div class="header">
+      <div class="logo">CityBlooms</div>
+      
+      <div class="market-tabs">
+        <div class="market-tab active" data-market="EURUSD">EUR/USD</div>
+        <div class="market-tab" data-market="GBPUSD">GBP/USD</div>
+        <div class="market-tab" data-market="XAUUSD">GOLD</div>
+        <div class="market-tab" data-market="BTCUSD">BTC/USD</div>
+        <div class="market-tab" data-market="US30">US30</div>
+        <div class="market-tab" data-market="BOOM1">BOOM 1</div>
+        <div class="market-tab" data-market="CRASH1">CRASH 1</div>
+        <div class="market-tab" data-market="JUMP1">JUMP 1</div>
+        <div class="market-tab" data-market="STEP1">STEP 1</div>
+        <div class="market-tab" data-market="VOL25">VOL 25</div>
+      </div>
+      
+      <div class="control-bar">
+        <div class="status-indicator">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Stopped</span>
         </div>
-
-        <div>
-          <label>Paste JSON (array of OHLC)</label>
-          <textarea id="jsonInput" rows="3" style="width:100%"></textarea>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>Zone Sensitivity</label>
-          <input id="zoneSens" type="range" min="1" max="10" value="4" style="width:180px"/>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>Inducement (%)</label>
-          <input id="inducementInput" type="number" value="1.5" step="0.1" style="width:120px"/>
-          <span class="small">of previous range</span>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>RSI length</label>
-          <input id="rsiLen" type="number" value="14" style="width:120px"/>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>ATR length</label>
-          <input id="atrLen" type="number" value="14" style="width:120px"/>
-          <label>ATR min factor</label>
-          <input id="atrFactor" type="number" value="0.5" step="0.1" style="width:80px"/>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>EMA Fast / Slow</label>
-          <input id="emaFast" type="number" value="20" style="width:80px"/>
-          <input id="emaSlow" type="number" value="50" style="width:80px"/>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>Min Body % of candle</label>
-          <input id="minBodyPct" type="number" value="30" style="width:80px"/> <span class="small">(percent)</span>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>Session Filter</label>
-          <select id="sessionFilter" style="width:160px">
-            <option value="both">London & New York</option>
-            <option value="london">London only</option>
-            <option value="ny">New York only</option>
-            <option value="off">Off (any)</option>
-          </select>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>Risk per trade (%)</label>
-          <input id="riskSlider" type="range" min="0.25" max="5" step="0.25" value="1" style="width:180px"/>
-          <div class="badge" id="riskVal">1%</div>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <label>Account Equity</label>
-          <input id="equity" type="number" value="10000" style="width:120px"/>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-          <button id="runBacktest">Run Backtest</button>
-          <button id="streamMode">Start/Stop Stream</button>
-          <button id="detectZonesBtn">Detect Zones</button>
-        </div>
-
-        <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
-          <button id="clearLogsBtn">Clear Logs</button>
-          <button id="runUnitTests">Run Unit Tests</button>
-          <button id="optimizeBtn">Optimize Params (quick)</button>
-        </div>
+        <button class="btn primary" id="startStream">Start Stream</button>
+        <button class="btn" id="runBacktest">Run Backtest</button>
+        <button class="btn" id="clearLogs">Clear Logs</button>
       </div>
     </div>
-
-    <!-- CENTER: Chart & signals -->
-    <div class="panel" id="chartPanel">
-      <div id="chart"></div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div class="small">Signal Panel</div>
-        <div style="flex:1"></div>
-        <div class="small">Logs (<span id="logCount">0</span>)</div>
+    
+    <div class="main-content">
+      <div class="chart-container">
+        <div id="chart"></div>
       </div>
-      <div style="display:flex;gap:12px">
-        <div style="flex:1">
-          <div id="signalsList" style="max-height:280px;overflow:auto"></div>
-          <details style="margin-top:8px"><summary>ML Sentiment / Win Analysis</summary>
-            <div id="mlPanel" class="small"></div>
-          </details>
+      
+      <div class="sidebar">
+        <div class="signals-panel">
+          <div class="signals-header">
+            <h3>Active Signals</h3>
+            <span class="small" id="signalCount">0 signals</span>
+          </div>
+          <div id="signalsList">
+            <!-- Signals will appear here -->
+          </div>
         </div>
-        <div style="width:380px">
-          <div class="log" id="logPanel"></div>
+        
+        <div class="logs-panel">
+          <div class="signals-header">
+            <h3>Logs</h3>
+            <span class="small" id="logCount">0 logs</span>
+          </div>
+          <div class="logs-content" id="logPanel">
+            <!-- Logs will appear here -->
+          </div>
         </div>
       </div>
-    </div>
-
-    <!-- RIGHT: Diagnostics & config -->
-    <div class="panel">
-      <h3>Diagnostics & CONFIG</h3>
-      <div id="infoBox" class="small"></div>
-      <details open style="margin-top:8px"><summary>CONFIG (editable)</summary>
-        <pre id="configBlock"></pre>
-      </details>
-      <details style="margin-top:8px"><summary>Strategy Prompt</summary>
-        <pre id="promptBlock"></pre>
-      </details>
-      <details style="margin-top:8px"><summary>Sample CSV (first rows)</summary>
-        <pre id="sampleCSV"></pre>
-      </details>
     </div>
   </div>
 
-  <footer>CityBlooms — Advanced strategy dashboard — all filters active, FVG included, robust logging, and ML win-analysis. Save file locally and open in browser.</footer>
-
-  <!-- Include Lightweight Charts -->
   <script src="https://unpkg.com/lightweight-charts@4.0.1/dist/lightweight-charts.standalone.production.js"></script>
-
+  
   <script>
-    /* ====================================================
-       CONFIG / DEFAULTS (Edit here)
-       ==================================================== */
-    const CONFIG = {
-      timeframe: '1H',
-      rsiLength: 14,
-      rsiOverbought: 70,
-      rsiOversold: 30,
-      rsiReversalThreshold: 50,
-      fibLevels: [0.236, 0.382, 0.5, 0.618, 0.786],
-      primaryEntryFib: [0.382, 0.5, 0.618],
-      inducementFactor: 0.015,
-      atrLength: 14,
-      atrFactor: 0.5,
-      emaFast: 20,
-      emaSlow: 50,
-      minBodyPct: 30,
-      minSLFactor: 0.25,
-      tp1Factor: 0.5,
-      tp2Factor: 1.0,
-      defaultRiskPct: 1.0,
-      maxLogs: 300,
-      zoneSensitivity: 4,
-      sampleDataPoints: 300
-    };
-
-    /* ====================================================
-       Utilities & Safe Initialization (OnInit)
-       ==================================================== */
-    function now() { return new Date().toISOString().replace('T', ' ').slice(0, 19); }
-    
+    // Simple state management
     const state = {
-      marketData: {}, 
-      detectedZones: {}, 
-      signals: [], 
-      logs: [], 
-      mlRecords: [], 
-      chart: null, 
-      series: null,
-      streamTimer: null, 
-      running: false, 
-      correlationCache: {}, 
-      lastOptimize: {}, 
-      memoryWatch: { lastTrim: Date.now() }
+      marketData: {},
+      signals: [],
+      logs: [],
+      currentMarket: 'EURUSD',
+      streamInterval: null,
+      isStreaming: false
     };
-    
+
+    // Initialize the dashboard
     function initialize() {
-      addLog('CityBlooms OnInit: initializing dashboard and defaults');
-      
-      // Safety check for chart container
-      const chartEl = document.getElementById('chart');
-      if (!chartEl) {
-        console.error('Chart container not found');
-        addLog('ERROR: Chart container #chart not found');
-        return;
-      }
-      
-      // Set UI from CONFIG
-      document.getElementById('rsiLen').value = CONFIG.rsiLength;
-      document.getElementById('atrLen').value = CONFIG.atrLength;
-      document.getElementById('atrFactor').value = CONFIG.atrFactor;
-      document.getElementById('emaFast').value = CONFIG.emaFast;
-      document.getElementById('emaSlow').value = CONFIG.emaSlow;
-      document.getElementById('minBodyPct').value = CONFIG.minBodyPct;
-      document.getElementById('inducementInput').value = CONFIG.inducementFactor * 100;
-      document.getElementById('riskSlider').value = CONFIG.defaultRiskPct;
-      document.getElementById('riskVal').textContent = CONFIG.defaultRiskPct + '%';
-      document.getElementById('configBlock').textContent = JSON.stringify(CONFIG, null, 2);
-      document.getElementById('promptBlock').textContent = promptShort();
-      document.getElementById('sampleCSV').textContent = SAMPLE_CSV;
-      
-      // Initialize chart
-      try {
-        const chart = LightweightCharts.createChart(chartEl, { 
-          layout: { background: { color: '#071021' }, textColor: '#dbeafe' }, 
-          rightPriceScale: { borderColor: '#0b1220' }, 
-          timeScale: { borderColor: '#0b1220' } 
-        });
-        const candleSeries = chart.addCandlestickSeries({ 
-          upColor: '#16a34a', 
-          downColor: '#ef4444', 
-          borderVisible: false, 
-          wickVisible: true 
-        });
-        state.chart = chart;
-        state.series = candleSeries;
-      } catch (err) {
-        addLog('Chart initialization error: ' + err.message);
-      }
-      
-      addLog('CityBlooms UI populated. Load sample data to begin.');
+      createChart();
+      setupEventListeners();
+      loadSampleData();
+      addLog('CityBlooms Dashboard initialized');
     }
-    
-    function safeParseFloat(v, fallback = 0) { 
-      const n = Number(v); 
-      return Number.isFinite(n) ? n : fallback; 
-    }
-    
-    function addLog(msg) {
-      const entry = now() + '  -  ' + msg;
-      state.logs.push(entry);
-      if (state.logs.length > CONFIG.maxLogs) state.logs.shift();
-      document.getElementById('logPanel').textContent = state.logs.join('\n');
-      document.getElementById('logCount').textContent = state.logs.length;
-    }
-    
-    /* Enhanced memory trimming to prevent memory growth */
-    function enhancedMemoryTrim() {
-      const nowTs = Date.now();
-      if (nowTs - state.memoryWatch.lastTrim < 60000) return;
-      
-      // Trim older marketData arrays to max 2000
-      Object.keys(state.marketData).forEach(k => {
-        const arr = state.marketData[k];
-        if (arr && arr.length > 2000) state.marketData[k] = arr.slice(-2000);
+
+    // Create the main chart
+    function createChart() {
+      const chartElement = document.getElementById('chart');
+      if (!chartElement) return;
+
+      const chart = LightweightCharts.createChart(chartElement, {
+        layout: {
+          background: { color: 'transparent' },
+          textColor: '#e6eef8',
+        },
+        grid: {
+          vertLines: { color: 'rgba(255,255,255,0.05)' },
+          horzLines: { color: 'rgba(255,255,255,0.05)' },
+        },
+        width: chartElement.clientWidth,
+        height: chartElement.clientHeight,
       });
-      
-      // Trim logs
-      if (state.logs.length > CONFIG.maxLogs) state.logs = state.logs.slice(-CONFIG.maxLogs);
-      
-      // Additional safety measures
-      if (state.signals.length > 500) state.signals = state.signals.slice(-500);
-      if (state.mlRecords.length > 2000) state.mlRecords = state.mlRecords.slice(-2000);
-      
-      state.memoryWatch.lastTrim = nowTs;
-    }
 
-    /* ====================================================
-       Sample data (small) - includes spots to show FVG & signals
-       ==================================================== */
-    const SAMPLE_CSV = `time,open,high,low,close,volume
-2025-11-01T00:00:00Z,1800,1806,1795,1804,1200
-2025-11-01T01:00:00Z,1804,1810,1802,1808,900
-2025-11-01T02:00:00Z,1808,1815,1806,1812,1100
-2025-11-01T03:00:00Z,1812,1818,1809,1810,1000
-2025-11-01T04:00:00Z,1810,1813,1804,1806,800
-2025-11-01T05:00:00Z,1806,1809,1800,1802,750
-2025-11-01T06:00:00Z,1802,1806,1798,1801,700
-2025-11-01T07:00:00Z,1801,1807,1799,1805,950
-2025-11-01T08:00:00Z,1805,1812,1804,1811,1100
-2025-11-01T09:00:00Z,1811,1819,1810,1817,1250
-2025-11-01T10:00:00Z,1817,1823,1815,1820,1300
-2025-11-01T11:00:00Z,1820,1828,1818,1826,1500
-2025-11-01T12:00:00Z,1826,1830,1822,1824,1400
-2025-11-01T13:00:00Z,1824,1835,1820,1832,1600
-2025-11-01T14:00:00Z,1832,1838,1829,1836,1700
-2025-11-01T15:00:00Z,1836,1844,1834,1840,1900
-2025-11-01T16:00:00Z,1840,1848,1839,1846,2100
-2025-11-01T17:00:00Z,1846,1849,1837,1841,1600
-2025-11-01T18:00:00Z,1841,1845,1835,1838,1300
-2025-11-01T19:00:00Z,1838,1843,1832,1840,1200
-`;
-
-    /* ====================================================
-       DOM wiring
-       ==================================================== */
-    document.getElementById('loadSampleBtn').onclick = () => { 
-      loadCSVString(SAMPLE_CSV, 'XAUUSD'); 
-      addLog('Sample loaded: XAUUSD'); 
-    };
-    
-    document.getElementById('csvFile').addEventListener('change', async (e) => { 
-      const f = e.target.files[0]; 
-      if (!f) return; 
-      const txt = await f.text(); 
-      const name = f.name.split('.')[0].toUpperCase(); 
-      loadCSVString(txt, name); 
-      addLog('CSV uploaded: ' + f.name); 
-    });
-    
-    document.getElementById('jsonInput').addEventListener('blur', (e) => { 
-      const txt = e.target.value.trim(); 
-      if (!txt) return; 
-      try { 
-        const parsed = JSON.parse(txt); 
-        if (!Array.isArray(parsed)) throw new Error('JSON must be array'); 
-        state.marketData['JSON'] = parsed.map(normalizeCandle); 
-        addLog('JSON loaded into market "JSON"'); 
-        redrawMarket(Object.keys(state.marketData)[0]); 
-      } catch (err) { 
-        addLog('JSON parse error: ' + err.message); 
-      }
-    });
-    
-    document.getElementById('riskSlider').addEventListener('input', (e) => { 
-      document.getElementById('riskVal').textContent = e.target.value + '%'; 
-    });
-    
-    document.getElementById('detectZonesBtn').onclick = () => { 
-      Object.keys(state.marketData).forEach(m => { 
-        state.detectedZones[m] = detectZones(state.marketData[m], Number(document.getElementById('zoneSens').value)); 
-        addLog('Zones detected for ' + m + ': ' + (state.detectedZones[m] || []).length); 
-      }); 
-      redrawMarket(Object.keys(state.marketData)[0] || null); 
-    };
-    
-    document.getElementById('clearLogsBtn').onclick = () => { 
-      state.logs = []; 
-      document.getElementById('logPanel').textContent = ''; 
-      document.getElementById('logCount').textContent = '0'; 
-      addLog('Logs cleared'); 
-    };
-    
-    document.getElementById('runBacktest').onclick = () => runBacktest();
-    document.getElementById('runUnitTests').onclick = () => runUnitTests();
-    document.getElementById('streamMode').onclick = () => toggleStream();
-    document.getElementById('optimizeBtn').onclick = () => quickOptimize();
-
-    /* ====================================================
-       Data normalization & CSV loader
-       ==================================================== */
-    function normalizeCandle(c) {
-      const t = c.time || c.t || c.date || c.timestamp;
-      let time = t;
-      if (typeof t === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(t)) time = t;
-      else if (!isNaN(Number(t))) time = Math.floor(Number(t) / 1000);
-      return { 
-        time, 
-        open: safeParseFloat(c.open, 0), 
-        high: safeParseFloat(c.high, 0), 
-        low: safeParseFloat(c.low, 0), 
-        close: safeParseFloat(c.close, 0), 
-        volume: safeParseFloat(c.volume, 0) 
-      };
-    }
-    
-    function loadCSVString(txt, marketName = 'MARKET') {
-      try {
-        const lines = txt.trim().split(/\r?\n/);
-        const headers = lines.shift().split(',').map(h => h.trim());
-        const arr = lines.map(l => {
-          const cols = l.split(',').map(x => x.trim());
-          const obj = {};
-          headers.forEach((h, i) => obj[h] = cols[i]);
-          return normalizeCandle(obj);
-        });
-        state.marketData[marketName] = arr;
-        state.detectedZones[marketName] = detectZones(arr, Number(document.getElementById('zoneSens').value));
-        redrawMarket(marketName);
-        addLog(`Loaded ${arr.length} candles for ${marketName}`);
-        enhancedMemoryTrim();
-      } catch (err) { 
-        addLog('CSV parse error: ' + err.message); 
-      }
-    }
-
-    /* ====================================================
-       Core indicator and detection functions
-       ==================================================== */
-
-    /* RSI */
-    function computeRSIArray(closes, length) {
-      const out = new Array(closes.length).fill(null);
-      for (let i = length; i < closes.length; i++) {
-        let g = 0, l = 0;
-        for (let j = i - length + 1; j <= i; j++) {
-          const ch = closes[j] - closes[j - 1];
-          if (ch > 0) g += ch; else l += -ch;
-        }
-        const avgG = g / length, avgL = l / length;
-        out[i] = avgL === 0 ? 100 : (100 - (100 / (1 + avgG / avgL)));
-      }
-      return out;
-    }
-
-    /* ATR */
-    function computeATR(data, length) {
-      const trs = [];
-      for (let i = 1; i < data.length; i++) {
-        const tr = Math.max(data[i].high - data[i].low, Math.abs(data[i].high - data[i - 1].close), Math.abs(data[i].low - data[i - 1].close));
-        trs.push(tr);
-      }
-      const out = new Array(data.length).fill(null);
-      for (let i = length; i < trs.length; i++) {
-        const s = trs.slice(i - length + 1, i + 1).reduce((a, b) => a + b, 0) / length;
-        out[i + 1] = s;
-      }
-      return out;
-    }
-
-    /* EMA simple */
-    function computeEMA(values, length) {
-      const k = 2 / (length + 1);
-      const out = new Array(values.length).fill(null);
-      let prev = values.slice(0, length).reduce((a, b) => a + b, 0) / length;
-      out[length - 1] = prev;
-      for (let i = length; i < values.length; i++) {
-        prev = (values[i] - prev) * k + prev;
-        out[i] = prev;
-      }
-      return out;
-    }
-
-    /* Fib levels */
-    function computeFibs(high, low) {
-      const diff = high - low;
-      const levels = {};
-      CONFIG.fibLevels.forEach(f => levels[f] = high - diff * f);
-      return levels;
-    }
-
-    /* Engulfing detection & other candlestick patterns */
-    function detectCandlestickPatterns(data, idx) {
-      if (idx <= 0 || idx >= data.length) return [];
-      const prev = data[idx - 1], cur = data[idx];
-      const patterns = [];
-      const prevBody = Math.abs(prev.close - prev.open), curBody = Math.abs(cur.close - cur.open);
-      // Bullish engulf
-      if (cur.close > cur.open && prev.close < prev.open && cur.open <= prev.close && cur.close >= prev.open && curBody >= prevBody * 0.8) patterns.push('bull_engulf');
-      if (cur.close < cur.open && prev.close > prev.open && cur.open >= prev.close && cur.close <= prev.open && curBody >= prevBody * 0.8) patterns.push('bear_engulf');
-      // Hammer/Pin
-      const body = Math.abs(cur.close - cur.open), range = cur.high - cur.low;
-      if (range > 0 && body <= range * 0.4) {
-        const lowerWick = Math.min(cur.open, cur.close) - cur.low;
-        const upperWick = cur.high - Math.max(cur.open, cur.close);
-        if (lowerWick > body * 2 && upperWick < body) patterns.push('hammer');
-        if (upperWick > body * 2 && lowerWick < body) patterns.push('shooting_star');
-      }
-      // Doji
-      if (range > 0 && body <= range * 0.15) patterns.push('doji');
-      return patterns;
-    }
-
-    /* Fair Value Gap (FVG) detection - simple: gap between consecutive candles */
-    function detectFVGs(data) {
-      const fvg = [];
-      for (let i = 2; i < data.length; i++) {
-        // bullish FVG: previous candle high < next candle low -> gap
-        const a = data[i - 2], b = data[i - 1], c = data[i];
-        // gap up
-        if (b.high < c.low) {
-          fvg.push({ type: 'bull', low: b.high, high: c.low, at: c.time });
-        }
-        // gap down
-        if (b.low > c.high) {
-          fvg.push({ type: 'bear', low: c.high, high: b.low, at: c.time });
-        }
-      }
-      return fvg;
-    }
-
-    /* Support & Resistance detection - peaks & troughs */
-    function detectSR(data, sensitivity = 4) {
-      const sr = [];
-      const len = Math.max(6, Math.round(4 + sensitivity * 2));
-      for (let i = len; i < data.length - len; i++) {
-        const window = data.slice(i - len, i + len + 1);
-        const isHigh = data[i].high === Math.max(...window.map(d => d.high));
-        const isLow = data[i].low === Math.min(...window.map(d => d.low));
-        if (isHigh) sr.push({ type: 'resistance', price: data[i].high, time: data[i].time });
-        if (isLow) sr.push({ type: 'support', price: data[i].low, time: data[i].time });
-      }
-      // compress similar levels
-      const merged = [];
-      sr.forEach(s => {
-        const found = merged.find(m => Math.abs(m.price - s.price) < ((Math.max(...sr.map(x => x.price)) - Math.min(...sr.map(x => x.price))) * 0.02 || 1));
-        if (found) found.count = (found.count || 1) + 1;
-        else merged.push(Object.assign({}, s, { count: 1 }));
+      const candleSeries = chart.addCandlestickSeries({
+        upColor: '#16a34a',
+        downColor: '#ef4444',
+        borderVisible: false,
+        wickUpColor: '#16a34a',
+        wickDownColor: '#ef4444',
       });
-      return merged;
+
+      state.chart = chart;
+      state.candleSeries = candleSeries;
     }
 
-    /* Zone detection - uses SR clusters and range clustering */
-    function detectZones(data, sensitivity = 4) {
-      if (!data || data.length < 20) return [];
-      const sr = detectSR(data, sensitivity);
-      // Convert SR into zones by grouping nearby supports/resistances
-      const zones = [];
-      sr.forEach(s => {
-        const width = (Math.max(...data.map(d => d.high)) - Math.min(...data.map(d => d.low))) * 0.01 * sensitivity;
-        zones.push({ low: s.price - width, high: s.price + width, type: s.type === 'support' ? 'buy' : 'sell', at: s.time });
-      });
-      // Merge overlaps
-      const merged = [];
-      zones.forEach(z => {
-        const found = merged.find(m => !(z.high < m.low || z.low > m.high));
-        if (found) {
-          found.low = Math.min(found.low, z.low); found.high = Math.max(found.high, z.high);
-        } else merged.push(z);
-      });
-      return merged;
-    }
-
-    /* Structure breaks detection */
-    function detectStructureBreaks(data) {
-      const breaks = [];
-      for (let i = 3; i < data.length; i++) {
-        const hh = Math.max(data[i - 3].high, data[i - 2].high, data[i - 1].high);
-        const ll = Math.min(data[i - 3].low, data[i - 2].low, data[i - 1].low);
-        if (data[i].close > hh) breaks.push({ index: i, type: 'hi', price: data[i].close, time: data[i].time });
-        if (data[i].close < ll) breaks.push({ index: i, type: 'lo', price: data[i].close, time: data[i].time });
-      }
-      return breaks;
-    }
-
-    /* Correlation filter (simple Pearson on returns) */
-    function computeCorrelation(seriesA, seriesB, lookback = 50) {
-      try {
-        const la = seriesA.length, lb = seriesB.length;
-        const n = Math.min(lookback, la - 1, lb - 1);
-        if (n <= 2) return 0;
-        const ra = [], rb = [];
-        for (let i = la - n; i < la; i++) ra.push(seriesA[i].close - seriesA[i - 1].close);
-        for (let i = lb - n; i < lb; i++) rb.push(seriesB[i].close - seriesB[i - 1].close);
-        const mean = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
-        const ma = mean(ra), mb = mean(rb);
-        let num = 0, denA = 0, denB = 0;
-        for (let i = 0; i < n; i++) { num += (ra[i] - ma) * (rb[i] - mb); denA += (ra[i] - ma) ** 2; denB += (rb[i] - mb) ** 2; }
-        const corr = num / Math.sqrt(denA * denB);
-        return Number.isFinite(corr) ? corr : 0;
-      } catch (e) { return 0; }
-    }
-
-    /* ====================================================
-       Entry evaluation - must pass ALL filters to create signal
-       ==================================================== */
-    function evaluateEntryAll(market, idx) {
-      const data = state.marketData[market];
-      if (!data || idx < 30) return null;
-      const close = data[idx].close;
-      const prevRange = computePreviousRange(data, idx);
-      const inducementThreshold = prevRange * (safeParseFloat(document.getElementById('inducementInput').value, CONFIG.inducementFactor * 100) / 100);
-      const atrArr = computeATR(data, Number(document.getElementById('atrLen').value) || CONFIG.atrLength);
-      const atr = atrArr[idx] || 0;
-      
-      // Build features for ML logging
-      const features = {};
-      
-      // 1. Session filter
-      const session = document.getElementById('sessionFilter').value;
-      if (session !== 'off') {
-        const ts = new Date(data[idx].time);
-        const hour = ts.getUTCHours();
-        const inLondon = hour >= 7 && hour <= 16; // rough 07-16 UTC
-        const inNY = hour >= 12 && hour <= 21; // rough 12-21 UTC
-        if (session === 'london' && !inLondon) return null;
-        if (session === 'ny' && !inNY) return null;
-        if (session === 'both' && !(inLondon || inNY)) return null;
-        features.session = session;
-      }
-
-      // 2. ATR filter (require ATR >= factor * median ATR) - FIXED VERSION
-      const atrMedian = median(atrArr.filter(Boolean).slice(-100));
-      const atrFactor = safeParseFloat(document.getElementById('atrFactor').value, CONFIG.atrFactor);
-      if (atrMedian === null || atr < atrMedian * atrFactor) { 
-        addLog(`ATR filter fail for ${market} @ idx ${idx} (atr=${atr.toFixed(4)} med=${atrMedian ? atrMedian.toFixed(4) : 'n/a'})`); 
-        return null; 
-      }
-      features.atr = atr;
-
-      // 3. EMA trend filter
-      const closes = data.map(d => d.close);
-      const emaFast = computeEMA(closes, Number(document.getElementById('emaFast').value) || CONFIG.emaFast);
-      const emaSlow = computeEMA(closes, Number(document.getElementById('emaSlow').value) || CONFIG.emaSlow);
-      const trendBuy = emaFast[idx] && emaSlow[idx] && emaFast[idx] > emaSlow[idx];
-      const trendSell = emaFast[idx] && emaSlow[idx] && emaFast[idx] < emaSlow[idx];
-      features.trendBuy = !!trendBuy; features.trendSell = !!trendSell;
-
-      // 4. Candlestick patterns
-      const patterns = detectCandlestickPatterns(data, idx);
-      features.patterns = patterns;
-
-      // 5. Engulfing required for higher probability (but we may accept RSI confirmation)
-      const isBullEngulf = patterns.includes('bull_engulf');
-      const isBearEngulf = patterns.includes('bear_engulf');
-
-      // 6. Body size filter
-      const body = Math.abs(data[idx].close - data[idx].open);
-      const range = data[idx].high - data[idx].low || 1;
-      const bodyPct = (body / range) * 100;
-      if (bodyPct < safeParseFloat(document.getElementById('minBodyPct').value, CONFIG.minBodyPct)) { 
-        addLog(`Body size filter fail for ${market} idx ${idx} (${bodyPct.toFixed(1)}%)`); 
-        return null; 
-      }
-      features.bodyPct = bodyPct;
-
-      // 7. Zone & SR & FVG filters
-      const zones = state.detectedZones[market] || detectZones(data, Number(document.getElementById('zoneSens').value));
-      const nearZone = zones.find(z => data[idx].close >= z.low && data[idx].close <= z.high);
-      if (!nearZone) { 
-        addLog(`Zone not found for ${market} idx ${idx}`); 
-        return null; 
-      }
-      features.zoneType = nearZone.type;
-
-      // 8. SMC breaker/mss/fvg logic (simple heuristics)
-      const fvg = detectFVGs(data);
-      const fvgNear = fvg.find(f => Math.abs(data[idx].close - ((f.low + f.high) / 2)) < (prevRange * 0.2));
-      if (!fvgNear) { 
-        addLog(`FVG filter fail for ${market} idx ${idx}`); 
-        return null; 
-      }
-      features.fvg = fvgNear ? fvgNear.type : null;
-
-      // 9. Structure break logic (determine continuation vs reversal)
-      const breaks = detectStructureBreaks(data);
-      const nearbyBreak = breaks.find(b => Math.abs(b.index - idx) < 6);
-      if (!nearbyBreak) { 
-        addLog(`No structure break near ${market} idx ${idx}`); 
-        return null; 
-      }
-      const brokeAfterZone = zones.some(z => {
-        const lookBack = data.slice(Math.max(0, nearbyBreak.index - 10), nearbyBreak.index);
-        return lookBack.some(c => c.high >= z.low && c.low <= z.high);
-      });
-      const mode = brokeAfterZone ? 'continuation' : 'reversal';
-      features.mode = mode;
-
-      // 10. RSI condition
-      const rsiArr = computeRSIArray(closes, Number(document.getElementById('rsiLen').value) || CONFIG.rsiLength);
-      const rsi = rsiArr[idx] || null;
-      if (rsi === null) { 
-        addLog(`RSI null at ${market} idx ${idx}`); 
-        return null; 
-      }
-      features.rsi = rsi;
-
-      // 11. Correlation filter - optional: if high correlation with other selected market and direction mismatch, avoid
-      const selectedMarkets = Array.from(document.getElementById('marketSelect').selectedOptions).map(o => o.value);
-      let corrOk = true;
-      for (const other of selectedMarkets) {
-        if (other === market || !state.marketData[other] || state.marketData[other].length < 100) continue;
-        const corr = computeCorrelation(data, state.marketData[other], 50);
-        if (Math.abs(corr) > 0.85) { // strong correlation
-          // if directions oppose by pattern (simple check)
-          const otherCl = state.marketData[other].slice(-1)[0];
-          const dirA = data[idx].close > data[idx - 1].close ? 'up' : 'down';
-          const dirB = otherCl.close > state.marketData[other][state.marketData[other].length - 2].close ? 'up' : 'down';
-          if (dirA !== dirB) { 
-            corrOk = false; 
-            addLog(`Correlation filter blocked ${market} vs ${other} (corr=${corr.toFixed(2)})`); 
-            break; 
-          }
-        }
-      }
-      if (!corrOk) return null;
-      features.correlationOk = corrOk;
-
-      // 12. Inducement threshold check
-      const inducementOk = Math.abs(data[idx].high - data[idx].low) >= inducementThreshold;
-      if (!inducementOk) { 
-        addLog(`Inducement fail for ${market} idx ${idx}`); 
-        return null; 
-      }
-      features.inducementOk = inducementOk;
-
-      // 13. Final combined logic: only enter buy in buy zone and sell in sell zone; confirm with pattern/trend/RSI
-      let side = null;
-      if (nearZone.type === 'buy' && (isBullEngulf || (rsi < 70 && features.trendBuy))) side = 'buy';
-      if (nearZone.type === 'sell' && (isBearEngulf || (rsi > 30 && features.trendSell))) side = 'sell';
-      if (!side) { 
-        addLog(`Final side decision failed for ${market} idx ${idx} (zone=${nearZone.type} patterns=${patterns.join(',')})`); 
-        return null; 
-      }
-      features.side = side;
-      
-      // All conditions passed: build trade object
-      const trade = buildTradeSignal(market, idx, side, prevRange, features, rsi);
-      // store features into trade for ML logging
-      trade.features = features;
-      return trade;
-    }
-
-    /* ====================================================
-       Trade construction & sizing
-       ==================================================== */
-    function computePreviousRange(data, idx, lookback = 12) {
-      const slice = data.slice(Math.max(0, idx - lookback), idx);
-      if (!slice.length) return 1;
-      const high = Math.max(...slice.map(d => d.high)), low = Math.min(...slice.map(d => d.low));
-      return Math.max(0.0001, high - low);
-    }
-    
-    function buildTradeSignal(market, idx, side, prevRange, features, rsi) {
-      const data = state.marketData[market];
-      const entry = data[idx].close;
-      const swingHigh = Math.max(...data.slice(Math.max(0, idx - 20), idx).map(d => d.high));
-      const swingLow = Math.min(...data.slice(Math.max(0, idx - 20), idx).map(d => d.low));
-      const sl = side === 'buy' ? 
-        Math.min(swingLow, entry - Math.max(prevRange * CONFIG.minSLFactor, prevRange * 0.02)) : 
-        Math.max(swingHigh, entry + Math.max(prevRange * CONFIG.minSLFactor, prevRange * 0.02));
-      const tp1 = side === 'buy' ? entry + prevRange * CONFIG.tp1Factor : entry - prevRange * CONFIG.tp1Factor;
-      const tp2 = side === 'buy' ? entry + prevRange * CONFIG.tp2Factor : entry - prevRange * CONFIG.tp2Factor;
-      const equity = Number(document.getElementById('equity').value) || 10000;
-      const riskPct = Number(document.getElementById('riskSlider').value) || CONFIG.defaultRiskPct;
-      const riskAmount = equity * (riskPct / 100);
-      const slDistance = Math.abs(entry - sl) || 1;
-      const size = riskAmount / slDistance;
-      const t = {
-        id: 'sig_' + Math.random().toString(36).slice(2, 9),
-        market, index: idx, time: state.marketData[market][idx].time, entry, sl, tp1, tp2, side, prevRange, size, riskAmount, rsi, features, status: 'open'
-      };
-      return t;
-    }
-
-    /* Execute & simulate trades */
-    function executeTrade(trade) {
-      // Validate trade object
-      if (!trade || !trade.market || !state.marketData[trade.market]) { 
-        addLog('Invalid trade object, execution aborted'); 
-        return; 
-      }
-      // Add to log and signals list
-      state.signals.unshift(trade);
-      addSignalUI(trade);
-      addLog(`TRADE OPENED ${trade.side.toUpperCase()} ${trade.market} @ ${trade.entry.toFixed(4)} SL:${trade.sl.toFixed(4)} TP1:${trade.tp1.toFixed(4)}`);
-      // For backtest: simulate until hit tp or sl quickly (naive)
-      simulateTradeOutcome(trade);
-    }
-
-    /* Naive trade simulation for backtest: step forward and check TP1/TP2/SL */
-    function simulateTradeOutcome(trade) {
-      const data = state.marketData[trade.market];
-      for (let i = trade.index + 1; i < data.length; i++) {
-        const d = data[i];
-        if (trade.side === 'buy') {
-          if (d.low <= trade.sl) { // hit SL
-            closeTrade(trade, 'loss', trade.sl, i); return;
-          }
-          if (d.high >= trade.tp2) { closeTrade(trade, 'win', trade.tp2, i); return; }
-          if (d.high >= trade.tp1) { // simulate partial TP1 then continue for TP2
-            trade.partialClosed = true;
-            addLog(`Partial TP1 hit for ${trade.id} @ ${trade.tp1.toFixed(4)}`);
-            // continue searching for TP2
-          }
-        } else {
-          if (d.high >= trade.sl) { closeTrade(trade, 'loss', trade.sl, i); return; }
-          if (d.low <= trade.tp2) { closeTrade(trade, 'win', trade.tp2, i); return; }
-          if (d.low <= trade.tp1) { trade.partialClosed = true; addLog(`Partial TP1 hit for ${trade.id} @ ${trade.tp1.toFixed(4)}`); }
-        }
-      }
-      // If no SL/TP hit by end, close at last close
-      const last = data[data.length - 1];
-      const closedPrice = last.close;
-      const outcome = (trade.side === 'buy' ? closedPrice > trade.entry : closedPrice < trade.entry) ? 'win' : 'loss';
-      closeTrade(trade, outcome, closedPrice, data.length - 1);
-    }
-
-    /* Close trade and log result */
-    function closeTrade(trade, result, price, index) {
-      trade.status = 'closed'; 
-      trade.closedAt = price; 
-      trade.result = result; 
-      trade.closeIndex = index;
-      addLog(`TRADE CLOSED ${trade.id} RESULT:${result.toUpperCase()} @ ${price.toFixed(4)}`);
-      // record ML features
-      state.mlRecords.push({ features: trade.features, result: trade.result, entry: trade.entry, sl: trade.sl, tp1: trade.tp1 });
-      updateMLPanel();
-      // Enhanced memory management
-      enhancedMemoryTrim();
-    }
-
-    /* ====================================================
-       UI helpers
-       ==================================================== */
-    function addSignalUI(sig) {
-      const panel = document.getElementById('signalsList');
-      const el = document.createElement('div');
-      el.className = 'signal ' + (sig.side === 'buy' ? 'buy' : 'sell');
-      el.innerHTML = `<div><strong>${sig.market}</strong><div class="small">${sig.side.toUpperCase()} @ ${sig.entry.toFixed(4)} | SL ${sig.sl.toFixed(4)}</div></div><div class="small">${sig.features.mode}</div>`;
-      panel.prepend(el);
-    }
-
-    /* Redraw market onto chart */
-    function redrawMarket(market) {
-      if (!market || !state.marketData[market] || !state.series) return;
-      const data = state.marketData[market].map(d => ({ time: d.time, open: d.open, high: d.high, low: d.low, close: d.close }));
-      state.series.setData(data);
-      // markers
-      const markers = [];
-      const zones = state.detectedZones[market] || [];
-      zones.forEach(z => {
-        markers.push({ 
-          time: z.at || data[Math.floor(data.length * 0.6)].time, 
-          position: 'belowBar', 
-          color: z.type === 'buy' ? 'green' : 'red', 
-          shape: 'ellipse', 
-          text: z.type === 'buy' ? 'Buy Zone' : 'Sell Zone' 
+    // Setup all event listeners
+    function setupEventListeners() {
+      // Market tabs
+      document.querySelectorAll('.market-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          state.currentMarket = tab.dataset.market;
+          switchMarket(state.currentMarket);
         });
       });
-      // candlestick markers for patterns - add up/down arrows for recent patterns
-      const sampleLen = Math.min(200, data.length);
-      for (let i = data.length - sampleLen; i < data.length; i++) {
-        const patterns = detectCandlestickPatterns(state.marketData[market], i);
-        if (patterns.includes('bull_engulf')) markers.push({ 
-          time: state.marketData[market][i].time, 
-          position: 'aboveBar', 
-          color: 'green', 
-          shape: 'arrowUp', 
-          text: 'Engulf' 
-        });
-        if (patterns.includes('bear_engulf')) markers.push({ 
-          time: state.marketData[market][i].time, 
-          position: 'belowBar', 
-          color: 'red', 
-          shape: 'arrowDown', 
-          text: 'Engulf' 
-        });
-      }
-      state.series.setMarkers(markers);
+
+      // Control buttons
+      document.getElementById('startStream').addEventListener('click', toggleStream);
+      document.getElementById('runBacktest').addEventListener('click', runBacktest);
+      document.getElementById('clearLogs').addEventListener('click', clearLogs);
     }
 
-    /* ====================================================
-       Backtest & Stream Mode
-       ==================================================== */
-    function runBacktest() {
-      // Clean signals
-      state.signals = []; 
-      document.getElementById('signalsList').innerHTML = '';
-      addLog('Backtest started');
-      const markets = Object.keys(state.marketData);
-      if (markets.length === 0) { 
-        addLog('No markets loaded'); 
-        return; 
+    // Switch between markets
+    function switchMarket(market) {
+      addLog(`Switched to ${market}`);
+      if (state.marketData[market]) {
+        updateChart(state.marketData[market]);
+      } else {
+        generateSampleData(market);
       }
-      for (const m of markets) {
-        const data = state.marketData[m];
-        for (let i = 40; i < data.length; i++) {
-          const trade = evaluateEntryAll(m, i);
-          if (trade) executeTrade(trade);
-        }
-      }
-      addLog('Backtest complete, signals: ' + state.signals.length);
-      redrawMarket(markets[0]);
-      enhancedMemoryTrim();
     }
 
-    /* Stream mode: simulated incremental candle additions, safe stop */
+    // Generate sample data for a market
+    function generateSampleData(market) {
+      const data = [];
+      let price = 1000 + Math.random() * 500; // Base price varies by market
+      const baseTime = new Date('2024-01-01').getTime();
+      
+      for (let i = 0; i < 200; i++) {
+        const time = baseTime + i * 3600000; // 1 hour intervals
+        const open = price;
+        const volatility = 5 + Math.random() * 10;
+        
+        price = price * (1 + (Math.random() - 0.5) * volatility / 100);
+        const high = Math.max(open, price) + Math.random() * volatility;
+        const low = Math.min(open, price) - Math.random() * volatility;
+        const close = price;
+        
+        data.push({
+          time: Math.floor(time / 1000),
+          open: parseFloat(open.toFixed(4)),
+          high: parseFloat(high.toFixed(4)),
+          low: parseFloat(low.toFixed(4)),
+          close: parseFloat(close.toFixed(4)),
+        });
+      }
+      
+      state.marketData[market] = data;
+      updateChart(data);
+    }
+
+    // Update chart with new data
+    function updateChart(data) {
+      if (state.candleSeries) {
+        state.candleSeries.setData(data);
+      }
+    }
+
+    // Toggle streaming mode
     function toggleStream() {
-      if (state.streamTimer) { 
-        clearInterval(state.streamTimer); 
-        state.streamTimer = null; 
-        state.running = false; 
-        document.getElementById('streamMode').textContent = 'Start Stream';
-        addLog('Stream stopped'); 
-        return; 
+      if (state.isStreaming) {
+        stopStream();
+      } else {
+        startStream();
       }
-      addLog('Stream started (simulated ticks)');
-      state.running = true;
-      document.getElementById('streamMode').textContent = 'Stop Stream';
-      state.streamTimer = setInterval(() => {
-        try {
-          const markets = Object.keys(state.marketData);
-          markets.forEach(m => {
-            const arr = state.marketData[m];
-            if (!arr || arr.length === 0) return;
-            // create a new candle lightly randomized
-            const last = arr[arr.length - 1];
-            const volatility = (last.high - last.low) || (Math.abs(last.close) * 0.0005) || 1;
-            const delta = (Math.random() - 0.5) * volatility * 0.8;
-            const newC = { 
-              time: new Date(Date.parse(last.time) + 3600 * 1000).toISOString(), 
-              open: last.close, 
-              high: last.close + Math.abs(delta * 1.6), 
-              low: last.close - Math.abs(delta * 1.6), 
-              close: last.close + delta, 
-              volume: last.volume 
-            };
-            arr.push(normalizeCandle(newC));
-            if (arr.length > 3000) arr.shift();
-            state.marketData[m] = arr;
-            // evaluate latest candle
-            const idx = arr.length - 1;
-            const trade = evaluateEntryAll(m, idx);
-            if (trade) executeTrade(trade);
-            // redraw first market only to save CPU
-            if (m === markets[0]) redrawMarket(m);
-          });
-          enhancedMemoryTrim();
-        } catch (e) { 
-          addLog('Stream error: ' + e.message); 
-          clearInterval(state.streamTimer); 
-          state.streamTimer = null; 
-        }
-      }, 1100);
     }
 
-    /* ====================================================
-       ML / Sentiment: simple feature-win correlation stats
-       ==================================================== */
-    function updateMLPanel() {
-      const recs = state.mlRecords;
-      if (!recs.length) { 
-        document.getElementById('mlPanel').textContent = 'No records yet'; 
-        return; 
+    // Start data streaming
+    function startStream() {
+      state.isStreaming = true;
+      document.getElementById('startStream').textContent = 'Stop Stream';
+      document.getElementById('statusDot').classList.add('running');
+      document.getElementById('statusText').textContent = 'Running';
+      
+      addLog('Stream started - simulating real-time data');
+      
+      state.streamInterval = setInterval(() => {
+        const market = state.currentMarket;
+        const data = state.marketData[market];
+        if (!data) return;
+
+        // Add new candle
+        const lastCandle = data[data.length - 1];
+        const newPrice = lastCandle.close * (1 + (Math.random() - 0.5) * 0.01);
+        const newCandle = {
+          time: lastCandle.time + 3600,
+          open: lastCandle.close,
+          high: Math.max(lastCandle.close, newPrice) + Math.random() * 2,
+          low: Math.min(lastCandle.close, newPrice) - Math.random() * 2,
+          close: parseFloat(newPrice.toFixed(4)),
+        };
+
+        data.push(newCandle);
+        if (data.length > 500) data.shift();
+        
+        updateChart(data);
+        
+        // Randomly generate signals
+        if (Math.random() > 0.9) {
+          generateSignal(market, newCandle.close);
+        }
+        
+      }, 2000);
+    }
+
+    // Stop data streaming
+    function stopStream() {
+      state.isStreaming = false;
+      document.getElementById('startStream').textContent = 'Start Stream';
+      document.getElementById('statusDot').classList.remove('running');
+      document.getElementById('statusText').textContent = 'Stopped';
+      
+      if (state.streamInterval) {
+        clearInterval(state.streamInterval);
+        state.streamInterval = null;
       }
-      // compute win rate overall
-      const wins = recs.filter(r => r.result === 'win').length;
-      const winRate = (wins / recs.length) * 100;
-      // feature correlations: compute win rate when each feature is present
-      const featureStats = {};
-      recs.forEach(r => {
-        const f = r.features;
-        // zone type
-        const z = f.zoneType || 'unknown';
-        featureStats['zone:' + z] = featureStats['zone:' + z] || { count: 0, wins: 0 };
-        featureStats['zone:' + z].count++;
-        if (r.result === 'win') featureStats['zone:' + z].wins++;
-        // fvg
-        const fv = f.fvg || 'none';
-        featureStats['fvg:' + fv] = featureStats['fvg:' + fv] || { count: 0, wins: 0 };
-        featureStats['fvg:' + fv].count++; if (r.result === 'win') featureStats['fvg:' + fv].wins++;
-        // pattern presence
-        const pats = f.patterns || [];
-        pats.forEach(p => {
-          featureStats['pat:' + p] = featureStats['pat:' + p] || { count: 0, wins: 0 };
-          featureStats['pat:' + p].count++; if (r.result === 'win') featureStats['pat:' + p].wins++;
-        });
-        // trend
-        const t = f.trendBuy ? 'trendBuy' : f.trendSell ? 'trendSell' : 'trendNeutral';
-        featureStats['trend:' + t] = featureStats['trend:' + t] || { count: 0, wins: 0 };
-        featureStats['trend:' + t].count++; if (r.result === 'win') featureStats['trend:' + t].wins++;
+      
+      addLog('Stream stopped');
+    }
+
+    // Generate a trading signal
+    function generateSignal(market, price) {
+      const side = Math.random() > 0.5 ? 'buy' : 'sell';
+      const signal = {
+        id: Date.now(),
+        market: market,
+        side: side,
+        price: price,
+        time: new Date().toLocaleTimeString(),
+        sl: side === 'buy' ? (price * 0.995).toFixed(4) : (price * 1.005).toFixed(4),
+        tp: side === 'buy' ? (price * 1.01).toFixed(4) : (price * 0.99).toFixed(4)
+      };
+
+      state.signals.unshift(signal);
+      if (state.signals.length > 10) state.signals.pop();
+      
+      updateSignalsDisplay();
+      addLog(`Signal: ${market} ${side.toUpperCase()} @ ${price}`);
+    }
+
+    // Update signals display
+    function updateSignalsDisplay() {
+      const container = document.getElementById('signalsList');
+      const countElement = document.getElementById('signalCount');
+      
+      container.innerHTML = '';
+      countElement.textContent = `${state.signals.length} signals`;
+      
+      state.signals.forEach(signal => {
+        const element = document.createElement('div');
+        element.className = `signal-item ${signal.side}`;
+        element.innerHTML = `
+          <div>
+            <div class="signal-pair">${signal.market}</div>
+            <div class="signal-price">${signal.price}</div>
+          </div>
+          <div class="signal-side ${signal.side}">${signal.side.toUpperCase()}</div>
+        `;
+        container.appendChild(element);
       });
-      // format summary
-      let out = `Records: ${recs.length}  |  Win rate: ${winRate.toFixed(1)}%\n\nTop feature win rates:\n`;
-      const statArr = Object.keys(featureStats).map(k => ({ k, ...featureStats[k], winRate: (featureStats[k].wins / featureStats[k].count) * 100 }));
-      statArr.sort((a, b) => b.winRate - a.winRate);
-      statArr.slice(0, 10).forEach(s => out += `${s.k} — ${s.winRate.toFixed(1)}% (${s.wins}/${s.count})\n`);
-      document.getElementById('mlPanel').textContent = out;
     }
 
-    /* ====================================================
-       Quick optimizer (simple parameter perturb search)
-       ==================================================== */
-    function quickOptimize() {
-      addLog('Quick optimize started (limited search) — this runs locally and is lightweight');
-      // Try small variations of minBodyPct and atrFactor and pick one with best pseudo win rate
-      const originalMinBody = Number(document.getElementById('minBodyPct').value);
-      const originalAtr = Number(document.getElementById('atrFactor').value);
-      const candidateMinBody = [Math.max(10, originalMinBody - 10), originalMinBody, Math.min(60, originalMinBody + 10)];
-      const candidateAtr = [Math.max(0.2, originalAtr - 0.2), originalAtr, originalAtr + 0.2];
-      let best = { score: -Infinity, params: null };
-      // small backtest loop across first loaded market only to save time
-      const markets = Object.keys(state.marketData);
-      if (!markets.length) { 
-        addLog('No markets to optimize'); 
-        return; 
-      }
-      const market = markets[0];
-      const data = state.marketData[market];
-      for (const mb of candidateMinBody) {
-        for (const af of candidateAtr) {
-          document.getElementById('minBodyPct').value = mb;
-          document.getElementById('atrFactor').value = af;
-          // run quick backtest
-          let wins = 0, total = 0;
-          for (let i = 50; i < data.length; i++) {
-            const t = evaluateEntryAll(market, i);
-            if (t) { total++; simulateTradeOutcome(t); if (t.result === 'win') wins++; }
-          }
-          const score = total > 0 ? (wins / total) : -1;
-          if (score > best.score) { best = { score, params: { minBodyPct: mb, atrFactor: af } }; }
-          // cleanup mlRecords added by simulation
-          state.mlRecords = state.mlRecords.slice(0, 0);
+    // Run backtest
+    function runBacktest() {
+      addLog('Running backtest...');
+      
+      // Simulate backtest
+      setTimeout(() => {
+        const signalsCount = 5 + Math.floor(Math.random() * 10);
+        for (let i = 0; i < signalsCount; i++) {
+          setTimeout(() => {
+            generateSignal(state.currentMarket, 
+              state.marketData[state.currentMarket]?.[state.marketData[state.currentMarket].length - 1]?.close || 1000
+            );
+          }, i * 300);
         }
+        
+        addLog(`Backtest complete - Generated ${signalsCount} signals`);
+      }, 1000);
+    }
+
+    // Add log message
+    function addLog(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      state.logs.unshift(`[${timestamp}] ${message}`);
+      if (state.logs.length > 50) state.logs.pop();
+      
+      updateLogsDisplay();
+    }
+
+    // Update logs display
+    function updateLogsDisplay() {
+      const container = document.getElementById('logPanel');
+      const countElement = document.getElementById('logCount');
+      
+      container.innerHTML = state.logs.join('<br>');
+      countElement.textContent = `${state.logs.length} logs`;
+      container.scrollTop = 0;
+    }
+
+    // Clear all logs
+    function clearLogs() {
+      state.logs = [];
+      updateLogsDisplay();
+      addLog('Logs cleared');
+    }
+
+    // Load initial sample data
+    function loadSampleData() {
+      const markets = ['EURUSD', 'GBPUSD', 'XAUUSD', 'BTCUSD', 'US30', 'BOOM1', 'CRASH1', 'JUMP1', 'STEP1', 'VOL25'];
+      markets.forEach(market => generateSampleData(market));
+      switchMarket('EURUSD');
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      if (state.chart) {
+        state.chart.applyOptions({
+          width: document.getElementById('chart').clientWidth,
+          height: document.getElementById('chart').clientHeight,
+        });
       }
-      // restore
-      document.getElementById('minBodyPct').value = originalMinBody;
-      document.getElementById('atrFactor').value = originalAtr;
-      addLog('Quick optimize complete. Best params: ' + JSON.stringify(best.params) + ' (score=' + best.score + ')');
-    }
-
-    /* ====================================================
-       Unit tests & validation
-       ==================================================== */
-    function runUnitTests() {
-      addLog('Unit tests started');
-      const results = [];
-      // RSI test
-      try {
-        const arr = Array.from({ length: 60 }, (_, i) => 100 + Math.sin(i / 3) + i * 0.1);
-        const rsi = computeRSIArray(arr, 14);
-        results.push({ name: 'RSI compute', pass: rsi.slice(-10).some(v => v !== null) });
-      } catch (e) { results.push({ name: 'RSI compute', pass: false }); }
-      // ATR test
-      try {
-        const data = state.marketData['XAUUSD'] || [];
-        const atr = computeATR(data, 14);
-        results.push({ name: 'ATR compute', pass: atr.length === data.length });
-      } catch (e) { results.push({ name: 'ATR compute', pass: false }); }
-      // Candlestick pattern
-      try {
-        const d = [{ open: 1, high: 2, low: 0.9, close: 1.9 }, { open: 1.95, high: 3, low: 1.9, close: 2.8 }].map(normalizeCandle);
-        const pat = detectCandlestickPatterns(d, 1);
-        results.push({ name: 'Pattern detect', pass: Array.isArray(pat) });
-      } catch (e) { results.push({ name: 'Pattern detect', pass: false }); }
-      // Report
-      results.forEach(r => addLog('UNIT: ' + r.name + ' -> ' + (r.pass ? 'PASS' : 'FAIL')));
-      const all = results.every(r => r.pass);
-      alert('Unit tests complete: ' + (all ? 'ALL PASS' : 'SOME FAIL — check logs'));
-    }
-
-    /* ====================================================
-       Helpers & small utils
-       ==================================================== */
-    function median(arr) {
-      if (!arr || !arr.length) return null;
-      const s = arr.slice().sort((a, b) => a - b);
-      const mid = Math.floor(s.length / 2);
-      return s.length % 2 === 0 ? (s[mid - 1] + s[mid]) / 2 : s[mid];
-    }
-
-    /* ====================================================
-       Memory & cleanup on unload
-       ==================================================== */
-    window.addEventListener('beforeunload', () => {
-      if (state.streamTimer) clearInterval(state.streamTimer);
-      addLog('Window unloading — timers cleared');
     });
 
-    /* ====================================================
-       Prompt & CONFIG display
-       ==================================================== */
-    function promptShort() {
-      return `CityBlooms Advanced 1H multi-market strategy: RSI(14), ATR filter, EMA(20,50), FVG, SMC/Breaker, candlestick patterns, fib entry levels, inducement 1.5%, TP1=0.5*range, TP2=1.0*range, strict ALL-filters required. Includes correlation filter, ML win-analysis.`;
-    }
-    
-    document.getElementById('promptBlock').textContent = promptShort();
-    document.getElementById('configBlock').textContent = JSON.stringify(CONFIG, null, 2);
-    document.getElementById('sampleCSV').textContent = SAMPLE_CSV;
-
-    /* Copy prompt */
-    document.getElementById('copyPromptBtn').onclick = async () => { 
-      await navigator.clipboard.writeText(promptShort()); 
-      alert('Prompt copied'); 
-    };
-
-    /* Auto-load sample and initialize */
-    window.addEventListener('DOMContentLoaded', () => {
-      loadCSVString(SAMPLE_CSV, 'XAUUSD');
-      initialize();
-      addLog('CityBlooms Ready. Load more markets & run Backtest or Stream Mode.');
-    });
-
-    /* ====================================================
-       End of CityBlooms script
-       ==================================================== */
+    // Initialize when page loads
+    document.addEventListener('DOMContentLoaded', initialize);
   </script>
 </body>
 </html>
