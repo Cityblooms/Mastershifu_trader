@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CityBlooms - Trading Dashboard</title>
+  <title>CityBlooms - Trading Signals</title>
   <style>
     :root {
       --bg: #0a0e17;
@@ -65,6 +65,7 @@
       cursor: pointer;
       transition: all 0.2s;
       border: 1px solid transparent;
+      font-size: 14px;
     }
     
     .market-tab.active {
@@ -90,6 +91,7 @@
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
+      font-size: 14px;
     }
     
     .btn:hover {
@@ -107,24 +109,12 @@
     
     .main-content {
       display: grid;
-      grid-template-columns: 1fr 320px;
+      grid-template-columns: 300px 1fr;
       gap: 12px;
       height: 100%;
     }
     
-    .chart-container {
-      background: var(--panel);
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-    
-    #chart {
-      width: 100%;
-      height: 100%;
-    }
-    
-    .sidebar {
+    .signals-container {
       display: flex;
       flex-direction: column;
       gap: 12px;
@@ -136,13 +126,15 @@
       padding: 16px;
       border: 1px solid rgba(255,255,255,0.05);
       flex: 1;
+      display: flex;
+      flex-direction: column;
     }
     
     .signals-header {
       display: flex;
-      justify-content: between;
+      justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 16px;
     }
     
     .signal-item {
@@ -154,20 +146,31 @@
       border-radius: 8px;
       margin-bottom: 8px;
       border-left: 4px solid var(--buy);
+      transition: all 0.3s;
     }
     
     .signal-item.sell {
       border-left-color: var(--sell);
     }
     
+    .signal-item.new {
+      animation: pulseHighlight 2s;
+    }
+    
+    @keyframes pulseHighlight {
+      0% { background: rgba(31, 155, 118, 0.2); }
+      100% { background: rgba(255,255,255,0.03); }
+    }
+    
     .signal-pair {
       font-weight: bold;
+      font-size: 16px;
     }
     
     .signal-side {
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 14px;
       font-weight: bold;
     }
     
@@ -183,6 +186,24 @@
     
     .signal-price {
       font-size: 14px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    
+    .signal-details {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    
+    .signal-sl-tp {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    
+    .signal-time {
+      font-size: 11px;
       color: var(--muted);
     }
     
@@ -203,6 +224,61 @@
       font-family: monospace;
       font-size: 12px;
       line-height: 1.4;
+    }
+    
+    .chart-container {
+      background: var(--panel);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    
+    #miniChart {
+      flex: 1;
+      min-height: 200px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 24px;
+      font-weight: bold;
+      margin: 8px 0;
+    }
+    
+    .stat-value.positive {
+      color: var(--buy);
+    }
+    
+    .stat-value.negative {
+      color: var(--sell);
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: var(--muted);
     }
     
     .status-indicator {
@@ -230,6 +306,41 @@
       50% { opacity: 0.5; }
       100% { opacity: 1; }
     }
+    
+    .signal-strength {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    
+    .strength-bar {
+      width: 60px;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    
+    .strength-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+    
+    .strength-fill.high {
+      background: var(--buy);
+      width: 90%;
+    }
+    
+    .strength-fill.medium {
+      background: #f59e0b;
+      width: 70%;
+    }
+    
+    .strength-fill.low {
+      background: var(--sell);
+      width: 50%;
+    }
   </style>
 </head>
 <body>
@@ -245,8 +356,6 @@
         <div class="market-tab" data-market="US30">US30</div>
         <div class="market-tab" data-market="BOOM1">BOOM 1</div>
         <div class="market-tab" data-market="CRASH1">CRASH 1</div>
-        <div class="market-tab" data-market="JUMP1">JUMP 1</div>
-        <div class="market-tab" data-market="STEP1">STEP 1</div>
         <div class="market-tab" data-market="VOL25">VOL 25</div>
       </div>
       
@@ -262,28 +371,132 @@
     </div>
     
     <div class="main-content">
-      <div class="chart-container">
-        <div id="chart"></div>
-      </div>
-      
-      <div class="sidebar">
+      <div class="signals-container">
         <div class="signals-panel">
           <div class="signals-header">
             <h3>Active Signals</h3>
             <span class="small" id="signalCount">0 signals</span>
           </div>
-          <div id="signalsList">
+          <div id="signalsList" style="flex: 1; overflow-y: auto;">
             <!-- Signals will appear here -->
+            <div class="signal-item new">
+              <div>
+                <div class="signal-pair">EUR/USD</div>
+                <div class="signal-price">1.08542</div>
+                <div class="signal-strength">
+                  <span>Strength:</span>
+                  <div class="strength-bar">
+                    <div class="strength-fill high"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="signal-details">
+                <div class="signal-side buy">BUY</div>
+                <div class="signal-sl-tp">SL: 1.08210 | TP: 1.08950</div>
+                <div class="signal-time">Just now</div>
+              </div>
+            </div>
+            
+            <div class="signal-item sell new">
+              <div>
+                <div class="signal-pair">GOLD</div>
+                <div class="signal-price">2184.65</div>
+                <div class="signal-strength">
+                  <span>Strength:</span>
+                  <div class="strength-bar">
+                    <div class="strength-fill medium"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="signal-details">
+                <div class="signal-side sell">SELL</div>
+                <div class="signal-sl-tp">SL: 2195.20 | TP: 2165.80</div>
+                <div class="signal-time">2 min ago</div>
+              </div>
+            </div>
+            
+            <div class="signal-item">
+              <div>
+                <div class="signal-pair">BTC/USD</div>
+                <div class="signal-price">67432.50</div>
+                <div class="signal-strength">
+                  <span>Strength:</span>
+                  <div class="strength-bar">
+                    <div class="strength-fill high"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="signal-details">
+                <div class="signal-side buy">BUY</div>
+                <div class="signal-sl-tp">SL: 66500.00 | TP: 69500.00</div>
+                <div class="signal-time">5 min ago</div>
+              </div>
+            </div>
+            
+            <div class="signal-item sell">
+              <div>
+                <div class="signal-pair">US30</div>
+                <div class="signal-price">39245.80</div>
+                <div class="signal-strength">
+                  <span>Strength:</span>
+                  <div class="strength-bar">
+                    <div class="strength-fill low"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="signal-details">
+                <div class="signal-side sell">SELL</div>
+                <div class="signal-sl-tp">SL: 39500.00 | TP: 38800.00</div>
+                <div class="signal-time">8 min ago</div>
+              </div>
+            </div>
           </div>
         </div>
         
         <div class="logs-panel">
           <div class="signals-header">
             <h3>Logs</h3>
-            <span class="small" id="logCount">0 logs</span>
+            <span class="small" id="logCount">4 logs</span>
           </div>
           <div class="logs-content" id="logPanel">
-            <!-- Logs will appear here -->
+            [10:30:15] Signal: EUR/USD BUY @ 1.08542<br>
+            [10:28:42] Signal: GOLD SELL @ 2184.65<br>
+            [10:25:18] Signal: BTC/USD BUY @ 67432.50<br>
+            [10:22:05] Signal: US30 SELL @ 39245.80
+          </div>
+        </div>
+      </div>
+      
+      <div class="chart-container">
+        <div class="chart-header">
+          <h3>Market Overview</h3>
+          <div class="small" id="currentMarket">EUR/USD</div>
+        </div>
+        <div id="miniChart"></div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Today's Signals</div>
+            <div class="stat-value">24</div>
+            <div class="stat-label">+8.2% from yesterday</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">Win Rate</div>
+            <div class="stat-value positive">76.4%</div>
+            <div class="stat-label">Last 7 days</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">Active Signals</div>
+            <div class="stat-value">4</div>
+            <div class="stat-label">Across all markets</div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-label">Avg. Profit</div>
+            <div class="stat-value positive">+2.3%</div>
+            <div class="stat-label">Per signal</div>
           </div>
         </div>
       </div>
@@ -297,48 +510,73 @@
     const state = {
       marketData: {},
       signals: [],
-      logs: [],
+      logs: [
+        '[10:30:15] Signal: EUR/USD BUY @ 1.08542',
+        '[10:28:42] Signal: GOLD SELL @ 2184.65', 
+        '[10:25:18] Signal: BTC/USD BUY @ 67432.50',
+        '[10:22:05] Signal: US30 SELL @ 39245.80'
+      ],
       currentMarket: 'EURUSD',
       streamInterval: null,
-      isStreaming: false
+      isStreaming: false,
+      signalCount: 0
     };
 
     // Initialize the dashboard
     function initialize() {
-      createChart();
+      createMiniChart();
       setupEventListeners();
       loadSampleData();
-      addLog('CityBlooms Dashboard initialized');
+      updateSignalsDisplay();
+      updateLogsDisplay();
+      addLog('CityBlooms Signals Dashboard initialized');
     }
 
-    // Create the main chart
-    function createChart() {
-      const chartElement = document.getElementById('chart');
+    // Create the mini chart
+    function createMiniChart() {
+      const chartElement = document.getElementById('miniChart');
       if (!chartElement) return;
 
       const chart = LightweightCharts.createChart(chartElement, {
         layout: {
           background: { color: 'transparent' },
           textColor: '#e6eef8',
+          fontSize: 12
         },
         grid: {
-          vertLines: { color: 'rgba(255,255,255,0.05)' },
-          horzLines: { color: 'rgba(255,255,255,0.05)' },
+          vertLines: { visible: false },
+          horzLines: { visible: false },
         },
         width: chartElement.clientWidth,
         height: chartElement.clientHeight,
+        timeScale: {
+          visible: false,
+        },
+        rightPriceScale: {
+          visible: false,
+        },
+        crosshair: {
+          mode: 0, // Hidden
+        },
+        handleScroll: false,
+        handleScale: false
       });
 
-      const candleSeries = chart.addCandlestickSeries({
-        upColor: '#16a34a',
-        downColor: '#ef4444',
-        borderVisible: false,
-        wickUpColor: '#16a34a',
-        wickDownColor: '#ef4444',
+      const lineSeries = chart.addLineSeries({
+        color: '#1f9b76',
+        lineWidth: 2,
       });
 
-      state.chart = chart;
-      state.candleSeries = candleSeries;
+      // Generate sample data for the mini chart
+      const data = [];
+      let value = 100;
+      for (let i = 0; i < 50; i++) {
+        value = value * (1 + (Math.random() - 0.48) * 0.02);
+        data.push({ time: i, value: value });
+      }
+
+      lineSeries.setData(data);
+      state.miniChart = chart;
     }
 
     // Setup all event listeners
@@ -349,7 +587,8 @@
           document.querySelectorAll('.market-tab').forEach(t => t.classList.remove('active'));
           tab.classList.add('active');
           state.currentMarket = tab.dataset.market;
-          switchMarket(state.currentMarket);
+          document.getElementById('currentMarket').textContent = tab.textContent;
+          addLog(`Switched to ${state.currentMarket}`);
         });
       });
 
@@ -357,52 +596,6 @@
       document.getElementById('startStream').addEventListener('click', toggleStream);
       document.getElementById('runBacktest').addEventListener('click', runBacktest);
       document.getElementById('clearLogs').addEventListener('click', clearLogs);
-    }
-
-    // Switch between markets
-    function switchMarket(market) {
-      addLog(`Switched to ${market}`);
-      if (state.marketData[market]) {
-        updateChart(state.marketData[market]);
-      } else {
-        generateSampleData(market);
-      }
-    }
-
-    // Generate sample data for a market
-    function generateSampleData(market) {
-      const data = [];
-      let price = 1000 + Math.random() * 500; // Base price varies by market
-      const baseTime = new Date('2024-01-01').getTime();
-      
-      for (let i = 0; i < 200; i++) {
-        const time = baseTime + i * 3600000; // 1 hour intervals
-        const open = price;
-        const volatility = 5 + Math.random() * 10;
-        
-        price = price * (1 + (Math.random() - 0.5) * volatility / 100);
-        const high = Math.max(open, price) + Math.random() * volatility;
-        const low = Math.min(open, price) - Math.random() * volatility;
-        const close = price;
-        
-        data.push({
-          time: Math.floor(time / 1000),
-          open: parseFloat(open.toFixed(4)),
-          high: parseFloat(high.toFixed(4)),
-          low: parseFloat(low.toFixed(4)),
-          close: parseFloat(close.toFixed(4)),
-        });
-      }
-      
-      state.marketData[market] = data;
-      updateChart(data);
-    }
-
-    // Update chart with new data
-    function updateChart(data) {
-      if (state.candleSeries) {
-        state.candleSeries.setData(data);
-      }
     }
 
     // Toggle streaming mode
@@ -421,35 +614,17 @@
       document.getElementById('statusDot').classList.add('running');
       document.getElementById('statusText').textContent = 'Running';
       
-      addLog('Stream started - simulating real-time data');
+      addLog('Signal stream started - generating live signals');
+      
+      // Generate initial signals immediately
+      generateRandomSignal();
       
       state.streamInterval = setInterval(() => {
-        const market = state.currentMarket;
-        const data = state.marketData[market];
-        if (!data) return;
-
-        // Add new candle
-        const lastCandle = data[data.length - 1];
-        const newPrice = lastCandle.close * (1 + (Math.random() - 0.5) * 0.01);
-        const newCandle = {
-          time: lastCandle.time + 3600,
-          open: lastCandle.close,
-          high: Math.max(lastCandle.close, newPrice) + Math.random() * 2,
-          low: Math.min(lastCandle.close, newPrice) - Math.random() * 2,
-          close: parseFloat(newPrice.toFixed(4)),
-        };
-
-        data.push(newCandle);
-        if (data.length > 500) data.shift();
-        
-        updateChart(data);
-        
-        // Randomly generate signals
-        if (Math.random() > 0.9) {
-          generateSignal(market, newCandle.close);
+        // Generate new signals randomly
+        if (Math.random() > 0.7) {
+          generateRandomSignal();
         }
-        
-      }, 2000);
+      }, 5000); // New signal every 5-15 seconds
     }
 
     // Stop data streaming
@@ -464,24 +639,58 @@
         state.streamInterval = null;
       }
       
-      addLog('Stream stopped');
+      addLog('Signal stream stopped');
     }
 
-    // Generate a trading signal
-    function generateSignal(market, price) {
-      const side = Math.random() > 0.5 ? 'buy' : 'sell';
+    // Generate a random trading signal
+    function generateRandomSignal() {
+      const markets = ['EUR/USD', 'GBP/USD', 'GOLD', 'BTC/USD', 'US30', 'BOOM 1', 'CRASH 1', 'VOL 25'];
+      const sides = ['buy', 'sell'];
+      const strengths = ['high', 'medium', 'low'];
+      
+      const market = markets[Math.floor(Math.random() * markets.length)];
+      const side = sides[Math.floor(Math.random() * sides.length)];
+      const strength = strengths[Math.floor(Math.random() * strengths.length)];
+      
+      // Generate realistic prices based on market
+      let price;
+      switch(market) {
+        case 'EUR/USD': price = (1.07 + Math.random() * 0.03).toFixed(5); break;
+        case 'GBP/USD': price = (1.25 + Math.random() * 0.04).toFixed(5); break;
+        case 'GOLD': price = (2150 + Math.random() * 50).toFixed(2); break;
+        case 'BTC/USD': price = (65000 + Math.random() * 5000).toFixed(2); break;
+        case 'US30': price = (39000 + Math.random() * 1000).toFixed(2); break;
+        default: price = (100 + Math.random() * 50).toFixed(2);
+      }
+      
+      // Calculate SL and TP based on side and market volatility
+      let sl, tp;
+      if (side === 'buy') {
+        sl = (parseFloat(price) * 0.995).toFixed(market.includes('/') ? 5 : 2);
+        tp = (parseFloat(price) * 1.01).toFixed(market.includes('/') ? 5 : 2);
+      } else {
+        sl = (parseFloat(price) * 1.005).toFixed(market.includes('/') ? 5 : 2);
+        tp = (parseFloat(price) * 0.99).toFixed(market.includes('/') ? 5 : 2);
+      }
+      
       const signal = {
         id: Date.now(),
         market: market,
         side: side,
         price: price,
-        time: new Date().toLocaleTimeString(),
-        sl: side === 'buy' ? (price * 0.995).toFixed(4) : (price * 1.005).toFixed(4),
-        tp: side === 'buy' ? (price * 1.01).toFixed(4) : (price * 0.99).toFixed(4)
+        strength: strength,
+        sl: sl,
+        tp: tp,
+        time: 'Just now'
       };
 
       state.signals.unshift(signal);
-      if (state.signals.length > 10) state.signals.pop();
+      state.signalCount++;
+      
+      // Keep only last 10 signals
+      if (state.signals.length > 10) {
+        state.signals.pop();
+      }
       
       updateSignalsDisplay();
       addLog(`Signal: ${market} ${side.toUpperCase()} @ ${price}`);
@@ -495,15 +704,29 @@
       container.innerHTML = '';
       countElement.textContent = `${state.signals.length} signals`;
       
-      state.signals.forEach(signal => {
+      state.signals.forEach((signal, index) => {
         const element = document.createElement('div');
-        element.className = `signal-item ${signal.side}`;
+        element.className = `signal-item ${signal.side} ${index < 2 ? 'new' : ''}`;
+        
+        const strengthClass = signal.strength === 'high' ? 'high' : 
+                            signal.strength === 'medium' ? 'medium' : 'low';
+        
         element.innerHTML = `
           <div>
             <div class="signal-pair">${signal.market}</div>
             <div class="signal-price">${signal.price}</div>
+            <div class="signal-strength">
+              <span>Strength:</span>
+              <div class="strength-bar">
+                <div class="strength-fill ${strengthClass}"></div>
+              </div>
+            </div>
           </div>
-          <div class="signal-side ${signal.side}">${signal.side.toUpperCase()}</div>
+          <div class="signal-details">
+            <div class="signal-side ${signal.side}">${signal.side.toUpperCase()}</div>
+            <div class="signal-sl-tp">SL: ${signal.sl} | TP: ${signal.tp}</div>
+            <div class="signal-time">${signal.time}</div>
+          </div>
         `;
         container.appendChild(element);
       });
@@ -511,28 +734,27 @@
 
     // Run backtest
     function runBacktest() {
-      addLog('Running backtest...');
+      addLog('Running backtest simulation...');
       
-      // Simulate backtest
+      // Simulate backtest by generating multiple signals
+      const signalsToGenerate = 5 + Math.floor(Math.random() * 6); // 5-10 signals
+      
+      for (let i = 0; i < signalsToGenerate; i++) {
+        setTimeout(() => {
+          generateRandomSignal();
+        }, i * 800);
+      }
+      
       setTimeout(() => {
-        const signalsCount = 5 + Math.floor(Math.random() * 10);
-        for (let i = 0; i < signalsCount; i++) {
-          setTimeout(() => {
-            generateSignal(state.currentMarket, 
-              state.marketData[state.currentMarket]?.[state.marketData[state.currentMarket].length - 1]?.close || 1000
-            );
-          }, i * 300);
-        }
-        
-        addLog(`Backtest complete - Generated ${signalsCount} signals`);
-      }, 1000);
+        addLog(`Backtest complete - Generated ${signalsToGenerate} signals`);
+      }, signalsToGenerate * 800 + 500);
     }
 
     // Add log message
     function addLog(message) {
       const timestamp = new Date().toLocaleTimeString();
       state.logs.unshift(`[${timestamp}] ${message}`);
-      if (state.logs.length > 50) state.logs.pop();
+      if (state.logs.length > 20) state.logs.pop();
       
       updateLogsDisplay();
     }
@@ -544,7 +766,6 @@
       
       container.innerHTML = state.logs.join('<br>');
       countElement.textContent = `${state.logs.length} logs`;
-      container.scrollTop = 0;
     }
 
     // Clear all logs
@@ -556,20 +777,50 @@
 
     // Load initial sample data
     function loadSampleData() {
-      const markets = ['EURUSD', 'GBPUSD', 'XAUUSD', 'BTCUSD', 'US30', 'BOOM1', 'CRASH1', 'JUMP1', 'STEP1', 'VOL25'];
-      markets.forEach(market => generateSampleData(market));
-      switchMarket('EURUSD');
+      // Initial signals are already in the HTML
+      state.signals = [
+        {
+          id: 1,
+          market: 'EUR/USD',
+          side: 'buy',
+          price: '1.08542',
+          strength: 'high',
+          sl: '1.08210',
+          tp: '1.08950',
+          time: 'Just now'
+        },
+        {
+          id: 2,
+          market: 'GOLD',
+          side: 'sell',
+          price: '2184.65',
+          strength: 'medium',
+          sl: '2195.20',
+          tp: '2165.80',
+          time: '2 min ago'
+        },
+        {
+          id: 3,
+          market: 'BTC/USD',
+          side: 'buy',
+          price: '67432.50',
+          strength: 'high',
+          sl: '66500.00',
+          tp: '69500.00',
+          time: '5 min ago'
+        },
+        {
+          id: 4,
+          market: 'US30',
+          side: 'sell',
+          price: '39245.80',
+          strength: 'low',
+          sl: '39500.00',
+          tp: '38800.00',
+          time: '8 min ago'
+        }
+      ];
     }
-
-    // Handle window resize
-    window.addEventListener('resize', () => {
-      if (state.chart) {
-        state.chart.applyOptions({
-          width: document.getElementById('chart').clientWidth,
-          height: document.getElementById('chart').clientHeight,
-        });
-      }
-    });
 
     // Initialize when page loads
     document.addEventListener('DOMContentLoaded', initialize);
