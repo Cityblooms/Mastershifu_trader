@@ -1,1126 +1,322 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gold RSI Trading Signals - Real-Time 24/5</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #fff;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 1200px;
-        }
-
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            color: #ffd700;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        .header p {
-            color: #b8b8b8;
-            font-size: 1em;
-        }
-
-        .status-bar {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 18px 25px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .status-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .status-label {
-            color: #b8b8b8;
-            font-size: 0.85em;
-            margin-bottom: 5px;
-        }
-
-        .status-value {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #ffd700;
-        }
-
-        .market-closed {
-            background: rgba(214, 48, 49, 0.2);
-            border: 1px solid rgba(214, 48, 49, 0.4);
-            padding: 15px;
-            border-radius: 10px;
-            color: #ff7675;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .market-open {
-            background: rgba(0, 184, 148, 0.2);
-            border: 1px solid rgba(0, 184, 148, 0.4);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .live-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 15px;
-            background: rgba(0, 184, 148, 0.2);
-            border-radius: 20px;
-        }
-
-        .live-dot {
-            width: 10px;
-            height: 10px;
-            background: #00b894;
-            border-radius: 50%;
-            animation: blink 2s infinite;
-        }
-
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.3; }
-        }
-
-        .session-info {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-
-        .session-badges {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-
-        .session-badge {
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: bold;
-        }
-
-        .session-active {
-            background: rgba(0, 184, 148, 0.3);
-            border: 1px solid #00b894;
-            color: #00b894;
-        }
-
-        .session-inactive {
-            background: rgba(99, 110, 114, 0.2);
-            border: 1px solid #636e72;
-            color: #b8b8b8;
-        }
-
-        .session-overlap {
-            background: rgba(255, 215, 0, 0.2);
-            border: 1px solid #ffd700;
-            color: #ffd700;
-            animation: pulse-glow 2s infinite;
-        }
-
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
-            50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
-        }
-
-        .timeframe-selector {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .timeframe-selector label {
-            color: #ffd700;
-            font-weight: bold;
-            margin-right: 10px;
-        }
-
-        .tf-btn {
-            padding: 8px 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: #b8b8b8;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .tf-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-1px);
-        }
-
-        .tf-btn.active {
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
-            color: #1a1a2e;
-            font-weight: bold;
-            border: 1px solid #ffd700;
-            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
-        }
-
-        .signal-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 35px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 20px;
-        }
-
-        .signal-display {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .signal-badge {
-            display: inline-block;
-            padding: 20px 50px;
-            border-radius: 50px;
-            font-size: 2em;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            animation: pulse 2s infinite;
-        }
-
-        .signal-buy {
-            background: linear-gradient(135deg, #00b894, #00cec9);
-            box-shadow: 0 0 30px rgba(0, 184, 148, 0.5);
-        }
-
-        .signal-sell {
-            background: linear-gradient(135deg, #d63031, #ff7675);
-            box-shadow: 0 0 30px rgba(214, 48, 49, 0.5);
-        }
-
-        .signal-neutral {
-            background: linear-gradient(135deg, #636e72, #b2bec3);
-            box-shadow: 0 0 20px rgba(99, 110, 114, 0.3);
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-top: 25px;
-        }
-
-        .metric-box {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .metric-label {
-            color: #b8b8b8;
-            font-size: 0.9em;
-            margin-bottom: 8px;
-        }
-
-        .metric-value {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #ffd700;
-        }
-
-        .conditions-list {
-            margin-top: 25px;
-            padding: 20px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 15px;
-        }
-
-        .conditions-list h3 {
-            color: #ffd700;
-            margin-bottom: 15px;
-            font-size: 1.2em;
-        }
-
-        .condition-item {
-            display: flex;
-            align-items: center;
-            padding: 10px;
-            margin-bottom: 8px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-        }
-
-        .condition-icon {
-            width: 24px;
-            height: 24px;
-            margin-right: 12px;
-            font-size: 1.2em;
-        }
-
-        .condition-met {
-            color: #00b894;
-        }
-
-        .condition-not-met {
-            color: #636e72;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #b8b8b8;
-        }
-
-        .error-message {
-            background: rgba(214, 48, 49, 0.2);
-            border: 1px solid rgba(214, 48, 49, 0.4);
-            padding: 15px;
-            border-radius: 10px;
-            color: #ff7675;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .disclaimer {
-            text-align: center;
-            color: #636e72;
-            font-size: 0.85em;
-            margin-top: 20px;
-            padding: 15px;
-            background: rgba(255, 0, 0, 0.1);
-            border-radius: 10px;
-            border: 1px solid rgba(255, 0, 0, 0.2);
-        }
-
-        .refresh-btn {
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
-            color: #1a1a2e;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .refresh-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
-        }
-
-        .refresh-btn:active {
-            transform: translateY(0);
-        }
-
-        .refresh-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .volatility-warning {
-            background: rgba(255, 165, 0, 0.2);
-            border: 1px solid rgba(255, 165, 0, 0.4);
-            padding: 12px;
-            border-radius: 8px;
-            color: #ffa500;
-            margin-top: 15px;
-            font-size: 0.9em;
-            text-align: center;
-        }
-
-        .data-source {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .api-status {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.85em;
-            color: #b8b8b8;
-        }
-
-        .api-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #00b894;
-        }
-
-        .api-dot.offline {
-            background: #d63031;
-            animation: blink 1.5s infinite;
-        }
-
-        .provider-badge {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8em;
-            color: #ffd700;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-
-        .mt5-compatibility {
-            background: rgba(0, 184, 148, 0.1);
-            border: 1px solid rgba(0, 184, 148, 0.3);
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 0.9em;
-            color: #00b894;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>⚡ Gold RSI Trading Signals</h1>
-            <p>Real-time XAU/USD RSI analysis • 24/5 Market Coverage • MT5/TradingView Compatible</p>
-        </div>
-
-        <div id="marketStatusBanner"></div>
-
-        <div class="mt5-compatibility">
-            ✅ <strong>MT5/TradingView Compatible:</strong> RSI(14) calculations match MT5/TradingView exactly. Same signals, same time frames.
-        </div>
-
-        <div class="status-bar">
-            <div class="status-item">
-                <span class="status-label">Live Gold Price</span>
-                <span class="status-value" id="goldPrice">$1,950.00</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Market Status</span>
-                <div id="marketStatus">--</div>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Current Session</span>
-                <span class="status-value" id="currentSession" style="font-size: 1.1em;">--</span>
-            </div>
-            <div class="status-item">
-                <span class="status-label">Time Frame</span>
-                <span class="status-value" id="currentTimeframe" style="font-size: 1.1em; color: #ffed4e;">1 Hour</span>
-            </div>
-            <div class="status-item" style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
-                <button class="refresh-btn" onclick="refreshData()" id="refreshBtn">🔄 Refresh</button>
-                <button class="refresh-btn" onclick="resetData()" style="background: linear-gradient(135deg, #d63031, #ff7675);">🔄 Reset</button>
-            </div>
-        </div>
-
-        <div class="timeframe-selector">
-            <label>📈 Select Time Frame:</label>
-            <button class="tf-btn" onclick="changeTimeframe('M5')" data-tf="M5">M5</button>
-            <button class="tf-btn" onclick="changeTimeframe('M15')" data-tf="M15">M15</button>
-            <button class="tf-btn active" onclick="changeTimeframe('H1')" data-tf="H1">H1</button>
-            <button class="tf-btn" onclick="changeTimeframe('H4')" data-tf="H4">H4</button>
-            <button class="tf-btn" onclick="changeTimeframe('D1')" data-tf="D1">D1</button>
+        // Update market status
+        function updateMarketStatus() {
+            const isOpen = isMarketOpen();
+            const statusDiv = document.getElementById('marketStatus');
             
-            <div class="timeframe-info" style="width: 100%; background: rgba(255, 255, 255, 0.03); padding: 10px 15px; border-radius: 8px; margin-top: 10px; font-size: 0.9em; color: #b8b8b8; border-left: 3px solid #ffd700;">
-                <strong>Matching MT5/TradingView:</strong> RSI(14) calculations synchronized with selected time frame.
-                <br><small>M5=5min, M15=15min, H1=1hr, H4=4hr, D1=1day (Matches MT5/TradingView exactly)</small>
-            </div>
-        </div>
-
-        <div class="session-info">
-            <div style="color: #ffd700; font-weight: bold; margin-bottom: 8px;">📊 Trading Sessions (GMT)</div>
-            <div class="session-badges" id="sessionBadges"></div>
-            <div id="volatilityWarning"></div>
-        </div>
-
-        <div id="errorContainer"></div>
-
-        <div class="signal-card">
-            <div class="signal-display">
-                <div class="signal-badge signal-neutral" id="signalBadge">ANALYZING...</div>
-            </div>
-
-            <div class="metrics-grid">
-                <div class="metric-box">
-                    <div class="metric-label">RSI (14)</div>
-                    <div class="metric-value" id="rsiDisplay">--</div>
-                    <div style="font-size: 0.8em; color: #b8b8b8; margin-top: 5px;" id="rsiLevel">--</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-label">Trend Status</div>
-                    <div class="metric-value" id="trendDisplay" style="font-size: 1.3em;">--</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-label">Signal Strength</div>
-                    <div class="metric-value" id="strengthDisplay">--</div>
-                </div>
-                <div class="metric-box">
-                    <div class="metric-label">Time Frame</div>
-                    <div class="metric-value" id="timeframeDisplay" style="font-size: 1.4em;">1 Hour</div>
-                </div>
-            </div>
-
-            <div class="conditions-list" id="conditionsList">
-                <h3>Signal Analysis</h3>
-                <div class="loading">Initializing signal generator...</div>
-            </div>
-
-            <div class="data-source">
-                <div class="api-status">
-                    <div class="api-dot" id="apiStatusDot"></div>
-                    <span id="apiStatusText">Starting up...</span>
-                </div>
-                <div class="provider-badge" id="dataProvider">GoldAPI.io</div>
-            </div>
-
-            <div style="text-align: center; color: #b8b8b8; font-size: 0.9em; margin-top: 20px;" id="lastUpdate">
-                Last updated: -- <span id="timeframeUpdate"></span>
-            </div>
-        </div>
-
-        <div class="disclaimer">
-            ⚠️ <strong>Risk Disclaimer:</strong> Gold trades 24/5 with varying liquidity across sessions. 
-            <strong>Signals are based on RSI(14) matching MT5/TradingView calculations.</strong> 
-            Higher time frames (H4, D1) provide more reliable signals. 
-            Always use proper risk management, combine with multiple indicators, and never risk more than you can afford to lose.
-        </div>
-    </div>
-
-    <script>
-        // ==============================================
-        // SIMPLIFIED AND GUARANTEED WORKING VERSION
-        // ==============================================
-
-        // Initialize with working data immediately
-        let currentTimeFrame = 'H1';
-        let candleData = {};
-        let lastGoldPrice = 1950.00;
-        let lastChange = 0;
-        const RSI_PERIOD = 14;
-        
-        // Time frame configurations
-        const TIMEFRAMES = {
-            'M5': { name: '5 Minutes', refresh: 30000, oversold: 30, overbought: 70 },
-            'M15': { name: '15 Minutes', refresh: 60000, oversold: 30, overbought: 70 },
-            'H1': { name: '1 Hour', refresh: 120000, oversold: 30, overbought: 70 },
-            'H4': { name: '4 Hours', refresh: 300000, oversold: 30, overbought: 70 },
-            'D1': { name: 'Daily', refresh: 600000, oversold: 35, overbought: 65 }
-        };
-
-        // Trading sessions
-        const SESSIONS = {
-            asian: { start: 0, end: 9, name: 'Asian (Tokyo)' },
-            london: { start: 7, end: 16, name: 'London' },
-            newyork: { start: 13, end: 22, name: 'New York' }
-        };
-
-        // Initialize with sample data
-        function initializeSampleData() {
-            console.log("Initializing sample data...");
-            
-            // Create sample candle data for each timeframe
-            Object.keys(TIMEFRAMES).forEach(tf => {
-                candleData[tf] = [];
-                const basePrice = 1950.00;
-                
-                // Create 50 candles of historical data
-                for (let i = 50; i >= 0; i--) {
-                    const volatility = tf === 'M5' ? 0.002 : tf === 'D1' ? 0.005 : 0.003;
-                    const randomChange = (Math.random() - 0.5) * volatility * basePrice;
-                    const price = basePrice + randomChange * (i / 10);
-                    
-                    candleData[tf].push({
-                        timestamp: new Date(Date.now() - i * TIMEFRAMES[tf].refresh),
-                        open: price - randomChange * 0.3,
-                        high: price + Math.abs(randomChange) * 0.5,
-                        low: price - Math.abs(randomChange) * 0.5,
-                        close: price,
-                        volume: Math.floor(Math.random() * 1000) + 500
-                    });
-                }
-            });
-            
-            console.log("Sample data initialized");
+            if (isOpen) {
+                statusDiv.innerHTML = `
+                    <div class="live-indicator">
+                        <div class="live-dot"></div>
+                        <span style="color: #00b894; font-weight: bold; font-size: 0.9em;">LIVE MARKET</span>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    <div style="color: #ff7675; font-weight: bold; font-size: 0.9em;">
+                        MARKET CLOSED
+                    </div>
+                `;
+            }
         }
 
-        // Calculate RSI (simplified but accurate)
-        function calculateRSI(candles) {
-            if (!candles || candles.length < RSI_PERIOD + 1) return 50;
+        // Simulate RSI calculation (in real app, this would come from TradingView API)
+        function calculateRSI(prices, period = RSI_PERIOD) {
+            if (prices.length < period + 1) return 50;
             
             let gains = 0;
             let losses = 0;
             
-            // Calculate initial averages
-            for (let i = 1; i <= RSI_PERIOD; i++) {
-                const change = candles[i].close - candles[i-1].close;
-                if (change > 0) {
-                    gains += change;
+            for (let i = 1; i <= period; i++) {
+                const diff = prices[i] - prices[i - 1];
+                if (diff >= 0) {
+                    gains += diff;
                 } else {
-                    losses += Math.abs(change);
+                    losses -= diff;
                 }
             }
             
-            let avgGain = gains / RSI_PERIOD;
-            let avgLoss = losses / RSI_PERIOD;
-            
-            // Calculate remaining periods
-            for (let i = RSI_PERIOD + 1; i < candles.length; i++) {
-                const change = candles[i].close - candles[i-1].close;
-                const gain = change > 0 ? change : 0;
-                const loss = change < 0 ? Math.abs(change) : 0;
-                
-                avgGain = (avgGain * (RSI_PERIOD - 1) + gain) / RSI_PERIOD;
-                avgLoss = (avgLoss * (RSI_PERIOD - 1) + loss) / RSI_PERIOD;
-            }
+            const avgGain = gains / period;
+            const avgLoss = losses / period;
             
             if (avgLoss === 0) return 100;
+            
             const rs = avgGain / avgLoss;
             return 100 - (100 / (1 + rs));
         }
 
-        // Fetch gold price (with fallbacks)
-        async function fetchGoldPrice() {
-            const providers = [
-                {
-                    name: 'GoldAPI.io',
-                    url: 'https://api.goldapi.io/api/XAU/USD',
-                    headers: { 'x-access-token': 'goldapi-12ewq0vma26e-io' },
-                    parser: data => ({
-                        price: data.price,
-                        change: data.ch,
-                        changePercent: data.chp
-                    })
-                },
-                {
-                    name: 'FreeForexAPI',
-                    url: 'https://api.freeforexapi.com/v1/latest?pairs=XAUUSD',
-                    parser: data => {
-                        const rate = data.rates?.XAUUSD;
-                        if (!rate) throw new Error('No rate');
-                        const price = 1 / rate; // Convert from USD per ounce to ounces per USD
-                        const change = price - lastGoldPrice;
-                        return {
-                            price: price,
-                            change: change,
-                            changePercent: (change / lastGoldPrice * 100)
-                        };
-                    }
-                },
-                {
-                    name: 'Simulated',
-                    parser: () => {
-                        const volatility = 0.002;
-                        const change = (Math.random() - 0.5) * volatility * lastGoldPrice;
-                        const newPrice = lastGoldPrice + change;
-                        return {
-                            price: newPrice,
-                            change: change,
-                            changePercent: (change / lastGoldPrice * 100)
-                        };
-                    }
-                }
-            ];
-
-            for (const provider of providers) {
-                try {
-                    console.log(`Trying ${provider.name}...`);
-                    
-                    if (provider.name === 'Simulated') {
-                        const data = provider.parser();
-                        lastGoldPrice = data.price;
-                        lastChange = data.change;
-                        return {
-                            price: data.price,
-                            change: data.change,
-                            changePercent: data.changePercent,
-                            timestamp: new Date(),
-                            provider: provider.name
-                        };
-                    }
-                    
-                    if (provider.url) {
-                        const response = await fetch(provider.url, {
-                            headers: provider.headers,
-                            mode: 'cors'
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            const result = provider.parser(data);
-                            lastGoldPrice = result.price;
-                            lastChange = result.change;
-                            return {
-                                price: result.price,
-                                change: result.change,
-                                changePercent: result.changePercent,
-                                timestamp: new Date(),
-                                provider: provider.name
-                            };
-                        }
-                    }
-                } catch (error) {
-                    console.log(`${provider.name} failed:`, error.message);
-                    continue;
-                }
-            }
-            
-            // Final fallback
-            const change = (Math.random() - 0.5) * 5;
-            lastGoldPrice += change;
-            lastChange = change;
-            return {
-                price: lastGoldPrice,
-                change: change,
-                changePercent: (change / (lastGoldPrice - change) * 100),
-                timestamp: new Date(),
-                provider: 'Fallback'
+        // Generate signal based on RSI
+        function generateSignal(rsiValue) {
+            const signal = {
+                type: 'NEUTRAL',
+                strength: 'Medium',
+                confidence: 50,
+                conditions: []
             };
+            
+            // Extreme overbought
+            if (rsiValue >= 80) {
+                signal.type = 'STRONG SELL';
+                signal.strength = 'Very Strong';
+                signal.confidence = 85;
+                signal.conditions = [
+                    '✓ RSI above 80 (Extreme Overbought)',
+                    '✓ Price likely to reverse down',
+                    '✓ Consider short positions'
+                ];
+            }
+            // Overbought
+            else if (rsiValue >= 70) {
+                signal.type = 'SELL';
+                signal.strength = 'Strong';
+                signal.confidence = 70;
+                signal.conditions = [
+                    '✓ RSI above 70 (Overbought)',
+                    '✓ Caution for longs',
+                    '✓ Look for bearish patterns'
+                ];
+            }
+            // Oversold
+            else if (rsiValue <= 30) {
+                signal.type = 'BUY';
+                signal.strength = 'Strong';
+                signal.confidence = 70;
+                signal.conditions = [
+                    '✓ RSI below 30 (Oversold)',
+                    '✓ Price likely to bounce',
+                    '✓ Consider long positions'
+                ];
+            }
+            // Extreme oversold
+            else if (rsiValue <= 20) {
+                signal.type = 'STRONG BUY';
+                signal.strength = 'Very Strong';
+                signal.confidence = 85;
+                signal.conditions = [
+                    '✓ RSI below 20 (Extreme Oversold)',
+                    '✓ Strong bounce expected',
+                    '✓ Good long entry zone'
+                ];
+            }
+            // Neutral with bullish bias
+            else if (rsiValue > 50) {
+                signal.type = 'NEUTRAL-BULLISH';
+                signal.strength = 'Medium';
+                signal.confidence = 60;
+                signal.conditions = [
+                    '✓ RSI above 50 (Bullish bias)',
+                    '✓ Wait for better entry',
+                    '✓ Monitor for breakout'
+                ];
+            }
+            // Neutral with bearish bias
+            else if (rsiValue < 50) {
+                signal.type = 'NEUTRAL-BEARISH';
+                signal.strength = 'Medium';
+                signal.confidence = 60;
+                signal.conditions = [
+                    '✓ RSI below 50 (Bearish bias)',
+                    '✓ Wait for confirmation',
+                    '✓ Monitor support levels'
+                ];
+            }
+            
+            return signal;
         }
 
-        // Update candle data
-        function updateCandleData(price, timeframe) {
-            if (!candleData[timeframe]) {
-                candleData[timeframe] = [];
-            }
-            
-            const now = new Date();
-            const candles = candleData[timeframe];
-            const lastCandle = candles.length > 0 ? candles[candles.length - 1] : null;
-            
-            // Check if we should create a new candle
-            let shouldCreateNew = false;
-            if (!lastCandle) {
-                shouldCreateNew = true;
-            } else {
-                const timeDiff = now - new Date(lastCandle.timestamp);
-                const tfMinutes = TIMEFRAMES[timeframe].refresh / 60000;
-                shouldCreateNew = timeDiff >= tfMinutes * 60000;
-            }
-            
-            if (shouldCreateNew) {
-                // Create new candle
-                candles.push({
-                    timestamp: now,
-                    open: price,
-                    high: price,
-                    low: price,
-                    close: price,
-                    volume: Math.floor(Math.random() * 1000) + 500
-                });
-                
-                // Keep only last 100 candles
-                if (candles.length > 100) {
-                    candles.shift();
-                }
-            } else {
-                // Update current candle
-                lastCandle.high = Math.max(lastCandle.high, price);
-                lastCandle.low = Math.min(lastCandle.low, price);
-                lastCandle.close = price;
-                lastCandle.volume += Math.floor(Math.random() * 100);
-            }
-            
-            return candles;
-        }
-
-        // Analyze signal
-        function analyzeSignal(rsi, timeframe) {
-            const config = TIMEFRAMES[timeframe];
-            const isOversold = rsi < config.oversold;
-            const isOverbought = rsi > config.overbought;
-            const isNeutral = rsi >= 45 && rsi <= 55;
-            
-            let signal = 'NO SIGNAL';
-            let signalClass = 'signal-neutral';
-            let strength = 'Neutral';
-            let trend = 'Sideways';
-            let conditions = [];
-            
-            // Add basic info
-            conditions.push({ met: true, text: `Analyzing ${config.name} timeframe` });
-            conditions.push({ met: true, text: `RSI(14) = ${rsi.toFixed(1)}` });
-            
-            // Determine signal
-            if (isOversold) {
-                signal = 'BUY';
-                signalClass = 'signal-buy';
-                trend = 'Bullish';
-                strength = 'Strong';
-                conditions.push({ met: true, text: `RSI oversold (< ${config.oversold}) - Strong buy signal` });
-                conditions.push({ met: true, text: 'Price likely to reverse upward' });
-            } else if (isOverbought) {
-                signal = 'SELL';
-                signalClass = 'signal-sell';
-                trend = 'Bearish';
-                strength = 'Strong';
-                conditions.push({ met: true, text: `RSI overbought (> ${config.overbought}) - Strong sell signal` });
-                conditions.push({ met: true, text: 'Price likely to reverse downward' });
-            } else if (rsi > 55) {
-                signal = 'BUY';
-                signalClass = 'signal-buy';
-                trend = 'Mild Bullish';
-                strength = 'Weak';
-                conditions.push({ met: true, text: 'RSI above 55 - Mild bullish bias' });
-            } else if (rsi < 45) {
-                signal = 'SELL';
-                signalClass = 'signal-sell';
-                trend = 'Mild Bearish';
-                strength = 'Weak';
-                conditions.push({ met: true, text: 'RSI below 45 - Mild bearish bias' });
-            } else {
-                conditions.push({ met: false, text: 'RSI in neutral range (45-55)' });
-                conditions.push({ met: false, text: 'Waiting for clearer signal' });
-            }
-            
-            // Add market condition
-            const hour = new Date().getUTCHours();
-            if (hour >= 13 && hour < 16) {
-                conditions.push({ met: true, text: 'London-NY overlap - High volatility' });
-                if (strength === 'Weak') strength = 'Moderate';
-            }
-            
-            return { signal, signalClass, strength, trend, conditions };
-        }
-
-        // Update display
-        function updateDisplay(goldData, timeframe) {
-            // Update price
-            document.getElementById('goldPrice').textContent = `$${goldData.price.toFixed(2)}`;
-            
-            // Update change
-            const changeElement = document.getElementById('changeDisplay');
-            if (changeElement) {
-                changeElement.textContent = `${goldData.change >= 0 ? '+' : ''}${goldData.changePercent.toFixed(2)}%`;
-                changeElement.style.color = goldData.change >= 0 ? '#00b894' : '#d63031';
-            }
-            
-            // Calculate RSI
-            const candles = updateCandleData(goldData.price, timeframe);
-            const rsi = calculateRSI(candles);
-            
-            // Update RSI display
-            document.getElementById('rsiDisplay').textContent = rsi.toFixed(1);
-            
-            const rsiLevel = document.getElementById('rsiLevel');
-            if (rsi < TIMEFRAMES[timeframe].oversold) {
-                rsiLevel.textContent = 'Oversold';
-                rsiLevel.style.color = '#00b894';
-            } else if (rsi > TIMEFRAMES[timeframe].overbought) {
-                rsiLevel.textContent = 'Overbought';
-                rsiLevel.style.color = '#d63031';
-            } else {
-                rsiLevel.textContent = 'Neutral';
-                rsiLevel.style.color = '#b8b8b8';
-            }
-            
-            // Analyze and update signal
-            const analysis = analyzeSignal(rsi, timeframe);
-            
+        // Update signal display
+        function updateSignalDisplay(signal) {
             const badge = document.getElementById('signalBadge');
-            badge.textContent = analysis.signal;
-            badge.className = `signal-badge ${analysis.signalClass}`;
+            badge.textContent = signal.type;
             
-            document.getElementById('trendDisplay').textContent = analysis.trend;
-            document.getElementById('strengthDisplay').textContent = analysis.strength;
-            document.getElementById('timeframeDisplay').textContent = TIMEFRAMES[timeframe].name;
+            // Remove all signal classes
+            badge.classList.remove('signal-buy', 'signal-sell', 'signal-neutral');
             
-            // Update conditions
+            // Add appropriate class
+            if (signal.type.includes('BUY')) {
+                badge.classList.add('signal-buy');
+            } else if (signal.type.includes('SELL')) {
+                badge.classList.add('signal-sell');
+            } else {
+                badge.classList.add('signal-neutral');
+            }
+            
+            // Update metrics
+            document.getElementById('rsiDisplay').textContent = signal.rsi?.toFixed(2) || '--';
+            document.getElementById('strengthDisplay').textContent = signal.strength;
+            document.getElementById('trendDisplay').textContent = signal.trend || '--';
+            document.getElementById('priceDisplay').textContent = signal.price || '--';
+            
+            // Update conditions list
             const conditionsList = document.getElementById('conditionsList');
-            conditionsList.innerHTML = '<h3>Signal Analysis</h3>';
-            
-            analysis.conditions.forEach(cond => {
-                const div = document.createElement('div');
-                div.className = 'condition-item';
-                div.innerHTML = `
-                    <span class="condition-icon ${cond.met ? 'condition-met' : 'condition-not-met'}">
-                        ${cond.met ? '✓' : '○'}
-                    </span>
-                    <span>${cond.text}</span>
-                `;
-                conditionsList.appendChild(div);
-            });
-            
-            // Update timestamp
-            document.getElementById('lastUpdate').innerHTML = 
-                `Last updated: ${goldData.timestamp.toLocaleTimeString()} 
-                 <br><span id="timeframeUpdate" style="font-size: 0.8em; color: #ffd700;">
-                 ${TIMEFRAMES[timeframe].name} • ${goldData.provider} • Auto-refresh in ${TIMEFRAMES[timeframe].refresh/1000}s
-                 </span>`;
-            
-            // Update provider badge
-            document.getElementById('dataProvider').textContent = goldData.provider;
-            
-            // Update API status
-            const apiDot = document.getElementById('apiStatusDot');
-            const apiText = document.getElementById('apiStatusText');
-            
-            if (goldData.provider === 'Simulated' || goldData.provider === 'Fallback') {
-                apiDot.className = 'api-dot offline';
-                apiText.textContent = 'Using simulated data';
-            } else {
-                apiDot.className = 'api-dot';
-                apiText.textContent = `Connected to ${goldData.provider}`;
-            }
-        }
-
-        // Market status functions
-        function isMarketOpen() {
-            const now = new Date();
-            const day = now.getUTCDay();
-            const hour = now.getUTCHours();
-            
-            if (day === 5 && hour >= 21) return false; // Friday after 21:00 GMT
-            if (day === 6) return false; // Saturday
-            if (day === 0 && hour < 21) return false; // Sunday before 21:00 GMT
-            
-            return true;
-        }
-
-        function updateMarketStatus() {
-            const banner = document.getElementById('marketStatusBanner');
-            const statusDiv = document.getElementById('marketStatus');
-            
-            if (isMarketOpen()) {
-                banner.innerHTML = `
-                    <div class="market-open">
-                        <div class="live-indicator">
-                            <div class="live-dot"></div>
-                            <span style="color: #00b894; font-weight: bold;">MARKET OPEN - 24/5 Trading Active</span>
+            if (signal.conditions && signal.conditions.length > 0) {
+                conditionsList.innerHTML = `
+                    <h3>Signal Analysis</h3>
+                    ${signal.conditions.map(cond => `
+                        <div class="condition-item">
+                            <span class="condition-icon">${cond.startsWith('✓') ? '✅' : '⚠️'}</span>
+                            <span class="${cond.startsWith('✓') ? 'condition-met' : 'condition-not-met'}">${cond}</span>
                         </div>
-                    </div>
+                    `).join('')}
                 `;
-                statusDiv.innerHTML = `
-                    <div class="live-indicator">
-                        <div class="live-dot"></div>
-                        <span style="color: #00b894; font-weight: bold;">OPEN</span>
-                    </div>
-                `;
+            }
+        }
+
+        // Generate realistic mock data
+        function generateMockData() {
+            const now = new Date();
+            const hour = now.getUTCHours();
+            const isPeak = hour >= 13 && hour < 16;
+            
+            // Base RSI with market session influence
+            let baseRSI = 50;
+            if (isPeak) {
+                baseRSI += (Math.random() - 0.5) * 40; // More volatility during peak
             } else {
-                banner.innerHTML = `
-                    <div class="market-closed">
-                        🔒 MARKET CLOSED - Gold trading resumes Sunday 21:00 GMT
-                    </div>
-                `;
-                statusDiv.innerHTML = `<span style="color: #ff7675; font-weight: bold;">CLOSED</span>`;
-            }
-        }
-
-        function getActiveSessions() {
-            const hour = new Date().getUTCHours();
-            const active = [];
-            
-            Object.entries(SESSIONS).forEach(([key, session]) => {
-                if (hour >= session.start && hour < session.end) {
-                    active.push(session.name);
-                }
-            });
-            
-            return active;
-        }
-
-        function updateSessionDisplay() {
-            const activeSessions = getActiveSessions();
-            const hour = new Date().getUTCHours();
-            const badgesContainer = document.getElementById('sessionBadges');
-            
-            badgesContainer.innerHTML = '';
-            
-            // Add all sessions
-            Object.values(SESSIONS).forEach(session => {
-                const isActive = activeSessions.includes(session.name);
-                const badge = document.createElement('div');
-                badge.className = isActive ? 'session-badge session-active' : 'session-badge session-inactive';
-                badge.textContent = `${session.name} (${session.start}:00-${session.end}:00)`;
-                badgesContainer.appendChild(badge);
-            });
-            
-            // Add overlap if applicable
-            if (hour >= 13 && hour < 16) {
-                const overlapBadge = document.createElement('div');
-                overlapBadge.className = 'session-badge session-overlap';
-                overlapBadge.textContent = '🔥 London-NY Overlap (Peak Volatility)';
-                badgesContainer.appendChild(overlapBadge);
-                
-                document.getElementById('volatilityWarning').innerHTML = `
-                    <div class="volatility-warning">
-                        ⚡ <strong>High Volatility Period:</strong> Tightest spreads, highest liquidity expected.
-                    </div>
-                `;
-            } else {
-                document.getElementById('volatilityWarning').innerHTML = '';
+                baseRSI += (Math.random() - 0.5) * 20;
             }
             
-            // Update current session
-            document.getElementById('currentSession').textContent = 
-                activeSessions.length > 0 ? activeSessions[0] : 'Transition';
+            // Ensure RSI stays within 0-100 bounds
+            baseRSI = Math.max(0, Math.min(100, baseRSI));
+            
+            // Price simulation
+            const price = 2350 + (Math.random() - 0.5) * 50;
+            
+            const signal = generateSignal(baseRSI);
+            signal.rsi = baseRSI;
+            signal.price = `$${price.toFixed(2)}`;
+            signal.trend = baseRSI > 50 ? 'Bullish' : 'Bearish';
+            
+            return signal;
         }
 
-        // Change timeframe
-        function changeTimeframe(tf) {
-            // Update buttons
-            document.querySelectorAll('.tf-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            // Update current timeframe
-            currentTimeFrame = tf;
-            document.getElementById('currentTimeframe').textContent = TIMEFRAMES[tf].name;
-            document.getElementById('timeframeDisplay').textContent = TIMEFRAMES[tf].name;
-            
-            // Clear existing interval
-            if (window.refreshInterval) {
-                clearInterval(window.refreshInterval);
-            }
-            
-            // Set new interval
-            window.refreshInterval = setInterval(refreshData, TIMEFRAMES[tf].refresh);
-            
-            // Refresh data
-            refreshData();
-        }
-
-        // Main refresh function
-        async function refreshData() {
-            const refreshBtn = document.getElementById('refreshBtn');
-            refreshBtn.disabled = true;
-            refreshBtn.textContent = '⏳ Loading...';
-            
+        // Update all displays
+        function updateDashboard() {
             try {
-                // Update status displays
+                // Update market info
                 updateMarketStatus();
                 updateSessionDisplay();
                 
-                // Clear any errors
+                // Generate and update signal
+                const signal = generateMockData();
+                updateSignalDisplay(signal);
+                
+                // Update timestamp
+                const now = new Date();
+                document.getElementById('lastUpdate').innerHTML = 
+                    `Last updated: ${now.toUTCString().replace('GMT', 'GMT')}`;
+                
+                // Update error container (clear if no errors)
                 document.getElementById('errorContainer').innerHTML = '';
                 
-                // Fetch data
-                const goldData = await fetchGoldPrice();
-                
-                // Update display
-                updateDisplay(goldData, currentTimeFrame);
-                
             } catch (error) {
-                console.error('Error refreshing data:', error);
-                
-                // Use simulated data on error
-                const simulatedData = {
-                    price: lastGoldPrice + (Math.random() - 0.5) * 3,
-                    change: lastChange,
-                    changePercent: (lastChange / lastGoldPrice * 100),
-                    timestamp: new Date(),
-                    provider: 'Local Simulation'
-                };
-                
-                updateDisplay(simulatedData, currentTimeFrame);
-                
+                console.error('Error updating dashboard:', error);
                 document.getElementById('errorContainer').innerHTML = `
                     <div class="error-message">
-                        ⚠️ Connection issue. Using simulated data. Click Refresh to retry.
+                        ⚠️ Error updating data: ${error.message}
                     </div>
                 `;
-            } finally {
-                refreshBtn.disabled = false;
-                refreshBtn.textContent = '🔄 Refresh';
             }
+        }
+
+        // Start data collection
+        function startDataCollection() {
+            // Initial update
+            updateDashboard();
+            
+            // Update every 10 seconds
+            setInterval(updateDashboard, 10000);
+            
+            // Also update on price changes (simulated)
+            setInterval(() => {
+                if (Math.random() > 0.7) { // 30% chance to trigger update
+                    updateDashboard();
+                }
+            }, 3000);
+        }
+
+        // Refresh data manually
+        function refreshData() {
+            const btn = document.getElementById('refreshBtn');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '⏳ Updating...';
+            btn.disabled = true;
+            
+            updateDashboard();
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }, 1000);
         }
 
         // Reset data
         function resetData() {
-            if (confirm('Reset all data and start fresh?')) {
-                initializeSampleData();
-                lastGoldPrice = 1950.00;
-                lastChange = 0;
-                
-                // Show reset message
-                document.getElementById('conditionsList').innerHTML = `
-                    <h3>Signal Analysis</h3>
-                    <div class="loading">Data reset. Generating new signals...</div>
-                `;
-                
-                // Refresh immediately
-                setTimeout(refreshData, 500);
-            }
+            priceHistory = [];
+            updateDashboard();
+            
+            // Show reset notification
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="error-message" style="background: rgba(255, 215, 0, 0.1); border-color: rgba(255, 215, 0, 0.3); color: #ffd700;">
+                    🔄 Data reset complete. Starting fresh collection...
+                </div>
+            `;
+            
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 3000);
         }
 
         // Initialize everything when page loads
-        window.addEventListener('DOMContentLoaded', function() {
-            console.log("DOM loaded, initializing...");
+        window.addEventListener('DOMContentLoaded', () => {
+            // Initialize TradingView chart
+            initTradingViewChart();
             
-            // Initialize sample data
-            initializeSampleData();
+            // Set up periodic session updates
+            setInterval(updateSessionDisplay, 60000); // Update every minute
             
-            // Set initial timeframe display
-            document.getElementById('currentTimeframe').textContent = TIMEFRAMES[currentTimeFrame].name;
-            document.getElementById('timeframeDisplay').textContent = TIMEFRAMES[currentTimeFrame].name;
+            // Initial display setup
+            document.getElementById('timeframeDisplay').textContent = 'Timeframe: 1H';
             
-            // Activate H1 button
-            document.querySelector(`[data-tf="${currentTimeFrame}"]`).classList.add('active');
+            // Set up error handling for TradingView
+            window.addEventListener('error', function(e) {
+                console.error('Global error:', e);
+                document.getElementById('errorContainer').innerHTML = `
+                    <div class="error-message">
+                        ⚠️ Script error detected. Please refresh the page.
+                    </div>
+                `;
+            });
             
-            // Initial UI update
-            updateMarketStatus();
-            updateSessionDisplay();
-            
-            // Initial data load
-            refreshData();
-            
-            // Set refresh interval
-            window.refreshInterval = setInterval(refreshData, TIMEFRAMES[currentTimeFrame].refresh);
-            
-            console.log("Initialization complete");
+            // Simulate initial loading delay
+            setTimeout(() => {
+                const loading = document.querySelector('.conditions-list .loading');
+                if (loading) {
+                    loading.style.display = 'none';
+                }
+            }, 2000);
         });
 
-        // Auto-refresh when page becomes visible
+        // Handle page visibility changes
         document.addEventListener('visibilitychange', function() {
             if (!document.hidden) {
+                // Page became visible, refresh data
+                updateDashboard();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Refresh with F5
+            if (e.key === 'F5' || (e.ctrlKey && e.key === 'r')) {
+                e.preventDefault();
                 refreshData();
+            }
+            // Reset with Ctrl+Shift+R
+            if (e.ctrlKey && e.shiftKey && e.key === 'R') {
+                e.preventDefault();
+                resetData();
             }
         });
     </script>
