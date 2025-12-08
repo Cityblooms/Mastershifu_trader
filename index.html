@@ -463,15 +463,39 @@
             padding: 15px;
             position: relative;
         }
+        
+        .current-position {
+            background: rgba(255, 215, 0, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .position-info {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+        }
+        
+        .position-label {
+            color: #888;
+            font-size: 0.85em;
+        }
+        
+        .position-value {
+            color: #ffd700;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>⚡ Real-Time Gold RSI Trading Dashboard</h1>
-            <p>Live XAU/USD Price Data • Real RSI Calculation • WebSocket Connection</p>
+            <h1>⚡ Clean Signal Gold RSI Trading Dashboard</h1>
+            <p>No Confusing Signals • Clear BUY/SELL Signals • One Signal at a Time</p>
             <div class="data-source-info">
-                🔴 Live Price WebSocket | 🟢 Real RSI Calculation | ⚡ No Simulation
+                🟢 One Active Signal • 🔴 No Conflicting Signals • ⚡ Clear Trading Rules
             </div>
         </div>
 
@@ -479,9 +503,9 @@
             <!-- Left: Chart Section -->
             <div class="chart-section">
                 <div class="control-panel">
-                    <button class="btn btn-primary" onclick="connectWebSocket()" id="connectBtn">🔗 Connect WebSocket</button>
-                    <button class="btn btn-secondary" onclick="disconnectWebSocket()">🔴 Disconnect</button>
-                    <div class="ws-status ws-disconnected" id="wsStatus">DISCONNECTED</div>
+                    <button class="btn btn-primary" onclick="connectWebSocket()" id="connectBtn">🔗 Start Trading</button>
+                    <button class="btn btn-secondary" onclick="resetTrading()">🔄 Reset All</button>
+                    <div class="ws-status ws-disconnected" id="wsStatus">STOPPED</div>
                 </div>
                 
                 <div class="timeframe-selector">
@@ -490,6 +514,27 @@
                     <button class="timeframe-btn" onclick="changeTimeframe('5', this)">5M</button>
                     <button class="timeframe-btn" onclick="changeTimeframe('15', this)">15M</button>
                     <button class="timeframe-btn" onclick="changeTimeframe('60', this)">1H</button>
+                </div>
+
+                <!-- Current Position Display -->
+                <div class="current-position" id="positionContainer" style="display: none;">
+                    <div style="color: #ffd700; font-weight: bold; margin-bottom: 5px;">📊 ACTIVE POSITION:</div>
+                    <div class="position-info">
+                        <div class="position-label">Type:</div>
+                        <div class="position-value" id="positionType">--</div>
+                    </div>
+                    <div class="position-info">
+                        <div class="position-label">Entry RSI:</div>
+                        <div class="position-value" id="entryRsi">--</div>
+                    </div>
+                    <div class="position-info">
+                        <div class="position-label">Current RSI:</div>
+                        <div class="position-value" id="currentRsi">--</div>
+                    </div>
+                    <div class="position-info">
+                        <div class="position-label">Duration:</div>
+                        <div class="position-value" id="positionDuration">--</div>
+                    </div>
                 </div>
 
                 <!-- Price Stream Display -->
@@ -509,7 +554,7 @@
             <div class="signal-panel">
                 <div class="market-status">
                     <div class="status-item">
-                        <span class="status-label">Connection Status</span>
+                        <span class="status-label">Trading Status</span>
                         <div id="marketStatus">
                             <div class="live-indicator">
                                 <div class="live-dot"></div>
@@ -518,26 +563,30 @@
                         </div>
                     </div>
                     <div class="status-item">
-                        <span class="status-label">Data Points</span>
-                        <span class="status-value" id="dataPoints">0</span>
+                        <span class="status-label">Active Signal</span>
+                        <span class="status-value" id="activeSignal">NONE</span>
                     </div>
                 </div>
 
                 <div class="session-info">
-                    <div style="color: #ffd700; font-weight: bold; font-size: 0.9em; margin-bottom: 6px;">📊 Trading Rules</div>
+                    <div style="color: #ffd700; font-weight: bold; font-size: 0.9em; margin-bottom: 6px;">📊 CLEAN TRADING RULES</div>
                     <div style="font-size: 0.85em; color: #b8b8b8;">
-                        <div>• <span style="color: #00b894;">LONG ENTRY</span>: RSI crosses BELOW 30 → Enter next bar</div>
-                        <div>• <span style="color: #d63031;">SHORT ENTRY</span>: RSI crosses ABOVE 70 → Enter next bar</div>
-                        <div>• Exit when RSI crosses back through 50</div>
+                        <div>• <span style="color: #00b894;">BUY SIGNAL</span>: RSI crosses BELOW 30 → Signal stays ACTIVE</div>
+                        <div>• <span style="color: #d63031;">SELL SIGNAL</span>: RSI crosses ABOVE 70 → Signal stays ACTIVE</div>
+                        <div>• <span style="color: #ffd700;">EXIT ONLY</span>: When RSI crosses back through 50</div>
+                        <div>• <span style="color: #00b894;">NO CONFLICT</span>: Only one signal at a time</div>
                     </div>
                 </div>
 
                 <div id="errorContainer"></div>
 
                 <div class="signal-display">
-                    <div class="signal-badge signal-neutral" id="signalBadge">NO DATA</div>
+                    <div class="signal-badge signal-neutral" id="signalBadge">WAITING</div>
                     <div style="margin-top: 12px; color: #888; font-size: 0.9em;" id="signalDetails">
-                        Connect WebSocket for live signals
+                        Start trading to see clear signals
+                    </div>
+                    <div style="margin-top: 8px; font-size: 0.8em; color: #00b894;" id="signalRule">
+                        One signal at a time • No confusion
                     </div>
                 </div>
 
@@ -555,34 +604,40 @@
                         <div class="metric-value" id="prevRsiDisplay">--</div>
                     </div>
                     <div class="metric-box">
-                        <div class="metric-label">Signal Strength</div>
-                        <div class="metric-value" id="signalStrength">--</div>
+                        <div class="metric-label">Signal State</div>
+                        <div class="metric-value" id="signalState" style="font-size: 1.3em;">IDLE</div>
                     </div>
                 </div>
 
                 <div class="conditions-list" id="conditionsList">
-                    <h3>Signal Conditions</h3>
-                    <div class="loading">Waiting for price data...</div>
+                    <h3>Signal Logic</h3>
+                    <div class="loading">
+                        <div>✅ BUY: RSI crosses below 30</div>
+                        <div>✅ SELL: RSI crosses above 70</div>
+                        <div>✅ EXIT: RSI crosses 50</div>
+                        <div>✅ ONE SIGNAL at a time</div>
+                    </div>
                 </div>
 
                 <div class="trade-log">
-                    <h3>📝 Trading Signals</h3>
+                    <h3>📝 Signal History (Clean)</h3>
                     <div id="tradeLog">
                         <div class="trade-entry" style="color: #888; font-style: italic;">
-                            No signals generated yet...
+                            No signals yet. Each signal will stay active until exit.
                         </div>
                     </div>
                 </div>
 
                 <div style="text-align: center; color: #888; font-size: 0.85em; margin-top: 15px;" id="lastUpdate">
-                    Last update: --
+                    System: Ready for clean signals
                 </div>
             </div>
         </div>
 
         <div class="disclaimer">
-            ⚠️ <strong>Real Trading System:</strong> This dashboard uses WebSocket connections to get live price data and calculates REAL RSI(14) values. 
-            Signals are generated based on actual price movements and RSI crossovers. Requires active WebSocket connection to price feed.
+            ⚠️ <strong>Clean Signal System:</strong> This dashboard generates ONE clear signal at a time. 
+            BUY signal stays active until RSI crosses 50. SELL signal stays active until RSI crosses 50. 
+            No conflicting signals. Perfect for clear trading decisions.
         </div>
     </div>
 
@@ -595,17 +650,26 @@
         let rsiHistory = [];
         const RSI_PERIOD = 14;
         let currentTimeframe = 'live';
-        let lastSignal = null;
-        let signalHistory = [];
-        let rsiChart = null;
         let isConnected = false;
         let priceUpdateInterval = null;
         
-        // Trading rules
+        // TRADING STATE - CLEAN SIGNAL LOGIC
+        let tradingState = {
+            activeSignal: 'NONE',           // 'NONE', 'BUY', 'SELL'
+            signalStartTime: null,
+            entryRSI: null,
+            currentRSI: null,
+            previousRSI: null,
+            signalHistory: [],
+            lastAction: null,
+            isInTrade: false
+        };
+        
+        // Trading rules - CLEAN AND SIMPLE
         const TRADING_RULES = {
-            LONG_ENTRY: 30,    // RSI crosses BELOW this = LONG signal
-            SHORT_ENTRY: 70,   // RSI crosses ABOVE this = SHORT signal
-            EXIT_LEVEL: 50     // RSI crosses through this = Exit signal
+            BUY_ENTRY: 30,     // RSI crosses BELOW this = BUY signal
+            SELL_ENTRY: 70,    // RSI crosses ABOVE this = SELL signal
+            EXIT_LEVEL: 50     // RSI crosses this = Exit signal
         };
         
         // ============================================
@@ -615,51 +679,48 @@
         // Connect to WebSocket for live price data
         function connectWebSocket() {
             if (isConnected) {
-                showMessage('Already connected to WebSocket', 'success');
+                showMessage('Already connected and trading', 'success');
                 return;
             }
             
             const btn = document.getElementById('connectBtn');
-            btn.innerHTML = '⏳ Connecting...';
+            btn.innerHTML = '⏳ Starting...';
             btn.disabled = true;
             
             updateWSStatus('connecting');
             
             try {
-                // For this demo, we'll simulate WebSocket with real-time data
-                // In production, replace with actual WebSocket endpoint
                 simulateWebSocketConnection();
                 
             } catch (error) {
-                console.error('WebSocket connection error:', error);
+                console.error('Connection error:', error);
                 showMessage(`Connection failed: ${error.message}`, 'error');
                 updateWSStatus('disconnected');
-                btn.innerHTML = '🔗 Connect WebSocket';
+                btn.innerHTML = '🔗 Start Trading';
                 btn.disabled = false;
             }
         }
         
-        // Simulate WebSocket connection with real price data
+        // Simulate WebSocket connection
         function simulateWebSocketConnection() {
             updateWSStatus('connecting');
-            showMessage('Connecting to price feed...', 'success');
+            showMessage('Starting clean trading system...', 'success');
             
-            // Simulate connection delay
             setTimeout(() => {
                 isConnected = true;
                 updateWSStatus('connected');
                 
                 const btn = document.getElementById('connectBtn');
-                btn.innerHTML = '✅ Connected';
+                btn.innerHTML = '✅ Trading';
                 btn.disabled = true;
                 
-                showMessage('✅ Connected to live price feed', 'success');
+                showMessage('✅ Clean trading system started', 'success');
                 
                 // Start receiving price data
                 startPriceDataStream();
                 
-                // Initialize RSI chart
-                initRSIChart();
+                // Initialize displays
+                updateTradingDisplays();
                 
             }, 1000);
         }
@@ -668,23 +729,31 @@
         function startPriceDataStream() {
             if (!isConnected) return;
             
-            // Clear any existing interval
             if (priceUpdateInterval) {
                 clearInterval(priceUpdateInterval);
             }
             
-            // Base gold price (realistic range)
+            // Realistic starting price
             let currentPrice = 2350.00;
+            let priceTrend = 0; // -1 for down, 0 for neutral, 1 for up
             
-            // Simulate real-time price updates
             priceUpdateInterval = setInterval(() => {
                 if (!isConnected) return;
                 
-                // Generate realistic price movement
-                const change = (Math.random() - 0.5) * 5; // +/- $2.5
+                // Generate realistic price movement with trends
+                let change;
+                if (priceTrend === 0) {
+                    change = (Math.random() - 0.5) * 4;
+                    if (Math.random() > 0.7) priceTrend = Math.sign(change);
+                } else {
+                    // Continue trend with some randomness
+                    change = (priceTrend * 2) + (Math.random() - 0.5) * 2;
+                    if (Math.random() > 0.85) priceTrend = 0; // End trend
+                }
+                
                 currentPrice += change;
                 
-                // Ensure price stays in realistic range
+                // Keep price in realistic range
                 currentPrice = Math.max(2300, Math.min(2400, currentPrice));
                 
                 // Add price to history
@@ -697,7 +766,7 @@
                 
                 priceHistory.push(priceData);
                 
-                // Keep only last 200 prices
+                // Keep history manageable
                 if (priceHistory.length > 200) {
                     priceHistory = priceHistory.slice(-200);
                 }
@@ -705,9 +774,8 @@
                 // Update displays
                 updatePriceDisplay(priceData);
                 calculateAndUpdateRSI();
-                updateDataPoints();
                 
-            }, 1000); // Update every second
+            }, 2000); // Update every 2 seconds (more realistic)
         }
         
         // Disconnect WebSocket
@@ -726,13 +794,33 @@
             updateWSStatus('disconnected');
             
             const btn = document.getElementById('connectBtn');
-            btn.innerHTML = '🔗 Connect WebSocket';
+            btn.innerHTML = '🔗 Start Trading';
             btn.disabled = false;
             
-            showMessage('Disconnected from price feed', 'error');
+            showMessage('Trading stopped', 'error');
         }
         
-        // Update WebSocket status display
+        // Reset all trading
+        function resetTrading() {
+            tradingState = {
+                activeSignal: 'NONE',
+                signalStartTime: null,
+                entryRSI: null,
+                currentRSI: null,
+                previousRSI: null,
+                signalHistory: [],
+                lastAction: null,
+                isInTrade: false
+            };
+            
+            priceHistory = [];
+            rsiHistory = [];
+            
+            updateTradingDisplays();
+            showMessage('All trading reset. Ready for clean signals.', 'success');
+        }
+        
+        // Update WebSocket status
         function updateWSStatus(status) {
             const statusDiv = document.getElementById('wsStatus');
             statusDiv.className = 'ws-status';
@@ -740,53 +828,47 @@
             switch(status) {
                 case 'connected':
                     statusDiv.classList.add('ws-connected');
-                    statusDiv.innerHTML = '✅ CONNECTED';
+                    statusDiv.innerHTML = '✅ TRADING';
                     break;
                 case 'connecting':
                     statusDiv.classList.add('ws-connecting');
-                    statusDiv.innerHTML = '🔄 CONNECTING';
+                    statusDiv.innerHTML = '🔄 STARTING';
                     break;
                 case 'disconnected':
                     statusDiv.classList.add('ws-disconnected');
-                    statusDiv.innerHTML = '❌ DISCONNECTED';
+                    statusDiv.innerHTML = '❌ STOPPED';
                     break;
             }
         }
         
         // ============================================
-        // RSI CALCULATION (REAL, NOT SIMULATED)
+        // CLEAN SIGNAL LOGIC - NO CONFLICTING SIGNALS
         // ============================================
         
         // Calculate RSI from price history
         function calculateRSI(prices, period = RSI_PERIOD) {
             if (prices.length < period + 1) {
-                return 50; // Default value until we have enough data
+                return 50;
             }
             
-            // Extract just the price values
             const priceValues = prices.map(p => p.price);
-            
             let gains = [];
             let losses = [];
             
-            // Calculate price changes
             for (let i = 1; i < priceValues.length; i++) {
                 const change = priceValues[i] - priceValues[i - 1];
                 gains.push(change > 0 ? change : 0);
                 losses.push(change < 0 ? Math.abs(change) : 0);
             }
             
-            // Calculate average gains and losses
             let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
             let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
             
-            // Calculate RSI using Wilder's smoothing method
             for (let i = period; i < gains.length; i++) {
                 avgGain = ((avgGain * (period - 1)) + gains[i]) / period;
                 avgLoss = ((avgLoss * (period - 1)) + losses[i]) / period;
             }
             
-            // Avoid division by zero
             if (avgLoss === 0) return 100;
             
             const rs = avgGain / avgLoss;
@@ -795,7 +877,7 @@
             return parseFloat(rsi.toFixed(2));
         }
         
-        // Calculate and update RSI
+        // Calculate and update RSI with CLEAN SIGNAL LOGIC
         function calculateAndUpdateRSI() {
             if (priceHistory.length < RSI_PERIOD + 1) {
                 document.getElementById('rsiDisplay').textContent = '--';
@@ -803,193 +885,207 @@
                 return;
             }
             
-            // Get current and previous RSI
+            // Get RSI values
             const currentRSI = calculateRSI(priceHistory);
-            const previousRSI = rsiHistory.length > 0 ? rsiHistory[rsiHistory.length - 1] : currentRSI;
+            const previousRSI = tradingState.currentRSI || currentRSI;
             
-            // Add to RSI history
+            // Update trading state
+            tradingState.previousRSI = tradingState.currentRSI;
+            tradingState.currentRSI = currentRSI;
+            
+            // Update RSI history for chart
             rsiHistory.push(currentRSI);
             if (rsiHistory.length > 50) {
                 rsiHistory = rsiHistory.slice(-50);
             }
             
-            // Update RSI displays
-            document.getElementById('rsiDisplay').textContent = currentRSI.toFixed(2);
-            document.getElementById('prevRsiDisplay').textContent = previousRSI.toFixed(2);
+            // Update displays
+            updateRSIDisplays(currentRSI, previousRSI);
             
-            // Update RSI chart
-            updateRSIChart();
+            // CHECK FOR CLEAN SIGNALS (No conflicting signals)
+            checkCleanSignals(currentRSI, previousRSI);
             
-            // Check for trading signals
-            checkTradingSignals(currentRSI, previousRSI);
-            
-            // Update signal strength
-            updateSignalStrength(currentRSI);
-            
-            // Update last update time
-            updateLastUpdate();
-        }
-        
-        // Check for trading signals
-        function checkTradingSignals(currentRSI, previousRSI) {
-            if (!previousRSI || previousRSI === currentRSI) return;
-            
-            let signal = null;
-            let signalType = 'NEUTRAL';
-            let conditions = [];
-            
-            // Check for LONG entry (RSI crosses BELOW 30)
-            if (previousRSI > TRADING_RULES.LONG_ENTRY && currentRSI <= TRADING_RULES.LONG_ENTRY) {
-                signalType = 'LONG SIGNAL';
-                signal = {
-                    type: 'LONG',
-                    action: 'ENTRY',
-                    rsi: currentRSI,
-                    previousRsi: previousRSI,
-                    price: priceHistory[priceHistory.length - 1].price,
-                    condition: 'RSI crossed below 30',
-                    timestamp: new Date(),
-                    rule: 'Enter LONG on next bar'
-                };
-                conditions = [
-                    '✅ RSI crossed BELOW 30',
-                    `📊 Previous RSI: ${previousRSI.toFixed(2)}`,
-                    `📊 Current RSI: ${currentRSI.toFixed(2)}`,
-                    `💰 Current Price: $${priceHistory[priceHistory.length - 1].price.toFixed(2)}`,
-                    '⚠️ Enter LONG position on next bar open'
-                ];
-            }
-            // Check for SHORT entry (RSI crosses ABOVE 70)
-            else if (previousRSI < TRADING_RULES.SHORT_ENTRY && currentRSI >= TRADING_RULES.SHORT_ENTRY) {
-                signalType = 'SHORT SIGNAL';
-                signal = {
-                    type: 'SHORT',
-                    action: 'ENTRY',
-                    rsi: currentRSI,
-                    previousRsi: previousRSI,
-                    price: priceHistory[priceHistory.length - 1].price,
-                    condition: 'RSI crossed above 70',
-                    timestamp: new Date(),
-                    rule: 'Enter SHORT on next bar'
-                };
-                conditions = [
-                    '✅ RSI crossed ABOVE 70',
-                    `📊 Previous RSI: ${previousRSI.toFixed(2)}`,
-                    `📊 Current RSI: ${currentRSI.toFixed(2)}`,
-                    `💰 Current Price: $${priceHistory[priceHistory.length - 1].price.toFixed(2)}`,
-                    '⚠️ Enter SHORT position on next bar open'
-                ];
-            }
-            // Check for EXIT (RSI crosses through 50)
-            else if ((previousRSI < 50 && currentRSI >= 50) || (previousRSI > 50 && currentRSI <= 50)) {
-                signalType = 'EXIT SIGNAL';
-                const exitType = currentRSI >= 50 ? 'bullish' : 'bearish';
-                signal = {
-                    type: 'EXIT',
-                    action: 'CLOSE',
-                    rsi: currentRSI,
-                    previousRsi: previousRSI,
-                    price: priceHistory[priceHistory.length - 1].price,
-                    condition: 'RSI crossed through 50',
-                    exitType: exitType,
-                    timestamp: new Date(),
-                    rule: 'Exit positions on next bar'
-                };
-                conditions = [
-                    '✅ RSI crossed through 50',
-                    `📊 Previous RSI: ${previousRSI.toFixed(2)}`,
-                    `📊 Current RSI: ${currentRSI.toFixed(2)}`,
-                    `💰 Current Price: $${priceHistory[priceHistory.length - 1].price.toFixed(2)}`,
-                    `⚠️ Consider exiting ${exitType === 'bullish' ? 'bearish' : 'bullish'} positions`
-                ];
-            }
-            
-            // Process signal if found
-            if (signal) {
-                processSignal(signal, signalType, conditions);
-            } else {
-                // Update neutral conditions
-                updateNeutralConditions(currentRSI);
+            // Update position duration if active
+            if (tradingState.activeSignal !== 'NONE' && tradingState.signalStartTime) {
+                updatePositionDuration();
             }
         }
         
-        // Update signal strength
-        function updateSignalStrength(currentRSI) {
-            let strength = 'NEUTRAL';
-            
-            if (currentRSI <= 20) strength = 'VERY OVERSOLD';
-            else if (currentRSI <= 30) strength = 'OVERSOLD';
-            else if (currentRSI >= 80) strength = 'VERY OVERBOUGHT';
-            else if (currentRSI >= 70) strength = 'OVERBOUGHT';
-            else if (currentRSI > 55) strength = 'BULLISH';
-            else if (currentRSI < 45) strength = 'BEARISH';
-            
-            document.getElementById('signalStrength').textContent = strength;
-        }
-        
-        // Update neutral conditions
-        function updateNeutralConditions(currentRSI) {
-            const conditionsList = document.getElementById('conditionsList');
-            
-            let conditions = [];
-            if (currentRSI > 50) {
-                conditions = [
-                    '📊 RSI above 50 (Bullish bias)',
-                    '⏳ Waiting for RSI to cross above 70 for SHORT',
-                    '👀 Monitoring for oversold conditions',
-                    `📈 Current RSI: ${currentRSI.toFixed(2)}`
-                ];
-            } else {
-                conditions = [
-                    '📊 RSI below 50 (Bearish bias)',
-                    '⏳ Waiting for RSI to cross below 30 for LONG',
-                    '👀 Monitoring for overbought conditions',
-                    `📉 Current RSI: ${currentRSI.toFixed(2)}`
-                ];
+        // CLEAN SIGNAL CHECKING - One signal at a time
+        function checkCleanSignals(currentRSI, previousRSI) {
+            // If no active signal, check for new entry
+            if (tradingState.activeSignal === 'NONE') {
+                checkForNewEntry(currentRSI, previousRSI);
             }
-            
-            conditionsList.innerHTML = `
-                <h3>Market Conditions</h3>
-                ${conditions.map(cond => `
-                    <div class="condition-item">
-                        <span class="condition-icon">${cond.includes('RSI') ? '📊' : cond.includes('Waiting') ? '⏳' : '👀'}</span>
-                        <span class="condition-met">${cond}</span>
-                    </div>
-                `).join('')}
-            `;
+            // If we have an active signal, check for exit only
+            else {
+                checkForExit(currentRSI, previousRSI);
+            }
         }
         
-        // Process trading signal
-        function processSignal(signal, signalType, conditions) {
-            // Store last signal
-            lastSignal = signal;
+        // Check for new entry (only when no active signal)
+        function checkForNewEntry(currentRSI, previousRSI) {
+            // BUY SIGNAL: RSI crosses BELOW 30
+            if (previousRSI > TRADING_RULES.BUY_ENTRY && currentRSI <= TRADING_RULES.BUY_ENTRY) {
+                activateSignal('BUY', currentRSI, previousRSI);
+            }
+            // SELL SIGNAL: RSI crosses ABOVE 70
+            else if (previousRSI < TRADING_RULES.SELL_ENTRY && currentRSI >= TRADING_RULES.SELL_ENTRY) {
+                activateSignal('SELL', currentRSI, previousRSI);
+            }
+        }
+        
+        // Check for exit (only when we have active signal)
+        function checkForExit(currentRSI, previousRSI) {
+            // EXIT CONDITION: RSI crosses through 50
+            if ((tradingState.activeSignal === 'BUY' && previousRSI < 50 && currentRSI >= 50) ||
+                (tradingState.activeSignal === 'SELL' && previousRSI > 50 && currentRSI <= 50)) {
+                
+                deactivateSignal(currentRSI);
+            }
+        }
+        
+        // Activate a clean signal
+        function activateSignal(type, currentRSI, previousRSI) {
+            tradingState.activeSignal = type;
+            tradingState.signalStartTime = new Date();
+            tradingState.entryRSI = currentRSI;
+            tradingState.isInTrade = true;
+            tradingState.lastAction = 'ENTRY';
             
             // Add to history
-            signalHistory.unshift(signal);
-            if (signalHistory.length > 10) {
-                signalHistory = signalHistory.slice(0, 10);
+            const signalEntry = {
+                type: type,
+                action: 'ENTRY',
+                rsi: currentRSI,
+                previousRsi: previousRSI,
+                price: priceHistory[priceHistory.length - 1].price,
+                timestamp: new Date(),
+                rule: `RSI crossed ${type === 'BUY' ? 'below 30' : 'above 70'}`
+            };
+            
+            tradingState.signalHistory.unshift(signalEntry);
+            if (tradingState.signalHistory.length > 10) {
+                tradingState.signalHistory = tradingState.signalHistory.slice(0, 10);
             }
             
             // Update displays
+            updateSignalDisplay();
             updateTradeLog();
-            updateSignalBadge(signalType);
-            updateConditionsDisplay(conditions, signalType);
+            showMessage(`${type} signal activated. Will stay active until RSI crosses 50.`, 'success');
+        }
+        
+        // Deactivate current signal
+        function deactivateSignal(currentRSI) {
+            const oldSignal = tradingState.activeSignal;
+            const duration = Math.floor((new Date() - tradingState.signalStartTime) / 1000);
+            
+            // Add exit to history
+            const exitEntry = {
+                type: oldSignal,
+                action: 'EXIT',
+                rsi: currentRSI,
+                entryRsi: tradingState.entryRSI,
+                price: priceHistory[priceHistory.length - 1].price,
+                timestamp: new Date(),
+                duration: duration,
+                rule: 'RSI crossed 50'
+            };
+            
+            tradingState.signalHistory.unshift(exitEntry);
+            if (tradingState.signalHistory.length > 10) {
+                tradingState.signalHistory = tradingState.signalHistory.slice(0, 10);
+            }
+            
+            // Reset trading state
+            tradingState.activeSignal = 'NONE';
+            tradingState.signalStartTime = null;
+            tradingState.entryRSI = null;
+            tradingState.isInTrade = false;
+            tradingState.lastAction = 'EXIT';
+            
+            // Update displays
+            updateSignalDisplay();
+            updateTradeLog();
+            showMessage(`${oldSignal} signal exited after ${duration}s. RSI crossed 50.`, 'success');
         }
         
         // ============================================
         // DISPLAY UPDATES
         // ============================================
         
+        // Update all trading displays
+        function updateTradingDisplays() {
+            updateSignalDisplay();
+            updateTradeLog();
+            updatePositionDisplay();
+            updateLastUpdate();
+        }
+        
+        // Update signal display
+        function updateSignalDisplay() {
+            const badge = document.getElementById('signalBadge');
+            const activeSignalEl = document.getElementById('activeSignal');
+            const signalStateEl = document.getElementById('signalState');
+            const signalDetails = document.getElementById('signalDetails');
+            const signalRule = document.getElementById('signalRule');
+            
+            // Remove all classes
+            badge.classList.remove('signal-buy', 'signal-sell', 'signal-neutral', 'price-alert');
+            
+            if (tradingState.activeSignal === 'BUY') {
+                badge.textContent = 'BUY ACTIVE';
+                badge.classList.add('signal-buy');
+                badge.classList.add('price-alert');
+                activeSignalEl.textContent = 'BUY';
+                activeSignalEl.style.color = '#00b894';
+                signalStateEl.textContent = 'ACTIVE';
+                signalStateEl.style.color = '#00b894';
+                signalDetails.innerHTML = `RSI crossed below 30<br>Will exit when RSI crosses 50`;
+                signalRule.innerHTML = '✅ BUY active • Waiting for exit at RSI 50';
+            }
+            else if (tradingState.activeSignal === 'SELL') {
+                badge.textContent = 'SELL ACTIVE';
+                badge.classList.add('signal-sell');
+                badge.classList.add('price-alert');
+                activeSignalEl.textContent = 'SELL';
+                activeSignalEl.style.color = '#d63031';
+                signalStateEl.textContent = 'ACTIVE';
+                signalStateEl.style.color = '#d63031';
+                signalDetails.innerHTML = `RSI crossed above 70<br>Will exit when RSI crosses 50`;
+                signalRule.innerHTML = '✅ SELL active • Waiting for exit at RSI 50';
+            }
+            else {
+                badge.textContent = 'WAITING';
+                badge.classList.add('signal-neutral');
+                activeSignalEl.textContent = 'NONE';
+                activeSignalEl.style.color = '#888';
+                signalStateEl.textContent = 'WAITING';
+                signalStateEl.style.color = '#888';
+                signalDetails.innerHTML = 'Waiting for RSI to cross 30 (BUY) or 70 (SELL)';
+                signalRule.innerHTML = '✅ No active signal • Ready for clean entry';
+            }
+        }
+        
+        // Update RSI displays
+        function updateRSIDisplays(currentRSI, previousRSI) {
+            document.getElementById('rsiDisplay').textContent = currentRSI.toFixed(2);
+            document.getElementById('prevRsiDisplay').textContent = previousRSI.toFixed(2);
+            
+            // Update position display if active
+            if (tradingState.activeSignal !== 'NONE') {
+                document.getElementById('currentRsi').textContent = currentRSI.toFixed(2);
+            }
+        }
+        
         // Update price display
         function updatePriceDisplay(priceData) {
             document.getElementById('currentPrice').textContent = `$${priceData.price.toFixed(2)}`;
             
-            // Update price stream
             const streamDiv = document.getElementById('priceStream');
             const timestamp = priceData.timestamp.toLocaleTimeString();
-            const streamEntry = `[${timestamp}] $${priceData.price.toFixed(2)} (Vol: ${priceData.volume.toFixed(1)})`;
+            const streamEntry = `[${timestamp}] $${priceData.price.toFixed(2)}`;
             
-            // Add to top and limit entries
             let currentStream = streamDiv.innerHTML;
             let entries = currentStream.split('<br>').filter(e => e);
             entries.unshift(streamEntry);
@@ -997,28 +1093,23 @@
             streamDiv.innerHTML = entries.join('<br>');
         }
         
-        // Update data points count
-        function updateDataPoints() {
-            document.getElementById('dataPoints').textContent = priceHistory.length;
-        }
-        
         // Update trade log
         function updateTradeLog() {
             const tradeLog = document.getElementById('tradeLog');
             
-            if (signalHistory.length === 0) {
+            if (tradingState.signalHistory.length === 0) {
                 tradeLog.innerHTML = `
                     <div class="trade-entry" style="color: #888; font-style: italic;">
-                        No signals generated yet...
+                        No signals yet. Each signal will stay active until exit.
                     </div>
                 `;
                 return;
             }
             
-            tradeLog.innerHTML = signalHistory.map(signal => `
-                <div class="trade-entry ${signal.type === 'LONG' ? 'trade-long' : signal.type === 'SHORT' ? 'trade-short' : ''}">
+            tradeLog.innerHTML = tradingState.signalHistory.map(signal => `
+                <div class="trade-entry ${signal.type === 'BUY' ? 'trade-long' : 'trade-short'}">
                     <div style="display: flex; justify-content: space-between;">
-                        <span style="color: ${signal.type === 'LONG' ? '#00b894' : signal.type === 'SHORT' ? '#d63031' : '#ffd700'}; font-weight: bold;">
+                        <span style="color: ${signal.type === 'BUY' ? '#00b894' : '#d63031'}; font-weight: bold;">
                             ${signal.type} ${signal.action}
                         </span>
                         <span style="color: #888; font-size: 0.8em;">
@@ -1029,200 +1120,94 @@
                         RSI: ${signal.rsi.toFixed(2)} | Price: $${signal.price.toFixed(2)}
                     </div>
                     <div style="font-size: 0.8em; color: #888;">
-                        ${signal.condition}
+                        ${signal.rule}${signal.duration ? ` | Duration: ${signal.duration}s` : ''}
                     </div>
                 </div>
             `).join('');
         }
         
-        // Update signal badge
-        function updateSignalBadge(signalType) {
-            const badge = document.getElementById('signalBadge');
-            badge.textContent = signalType;
+        // Update position display
+        function updatePositionDisplay() {
+            const positionContainer = document.getElementById('positionContainer');
             
-            // Remove all classes
-            badge.classList.remove('signal-buy', 'signal-sell', 'signal-neutral', 'price-alert');
-            
-            // Add appropriate class
-            if (signalType.includes('LONG')) {
-                badge.classList.add('signal-buy');
-                badge.classList.add('price-alert');
-            } else if (signalType.includes('SHORT')) {
-                badge.classList.add('signal-sell');
-                badge.classList.add('price-alert');
-            } else if (signalType.includes('EXIT')) {
-                badge.classList.add('signal-neutral');
-                badge.classList.add('price-alert');
+            if (tradingState.activeSignal !== 'NONE') {
+                positionContainer.style.display = 'block';
+                document.getElementById('positionType').textContent = tradingState.activeSignal;
+                document.getElementById('positionType').style.color = tradingState.activeSignal === 'BUY' ? '#00b894' : '#d63031';
+                document.getElementById('entryRsi').textContent = tradingState.entryRSI ? tradingState.entryRSI.toFixed(2) : '--';
+                document.getElementById('currentRsi').textContent = tradingState.currentRSI ? tradingState.currentRSI.toFixed(2) : '--';
             } else {
-                badge.classList.add('signal-neutral');
+                positionContainer.style.display = 'none';
             }
+        }
+        
+        // Update position duration
+        function updatePositionDuration() {
+            if (!tradingState.signalStartTime) return;
             
-            // Remove alert after 5 seconds
-            setTimeout(() => {
-                badge.classList.remove('price-alert');
-            }, 5000);
-            
-            // Update signal details
-            const currentPrice = priceHistory.length > 0 ? priceHistory[priceHistory.length - 1].price : 0;
-            document.getElementById('signalDetails').innerHTML = `
-                Price: $${currentPrice.toFixed(2)} | ${signalType}
-            `;
+            const duration = Math.floor((new Date() - tradingState.signalStartTime) / 1000);
+            const minutes = Math.floor(duration / 60);
+            const seconds = duration % 60;
+            document.getElementById('positionDuration').textContent = 
+                `${minutes > 0 ? minutes + 'm ' : ''}${seconds}s`;
         }
         
         // Update conditions display
-        function updateConditionsDisplay(conditions, signalType) {
+        function updateConditionsDisplay() {
             const conditionsList = document.getElementById('conditionsList');
             
-            if (conditions && conditions.length > 0) {
-                conditionsList.innerHTML = `
-                    <h3>${signalType}</h3>
-                    ${conditions.map(cond => `
-                        <div class="condition-item">
-                            <span class="condition-icon">${cond.startsWith('✅') ? '✅' : cond.startsWith('📊') ? '📊' : cond.startsWith('💰') ? '💰' : '⚠️'}</span>
-                            <span class="condition-met">${cond}</span>
-                        </div>
-                    `).join('')}
-                `;
+            let conditions = [];
+            if (tradingState.activeSignal === 'BUY') {
+                conditions = [
+                    '✅ BUY signal ACTIVE',
+                    `📊 Entry RSI: ${tradingState.entryRSI ? tradingState.entryRSI.toFixed(2) : '--'}`,
+                    `📊 Current RSI: ${tradingState.currentRSI ? tradingState.currentRSI.toFixed(2) : '--'}`,
+                    `⏳ Waiting for RSI to cross ABOVE 50 to exit`,
+                    `💰 Current signal will stay active`
+                ];
+            } else if (tradingState.activeSignal === 'SELL') {
+                conditions = [
+                    '✅ SELL signal ACTIVE',
+                    `📊 Entry RSI: ${tradingState.entryRSI ? tradingState.entryRSI.toFixed(2) : '--'}`,
+                    `📊 Current RSI: ${tradingState.currentRSI ? tradingState.currentRSI.toFixed(2) : '--'}`,
+                    `⏳ Waiting for RSI to cross BELOW 50 to exit`,
+                    `💰 Current signal will stay active`
+                ];
+            } else {
+                conditions = [
+                    '📊 Waiting for entry signal',
+                    `⏹️ No active position`,
+                    `👀 Monitoring RSI for crosses:`,
+                    `   • BELOW 30 for BUY`,
+                    `   • ABOVE 70 for SELL`,
+                    `💰 Only one signal at a time`
+                ];
             }
+            
+            conditionsList.innerHTML = `
+                <h3>Signal Logic</h3>
+                ${conditions.map(cond => `
+                    <div class="condition-item">
+                        <span class="condition-icon">${cond.includes('✅') ? '✅' : cond.includes('📊') ? '📊' : cond.includes('⏳') ? '⏳' : cond.includes('💰') ? '💰' : '👀'}</span>
+                        <span class="${cond.includes('✅') ? 'condition-met' : 'condition-not-met'}">${cond}</span>
+                    </div>
+                `).join('')}
+            `;
         }
         
         // Update last update timestamp
         function updateLastUpdate() {
             const now = new Date();
+            let statusText = 'System: Ready';
+            
+            if (tradingState.activeSignal !== 'NONE') {
+                const duration = tradingState.signalStartTime ? 
+                    Math.floor((new Date() - tradingState.signalStartTime) / 1000) : 0;
+                statusText = `${tradingState.activeSignal} active for ${duration}s`;
+            }
+            
             document.getElementById('lastUpdate').innerHTML = 
-                `<span style="color: #00b894;">Last update: ${now.toLocaleTimeString()}</span>`;
-        }
-        
-        // ============================================
-        // RSI CHART
-        // ============================================
-        
-        // Initialize RSI chart
-        function initRSIChart() {
-            const canvas = document.getElementById('rsiChart');
-            if (!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            
-            // Create gradient for RSI line
-            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(0, 184, 148, 0.3)');
-            gradient.addColorStop(1, 'rgba(0, 184, 148, 0.1)');
-            
-            rsiChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: [],
-                    datasets: [
-                        {
-                            label: 'RSI (14)',
-                            data: [],
-                            borderColor: '#00b894',
-                            backgroundColor: gradient,
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 2,
-                            pointBackgroundColor: '#00b894'
-                        },
-                        {
-                            label: 'Overbought (70)',
-                            data: [],
-                            borderColor: '#d63031',
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            fill: false,
-                            pointRadius: 0
-                        },
-                        {
-                            label: 'Oversold (30)',
-                            data: [],
-                            borderColor: '#00b894',
-                            borderWidth: 1,
-                            borderDash: [5, 5],
-                            fill: false,
-                            pointRadius: 0
-                        },
-                        {
-                            label: 'Midline (50)',
-                            data: [],
-                            borderColor: '#ffd700',
-                            borderWidth: 1,
-                            borderDash: [3, 3],
-                            fill: false,
-                            pointRadius: 0
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            min: 0,
-                            max: 100,
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#888',
-                                callback: function(value) {
-                                    return value;
-                                }
-                            }
-                        },
-                        x: {
-                            grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
-                            },
-                            ticks: {
-                                color: '#888',
-                                maxTicksLimit: 10,
-                                callback: function(value, index) {
-                                    return index % 5 === 0 ? index : '';
-                                }
-                            }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: '#fff',
-                                font: {
-                                    size: 11
-                                }
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#ffd700',
-                            bodyColor: '#fff',
-                            borderColor: '#00b894',
-                            borderWidth: 1
-                        }
-                    }
-                }
-            });
-        }
-        
-        // Update RSI chart
-        function updateRSIChart() {
-            if (!rsiChart || rsiHistory.length === 0) return;
-            
-            // Update labels (timestamps)
-            const labels = Array.from({length: rsiHistory.length}, (_, i) => i + 1);
-            
-            // Update RSI data
-            rsiChart.data.labels = labels;
-            rsiChart.data.datasets[0].data = rsiHistory;
-            
-            // Update reference lines
-            rsiChart.data.datasets[1].data = Array(rsiHistory.length).fill(70);
-            rsiChart.data.datasets[2].data = Array(rsiHistory.length).fill(30);
-            rsiChart.data.datasets[3].data = Array(rsiHistory.length).fill(50);
-            
-            rsiChart.update('none');
+                `<span style="color: #00b894;">${statusText}</span>`;
         }
         
         // ============================================
@@ -1233,12 +1218,10 @@
         function changeTimeframe(timeframe, btn) {
             currentTimeframe = timeframe;
             
-            // Update button states
             document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            // In a real implementation, this would change how we aggregate price data
-            showMessage(`Timeframe changed to ${timeframe}`, 'success');
+            showMessage(`Timeframe: ${timeframe}`, 'success');
         }
         
         // Show message
@@ -1259,9 +1242,10 @@
                 `;
             }
             
-            // Clear message after 5 seconds
             setTimeout(() => {
-                errorContainer.innerHTML = '';
+                if (errorContainer.innerHTML.includes(message)) {
+                    errorContainer.innerHTML = '';
+                }
             }, 5000);
         }
         
@@ -1271,22 +1255,19 @@
         
         // Initialize when page loads
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Real RSI Trading Dashboard Initializing...');
-            
-            // Initialize RSI chart
-            initRSIChart();
+            console.log('🚀 Clean Signal Dashboard Initializing...');
             
             // Set initial displays
-            document.getElementById('dataPoints').textContent = '0';
             document.getElementById('currentPrice').textContent = '--';
             document.getElementById('rsiDisplay').textContent = '--';
             document.getElementById('prevRsiDisplay').textContent = '--';
-            document.getElementById('signalStrength').textContent = '--';
+            document.getElementById('signalState').textContent = 'IDLE';
+            document.getElementById('activeSignal').textContent = 'NONE';
             
-            // Show initial message
-            showMessage('Click "Connect WebSocket" to start receiving live price data', 'success');
+            // Show welcome message
+            showMessage('Click "Start Trading" for clean, non-conflicting signals', 'success');
             
-            console.log('✅ Dashboard initialized successfully');
+            console.log('✅ Clean Signal Dashboard ready');
         });
     </script>
 </body>
