@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>KILLER ZONE - NAS100 & US30 Trading</title>
+<title>KILLER ZONE - Multi-Asset Visual Analysis Dashboard</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
@@ -15,12 +15,16 @@
         --positive: #00c853;
         --negative: #ff3d00;
         --neutral: #5d7bdb;
+        --warning: #ff9800;
         --text-primary: #ffffff;
         --text-secondary: #cccccc;
         --border-radius: 8px;
         --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         --london-session: #2196F3;
         --ny-session: #4CAF50;
+        --gold: #FFD700;
+        --btc: #F7931A;
+        --forex: #00BFFF;
     }
     
     * {
@@ -121,18 +125,6 @@
         color: var(--primary-bg);
     }
     
-    .session-btn.ny {
-        border-left: 4px solid var(--ny-session);
-    }
-    
-    .session-btn.london {
-        border-left: 4px solid var(--london-session);
-    }
-    
-    .session-btn.both {
-        border-left: 4px solid var(--accent-color);
-    }
-    
     .market-status {
         margin-top: 10px;
         padding: 8px;
@@ -174,21 +166,21 @@
     
     /* Left Panel */
     .left-panel {
-        width: 350px;
+        width: 400px;
         display: flex;
         flex-direction: column;
         gap: 15px;
     }
     
-    /* Instrument Panel */
-    .instrument-panel {
+    /* Asset Selection Panel */
+    .asset-panel {
         background: var(--secondary-bg);
         border-radius: var(--border-radius);
         padding: 15px;
         box-shadow: var(--shadow);
     }
     
-    .instrument-header {
+    .asset-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -197,53 +189,60 @@
         font-weight: bold;
     }
     
-    .instrument-grid {
+    .asset-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
     }
     
-    .instrument-card {
+    .asset-card {
         background: rgba(0, 0, 0, 0.3);
         border-radius: 6px;
-        padding: 15px;
+        padding: 12px;
         border: 2px solid transparent;
         transition: all 0.3s;
         cursor: pointer;
         position: relative;
-        overflow: hidden;
     }
     
-    .instrument-card.active {
+    .asset-card.active {
         border-color: var(--accent-color);
         background: rgba(255, 215, 0, 0.1);
     }
     
-    .instrument-card.buy-signal {
+    .asset-card.gold {
+        border-left: 4px solid var(--gold);
+    }
+    
+    .asset-card.btc {
+        border-left: 4px solid var(--btc);
+    }
+    
+    .asset-card.forex {
+        border-left: 4px solid var(--forex);
+    }
+    
+    .asset-card.indices {
+        border-left: 4px solid var(--neutral);
+    }
+    
+    .asset-card.buy-signal {
         border-color: var(--positive);
-        box-shadow: 0 0 15px rgba(0, 200, 83, 0.3);
-        animation: pulse-border 2s infinite;
+        box-shadow: 0 0 10px rgba(0, 200, 83, 0.3);
     }
     
-    .instrument-card.sell-signal {
+    .asset-card.sell-signal {
         border-color: var(--negative);
-        box-shadow: 0 0 15px rgba(255, 61, 0, 0.3);
-        animation: pulse-border 2s infinite;
-    }
-    
-    @keyframes pulse-border {
-        0% { box-shadow: 0 0 5px; }
-        50% { box-shadow: 0 0 15px; }
-        100% { box-shadow: 0 0 5px; }
+        box-shadow: 0 0 10px rgba(255, 61, 0, 0.3);
     }
     
     .signal-badge {
         position: absolute;
         top: 10px;
         right: 10px;
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-size: 0.75rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-size: 0.7rem;
         font-weight: bold;
     }
     
@@ -257,22 +256,24 @@
         color: var(--negative);
     }
     
-    .inst-name {
-        font-size: 1.1rem;
+    .asset-name {
+        font-size: 1rem;
         font-weight: bold;
         margin-bottom: 5px;
-        color: var(--accent-color);
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
     
-    .inst-price {
-        font-size: 1.4rem;
+    .asset-price {
+        font-size: 1.2rem;
         font-weight: bold;
-        margin: 5px 0;
+        margin: 3px 0;
     }
     
-    .inst-change {
-        font-size: 0.9rem;
-        padding: 2px 8px;
+    .asset-change {
+        font-size: 0.85rem;
+        padding: 2px 6px;
         border-radius: 10px;
         display: inline-block;
     }
@@ -287,58 +288,8 @@
         color: var(--negative);
     }
     
-    .inst-rsi {
-        margin-top: 8px;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-    }
-    
-    .rsi-value {
-        font-weight: bold;
-        font-size: 1.1rem;
-    }
-    
-    .rsi-kill-zone-buy {
-        color: var(--positive);
-        text-shadow: 0 0 5px rgba(0, 200, 83, 0.5);
-    }
-    
-    .rsi-kill-zone-sell {
-        color: var(--negative);
-        text-shadow: 0 0 5px rgba(255, 61, 0, 0.5);
-    }
-    
-    .rsi-neutral {
-        color: var(--neutral);
-    }
-    
-    .rsi-warning {
-        color: #ff9800;
-    }
-    
-    .retracement-indicator {
-        margin-top: 8px;
-        font-size: 0.8rem;
-        padding: 3px 8px;
-        border-radius: 10px;
-        background: rgba(93, 123, 219, 0.2);
-        display: inline-block;
-    }
-    
-    .retracement-active {
-        background: rgba(255, 193, 7, 0.2);
-        color: #ffc107;
-        animation: retracement-pulse 1.5s infinite;
-    }
-    
-    @keyframes retracement-pulse {
-        0% { background: rgba(255, 193, 7, 0.2); }
-        50% { background: rgba(255, 193, 7, 0.4); }
-        100% { background: rgba(255, 193, 7, 0.2); }
-    }
-    
-    /* Signal Enforcement Panel */
-    .enforcement-panel {
+    /* Visual Analysis Panel */
+    .analysis-panel {
         background: var(--secondary-bg);
         border-radius: var(--border-radius);
         padding: 15px;
@@ -347,7 +298,7 @@
         overflow-y: auto;
     }
     
-    .enforcement-header {
+    .analysis-header {
         color: var(--accent-color);
         margin-bottom: 15px;
         display: flex;
@@ -355,129 +306,177 @@
         justify-content: space-between;
     }
     
-    .enforcement-item {
+    .analysis-section {
+        margin-bottom: 20px;
+    }
+    
+    .section-title {
+        color: var(--accent-color);
+        font-size: 1rem;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .analysis-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .analysis-item {
         background: rgba(0, 0, 0, 0.2);
         border-radius: 6px;
-        padding: 12px;
-        margin-bottom: 10px;
+        padding: 10px;
         border-left: 4px solid var(--neutral);
-        transition: all 0.3s;
     }
     
-    .enforcement-item.passed {
-        border-left-color: var(--positive);
-    }
-    
-    .enforcement-item.failed {
-        border-left-color: var(--negative);
-    }
-    
-    .enforcement-title {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 8px;
-        font-weight: bold;
-    }
-    
-    .enforcement-status {
-        padding: 2px 8px;
-        border-radius: 10px;
-        font-size: 0.8rem;
-        font-weight: bold;
-    }
-    
-    .status-pass {
-        background: rgba(0, 200, 83, 0.2);
-        color: var(--positive);
-    }
-    
-    .status-fail {
-        background: rgba(255, 61, 0, 0.2);
-        color: var(--negative);
-    }
-    
-    .enforcement-details {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-        margin-top: 5px;
-    }
-    
-    /* Active Signals Panel */
-    .active-signals-panel {
-        background: var(--secondary-bg);
-        border-radius: var(--border-radius);
-        padding: 15px;
-        box-shadow: var(--shadow);
-        height: 200px;
-        overflow-y: auto;
-    }
-    
-    .signals-header {
-        color: var(--accent-color);
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .signal-item {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 6px;
-        padding: 12px;
-        margin-bottom: 10px;
-        border-left: 4px solid;
-        animation: fadeIn 0.5s;
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-5px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .signal-item.buy {
+    .analysis-item.bullish {
         border-left-color: var(--positive);
         background: rgba(0, 200, 83, 0.1);
     }
     
-    .signal-item.sell {
+    .analysis-item.bearish {
         border-left-color: var(--negative);
         background: rgba(255, 61, 0, 0.1);
     }
     
-    .signal-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .analysis-item.neutral {
+        border-left-color: var(--warning);
+        background: rgba(255, 152, 0, 0.1);
     }
     
-    .signal-info {
-        flex: 1;
-    }
-    
-    .signal-type {
-        font-size: 1.1rem;
+    .item-title {
         font-weight: bold;
+        font-size: 0.9rem;
         margin-bottom: 5px;
     }
     
-    .signal-details {
+    .item-value {
         font-size: 0.85rem;
         color: var(--text-secondary);
     }
     
-    .signal-strength {
-        text-align: right;
-        min-width: 80px;
+    .confirmation-item {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
     
-    .strength-high {
+    .confirmation-item.confirmed {
+        border-left: 4px solid var(--positive);
+    }
+    
+    .confirmation-item.denied {
+        border-left: 4px solid var(--negative);
+    }
+    
+    .confirmation-check {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+    }
+    
+    .check-confirmed {
+        background: rgba(0, 200, 83, 0.2);
         color: var(--positive);
+    }
+    
+    .check-denied {
+        background: rgba(255, 61, 0, 0.2);
+        color: var(--negative);
+    }
+    
+    /* Signal Decision Panel */
+    .signal-panel {
+        background: var(--secondary-bg);
+        border-radius: var(--border-radius);
+        padding: 15px;
+        box-shadow: var(--shadow);
+    }
+    
+    .signal-header {
+        color: var(--accent-color);
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .signal-decision {
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        animation: fadeIn 0.5s;
+    }
+    
+    .signal-buy-decision {
+        background: rgba(0, 200, 83, 0.1);
+        border: 2px solid var(--positive);
+    }
+    
+    .signal-sell-decision {
+        background: rgba(255, 61, 0, 0.1);
+        border: 2px solid var(--negative);
+    }
+    
+    .signal-no-trade {
+        background: rgba(255, 152, 0, 0.1);
+        border: 2px solid var(--warning);
+    }
+    
+    .decision-text {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .decision-buy {
+        color: var(--positive);
+    }
+    
+    .decision-sell {
+        color: var(--negative);
+    }
+    
+    .decision-no-trade {
+        color: var(--warning);
+    }
+    
+    .trend-bias {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
         font-weight: bold;
     }
     
-    .strength-medium {
-        color: #ff9800;
-        font-weight: bold;
+    .trend-bullish {
+        color: var(--positive);
+    }
+    
+    .trend-bearish {
+        color: var(--negative);
+    }
+    
+    .trend-ranging {
+        color: var(--warning);
+    }
+    
+    .analysis-summary {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 0.9rem;
+        line-height: 1.5;
     }
     
     /* Chart Container */
@@ -547,6 +546,31 @@
         font-weight: bold;
     }
     
+    /* Chart Tools */
+    .chart-tools {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .tool-btn {
+        padding: 5px 12px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        color: var(--text-primary);
+        cursor: pointer;
+        font-size: 0.8rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .tool-btn.active {
+        background: var(--neutral);
+        color: white;
+    }
+    
     /* TradingView Chart */
     #tv_chart_container {
         flex: 1;
@@ -569,44 +593,8 @@
         font-style: italic;
     }
     
-    /* RSI Kill Zone Indicator */
-    .rsi-kill-zone-display {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 10px;
-        padding: 8px;
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 6px;
-        font-size: 0.85rem;
-    }
-    
-    .kill-zone {
-        text-align: center;
-        padding: 5px;
-        border-radius: 4px;
-        flex: 1;
-        margin: 0 2px;
-    }
-    
-    .kill-zone.buy {
-        background: rgba(0, 200, 83, 0.1);
-        color: var(--positive);
-        border: 1px solid rgba(0, 200, 83, 0.3);
-    }
-    
-    .kill-zone.sell {
-        background: rgba(255, 61, 0, 0.1);
-        color: var(--negative);
-        border: 1px solid rgba(255, 61, 0, 0.3);
-    }
-    
-    .kill-zone.neutral {
-        background: rgba(93, 123, 219, 0.1);
-        color: var(--neutral);
-    }
-    
     /* Responsive Design */
-    @media (max-width: 1200px) {
+    @media (max-width: 1400px) {
         .dashboard-container {
             flex-direction: column;
             height: auto;
@@ -618,7 +606,7 @@
             flex-wrap: wrap;
         }
         
-        .instrument-panel, .enforcement-panel, .active-signals-panel {
+        .asset-panel, .analysis-panel, .signal-panel {
             flex: 1;
             min-width: 300px;
         }
@@ -645,10 +633,15 @@
             align-items: flex-start;
         }
         
-        .timeframe-selector {
+        .timeframe-selector, .chart-tools {
             align-self: stretch;
             justify-content: center;
         }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
 </style>
 </head>
@@ -657,33 +650,29 @@
     <!-- Header -->
     <div class="header">
         <div class="header-content">
-            <h1><i class="fas fa-bolt"></i> KILLER ZONE - NAS100 & US30</h1>
-            <p class="tagline">STRICT RSI 20/80 ENFORCEMENT • Retracement-Triggered Updates • No Noise, Only Signals</p>
+            <h1><i class="fas fa-binoculars"></i> KILLER ZONE - Visual Analysis Dashboard</h1>
+            <p class="tagline">Multi-Asset Support • 3+ Visual Confirmations Required • No Conflicts Allowed</p>
             <div class="rules">
-                <div class="rule"><i class="fas fa-ban"></i> BLOCKED: RSI 21-79 (No Signals)</div>
-                <div class="rule"><i class="fas fa-check"></i> ALLOWED: RSI ≤20 (BUY) or ≥80 (SELL)</div>
-                <div class="rule"><i class="fas fa-wave-square"></i> Updates: Retracement Only</div>
-                <div class="rule"><i class="fas fa-filter"></i> NY/London Session Filter</div>
+                <div class="rule"><i class="fas fa-eye"></i> Visual Analysis First</div>
+                <div class="rule"><i class="fas fa-check-triple"></i> 3+ Confirmations Required</div>
+                <div class="rule"><i class="fas fa-times"></i> No Conflicts Allowed</div>
+                <div class="rule"><i class="fas fa-bullseye"></i> Accuracy Over Frequency</div>
             </div>
         </div>
         
         <div class="session-controls">
-            <div>TRADING SESSION FILTER</div>
+            <div>ANALYSIS MODE</div>
             <div class="session-buttons">
-                <button class="session-btn ny active" data-session="ny">
-                    <i class="fas fa-building"></i> NY Only
+                <button class="session-btn active" data-mode="realtime">
+                    <i class="fas fa-sync-alt"></i> Live Analysis
                 </button>
-                <button class="session-btn london" data-session="london">
-                    <i class="fas fa-landmark"></i> London Only
-                </button>
-                <button class="session-btn both" data-session="both">
-                    <i class="fas fa-globe-americas"></i> Both Sessions
+                <button class="session-btn" data-mode="simulation">
+                    <i class="fas fa-chart-bar"></i> Historical Test
                 </button>
             </div>
             <div class="market-status">
                 <span class="status-indicator status-open"></span>
-                <span id="current-session">New York Session</span> • 
-                <span id="retracement-status">Retracement: None</span>
+                <span id="analysis-status">Live Analysis Active</span>
             </div>
         </div>
     </div>
@@ -692,162 +681,219 @@
     <div class="dashboard-container">
         <!-- Left Panel -->
         <div class="left-panel">
-            <!-- Instrument Panel -->
-            <div class="instrument-panel">
-                <div class="instrument-header">
-                    <span><i class="fas fa-chart-line"></i> LIVE INSTRUMENTS</span>
-                    <span id="update-status" style="font-size:0.8rem;color:#ff9800">Waiting for retracement...</span>
+            <!-- Asset Selection Panel -->
+            <div class="asset-panel">
+                <div class="asset-header">
+                    <span><i class="fas fa-coins"></i> ASSET SELECTION</span>
+                    <span id="asset-count">5 Assets</span>
                 </div>
-                <div class="instrument-grid">
-                    <div class="instrument-card active buy-signal" data-symbol="NAS100">
-                        <div class="signal-badge signal-buy">KILLER ZONE BUY</div>
-                        <div class="inst-name">NAS100</div>
-                        <div class="inst-price" id="nas100-price">17,842.35</div>
-                        <div class="inst-change change-up" id="nas100-change">+0.85%</div>
-                        <div class="inst-rsi">
-                            RSI: <span class="rsi-value rsi-kill-zone-buy" id="nas100-rsi">18.5</span>
-                            <span id="nas100-rsi-status">(BUY ZONE ≤20)</span>
+                <div class="asset-grid">
+                    <div class="asset-card gold active" data-symbol="XAUUSD" data-name="Gold">
+                        <div class="asset-name">
+                            <i class="fas fa-gem" style="color:var(--gold)"></i>
+                            <span>Gold (XAUUSD)</span>
                         </div>
-                        <div class="retracement-indicator retracement-active" id="nas100-retracement">
-                            <i class="fas fa-wave-square"></i> Retracement: -1.8%
-                        </div>
+                        <div class="asset-price" id="gold-price">2,180.45</div>
+                        <div class="asset-change change-up" id="gold-change">+0.65%</div>
                     </div>
                     
-                    <div class="instrument-card" data-symbol="US30">
-                        <div class="inst-name">US30</div>
-                        <div class="inst-price" id="us30-price">39,215.60</div>
-                        <div class="inst-change change-down" id="us30-change">-0.32%</div>
-                        <div class="inst-rsi">
-                            RSI: <span class="rsi-value rsi-neutral" id="us30-rsi">65.2</span>
-                            <span id="us30-rsi-status">(NO ZONE 21-79)</span>
+                    <div class="asset-card btc" data-symbol="BTCUSD" data-name="Bitcoin">
+                        <div class="asset-name">
+                            <i class="fab fa-bitcoin" style="color:var(--btc)"></i>
+                            <span>Bitcoin (BTCUSD)</span>
                         </div>
-                        <div class="retracement-indicator" id="us30-retracement">
-                            <i class="fas fa-minus"></i> Range: ±0.4%
+                        <div class="asset-price" id="btc-price">68,245.80</div>
+                        <div class="asset-change change-up" id="btc-change">+2.35%</div>
+                    </div>
+                    
+                    <div class="asset-card forex" data-symbol="EURUSD" data-name="EURUSD">
+                        <div class="asset-name">
+                            <i class="fas fa-euro-sign" style="color:var(--forex)"></i>
+                            <span>EUR/USD</span>
                         </div>
+                        <div class="asset-price" id="eurusd-price">1.0956</div>
+                        <div class="asset-change change-down" id="eurusd-change">-0.15%</div>
+                    </div>
+                    
+                    <div class="asset-card indices" data-symbol="NAS100" data-name="NAS100">
+                        <div class="asset-name">
+                            <i class="fas fa-chart-line" style="color:var(--neutral)"></i>
+                            <span>NAS100</span>
+                        </div>
+                        <div class="asset-price" id="nas100-price">17,842.35</div>
+                        <div class="asset-change change-up" id="nas100-change">+0.85%</div>
+                    </div>
+                    
+                    <div class="asset-card indices" data-symbol="US30" data-name="US30">
+                        <div class="asset-name">
+                            <i class="fas fa-industry" style="color:var(--neutral)"></i>
+                            <span>US30 (Dow)</span>
+                        </div>
+                        <div class="asset-price" id="us30-price">39,215.60</div>
+                        <div class="asset-change change-down" id="us30-change">-0.32%</div>
                     </div>
                 </div>
-                
-                <!-- RSI Kill Zone Display -->
-                <div class="rsi-kill-zone-display">
-                    <div class="kill-zone buy">
-                        <div style="font-weight:bold;">BUY ZONE</div>
-                        <div>RSI ≤ 20</div>
-                        <div id="buy-zone-status" style="font-size:0.7rem;margin-top:2px;">ACTIVE</div>
-                    </div>
-                    <div class="kill-zone neutral">
-                        <div style="font-weight:bold;">BLOCKED ZONE</div>
-                        <div>RSI 21-79</div>
-                        <div style="font-size:0.7rem;margin-top:2px;">NO SIGNALS</div>
-                    </div>
-                    <div class="kill-zone sell">
-                        <div style="font-weight:bold;">SELL ZONE</div>
-                        <div>RSI ≥ 80</div>
-                        <div id="sell-zone-status" style="font-size:0.7rem;margin-top:2px;">INACTIVE</div>
-                    </div>
-                </div>
-                
                 <div style="margin-top: 15px; font-size: 0.85rem; color: var(--text-secondary);">
-                    <i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i> 
-                    STRICT RULE: Signals ONLY generated when RSI ≤20 (BUY) or ≥80 (SELL)
+                    <i class="fas fa-mouse-pointer" style="color: var(--accent-color);"></i> 
+                    Click any asset to analyze. Green/Red borders indicate signals.
                 </div>
             </div>
 
-            <!-- Signal Enforcement Panel -->
-            <div class="enforcement-panel">
-                <div class="enforcement-header">
-                    <span><i class="fas fa-shield-alt"></i> STRICT KILLER ZONE ENFORCEMENT</span>
-                    <span id="current-instrument">NAS100</span>
+            <!-- Visual Analysis Panel -->
+            <div class="analysis-panel">
+                <div class="analysis-header">
+                    <span><i class="fas fa-chart-bar"></i> VISUAL ANALYSIS</span>
+                    <span id="current-asset">Gold (XAUUSD)</span>
                 </div>
                 
-                <div class="enforcement-item passed" id="rule-kill-zone">
-                    <div class="enforcement-title">
-                        <span>RSI KILL ZONE (STRICT: ≤20 or ≥80 ONLY)</span>
-                        <span class="enforcement-status status-pass">PASSED</span>
-                    </div>
-                    <div class="enforcement-details" id="kill-zone-details">
-                        RSI: <strong>18.5</strong> ✓ IN BUY ZONE (≤20 required)
-                    </div>
-                </div>
-                
-                <div class="enforcement-item passed" id="rule-retracement">
-                    <div class="enforcement-title">
-                        <span>Retracement Confirmation (>1%)</span>
-                        <span class="enforcement-status status-pass">PASSED</span>
-                    </div>
-                    <div class="enforcement-details" id="retracement-details">
-                        Retracement: <strong>-1.8%</strong> ✓ Above 1% threshold
-                    </div>
-                </div>
-                
-                <div class="enforcement-item passed" id="rule-htf-trend">
-                    <div class="enforcement-title">
-                        <span>HTF Trend Alignment (Daily)</span>
-                        <span class="enforcement-status status-pass">PASSED</span>
-                    </div>
-                    <div class="enforcement-details" id="htf-details">
-                        Daily Trend: <strong>Bullish ✓</strong> (Aligned with BUY)
+                <!-- Market Structure -->
+                <div class="analysis-section">
+                    <div class="section-title">MARKET STRUCTURE</div>
+                    <div class="analysis-grid">
+                        <div class="analysis-item bullish" id="structure-hl">
+                            <div class="item-title">Higher Lows</div>
+                            <div class="item-value">Confirmed ✓</div>
+                        </div>
+                        <div class="analysis-item bullish" id="structure-hh">
+                            <div class="item-title">Higher Highs</div>
+                            <div class="item-value">Present ✓</div>
+                        </div>
+                        <div class="analysis-item" id="structure-lh">
+                            <div class="item-title">Lower Highs</div>
+                            <div class="item-value">Not Present</div>
+                        </div>
+                        <div class="analysis-item" id="structure-ll">
+                            <div class="item-title">Lower Lows</div>
+                            <div class="item-value">Not Present</div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="enforcement-item passed" id="rule-no-conflict">
-                    <div class="enforcement-title">
-                        <span>No Conflicting Signals</span>
-                        <span class="enforcement-status status-pass">PASSED</span>
-                    </div>
-                    <div class="enforcement-details" id="conflict-details">
-                        No SELL signals on lower timeframes
+                <!-- Trend & Indicators -->
+                <div class="analysis-section">
+                    <div class="section-title">TREND & MOMENTUM</div>
+                    <div class="analysis-grid">
+                        <div class="analysis-item bullish" id="trend-direction">
+                            <div class="item-title">Trend Direction</div>
+                            <div class="item-value">Bullish</div>
+                        </div>
+                        <div class="analysis-item neutral" id="rsi-status">
+                            <div class="item-title">RSI Status</div>
+                            <div class="item-value">62.5 (Neutral)</div>
+                        </div>
+                        <div class="analysis-item bullish" id="momentum">
+                            <div class="item-title">Momentum</div>
+                            <div class="item-value">Bullish Bars</div>
+                        </div>
+                        <div class="analysis-item" id="candle-pattern">
+                            <div class="item-title">Candle Pattern</div>
+                            <div class="item-value">Bullish Continuation</div>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="enforcement-item passed" id="rule-session">
-                    <div class="enforcement-title">
-                        <span>Valid Trading Session</span>
-                        <span class="enforcement-status status-pass">PASSED</span>
-                    </div>
-                    <div class="enforcement-details" id="session-details">
-                        New York Session ✓ (Active)
+                <!-- Key Levels -->
+                <div class="analysis-section">
+                    <div class="section-title">KEY LEVELS</div>
+                    <div class="analysis-grid">
+                        <div class="analysis-item" id="support-level">
+                            <div class="item-title">Support Zone</div>
+                            <div class="item-value">2,165 - 2,170</div>
+                        </div>
+                        <div class="analysis-item" id="resistance-level">
+                            <div class="item-title">Resistance Zone</div>
+                            <div class="item-value">2,190 - 2,195</div>
+                        </div>
+                        <div class="analysis-item bullish" id="price-position">
+                            <div class="item-title">Price Position</div>
+                            <div class="item-value">Above Support ✓</div>
+                        </div>
+                        <div class="analysis-item" id="breakout-status">
+                            <div class="item-title">Breakout Status</div>
+                            <div class="item-value">Testing Resistance</div>
+                        </div>
                     </div>
                 </div>
                 
-                <div style="margin-top: 20px; padding: 12px; background: rgba(0,0,0,0.3); border-radius: 6px; border: 2px solid var(--positive);">
-                    <div style="color: var(--accent-color); font-weight: bold; margin-bottom: 8px;">
-                        <i class="fas fa-check-circle"></i> KILLER ZONE SIGNAL CONFIRMED
-                    </div>
-                    <div id="trade-decision" style="font-size: 1.2rem; font-weight: bold; color: var(--positive);">
-                        ✅ BUY NAS100 - RSI 18.5 (≤20 ZONE)
-                    </div>
-                    <div id="trade-reason" style="font-size: 0.9rem; margin-top: 5px; color: var(--text-secondary);">
-                        STRICT RULES PASSED: RSI ≤20 ✓ | Retracement -1.8% ✓ | HTF Bullish ✓ | Session Active ✓
-                    </div>
-                </div>
-            </div>
-
-            <!-- Active Signals Panel -->
-            <div class="active-signals-panel">
-                <div class="signals-header">
-                    <span><i class="fas fa-bolt"></i> KILLER ZONE SIGNALS</span>
-                    <span id="signals-count">1 Active</span>
-                </div>
-                <div id="signals-container">
-                    <div class="signal-item buy">
-                        <div class="signal-content">
-                            <div class="signal-info">
-                                <div class="signal-type">BUY NAS100</div>
-                                <div class="signal-details">
-                                    RSI: 18.5 (≤20) • Retracement: -1.8% • Trend: Bullish
-                                </div>
+                <!-- Visual Confirmations -->
+                <div class="analysis-section">
+                    <div class="section-title">VISUAL CONFIRMATIONS (3+ Required)</div>
+                    <div id="confirmations-container">
+                        <div class="confirmation-item confirmed">
+                            <div class="confirmation-check check-confirmed">
+                                <i class="fas fa-check"></i>
                             </div>
-                            <div class="signal-strength">
-                                <div class="strength-high">KILLER ZONE</div>
-                                <div style="font-size: 0.8rem; margin-top: 3px;">2 mins ago</div>
+                            <div>
+                                <div style="font-weight:bold;">Higher Lows Pattern</div>
+                                <div style="font-size:0.8rem;color:var(--text-secondary)">Clear HH/HL structure confirms uptrend</div>
+                            </div>
+                        </div>
+                        <div class="confirmation-item confirmed">
+                            <div class="confirmation-check check-confirmed">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:bold;">Trend Direction</div>
+                                <div style="font-size:0.8rem;color:var(--text-secondary)">Clear bullish trend established</div>
+                            </div>
+                        </div>
+                        <div class="confirmation-item confirmed">
+                            <div class="confirmation-check check-confirmed">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:bold;">Bullish Candlestick Pattern</div>
+                                <div style="font-size:0.8rem;color:var(--text-secondary)">Series of bullish closes above key support</div>
+                            </div>
+                        </div>
+                        <div class="confirmation-item">
+                            <div class="confirmation-check">
+                                <i class="fas fa-minus"></i>
+                            </div>
+                            <div>
+                                <div style="font-weight:bold;">RSI Confirmation</div>
+                                <div style="font-size:0.8rem;color:var(--text-secondary)">RSI neutral, not overbought/sold</div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div id="no-signals" style="text-align: center; padding: 20px; color: var(--text-secondary); display: none;">
-                    <i class="fas fa-ban" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i><br>
-                    No Killer Zone signals<br>
-                    <small>Waiting for RSI ≤20 or ≥80</small>
+            </div>
+
+            <!-- Signal Decision Panel -->
+            <div class="signal-panel">
+                <div class="signal-header">
+                    <span><i class="fas fa-flag-checkered"></i> TRADE DECISION</span>
+                    <span id="confirmation-count">3/4 Confirmations</span>
+                </div>
+                
+                <div class="signal-decision signal-buy-decision">
+                    <div class="trend-bias trend-bullish">
+                        <i class="fas fa-arrow-up"></i> TREND BIAS: BULLISH
+                    </div>
+                    <div class="decision-text decision-buy">
+                        <i class="fas fa-thumbs-up"></i> SIGNAL: BUY
+                    </div>
+                    <div style="font-size:0.9rem;margin-bottom:10px;color:var(--text-secondary)">
+                        Confidence: High (3/4 visual confirmations)
+                    </div>
+                </div>
+                
+                <div class="analysis-summary">
+                    <strong>ANALYSIS SUMMARY:</strong><br>
+                    Gold shows a clear bullish structure with higher highs and higher lows. 
+                    Price is trading in a confirmed uptrend with strong support at 2,165. 
+                    Bullish candlestick patterns and momentum confirm the trend direction. 
+                    RSI at 62.5 provides neutral confirmation without overbought concerns. 
+                    No conflicting signals observed.
+                </div>
+                
+                <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius:6px; font-size:0.85rem;">
+                    <div style="color:var(--accent-color);margin-bottom:5px;">
+                        <i class="fas fa-exclamation-triangle"></i> KEY VISUAL CONFIRMATIONS:
+                    </div>
+                    <div>1. Higher Lows + Higher Highs pattern</div>
+                    <div>2. Clear bullish trend direction</div>
+                    <div>3. Bullish candlestick momentum above key support</div>
                 </div>
             </div>
         </div>
@@ -856,12 +902,26 @@
         <div class="chart-container">
             <div class="chart-header">
                 <div class="chart-info">
-                    <div class="chart-symbol" id="chart-symbol-name">NASDAQ:NDX (NAS100)</div>
+                    <div class="chart-symbol" id="chart-symbol-name">Gold (XAUUSD) - 1H Chart</div>
                     <div class="chart-stats">
-                        <span>RSI: <strong id="chart-rsi" style="color:var(--positive)">18.5</strong></span>
-                        <span>Trend: <strong id="chart-trend" style="color:var(--positive);">Bullish</strong></span>
-                        <span>Retracement: <strong id="chart-retracement" style="color:#ff9800;">-1.8%</strong></span>
-                        <span>Kill Zone: <strong id="chart-zone" style="color:var(--positive);">BUY (≤20)</strong></span>
+                        <span>Trend: <strong id="chart-trend" style="color:var(--positive)">Bullish</strong></span>
+                        <span>RSI: <strong id="chart-rsi">62.5</strong></span>
+                        <span>Structure: <strong id="chart-structure" style="color:var(--positive)">HH/HL</strong></span>
+                        <span>Momentum: <strong id="chart-momentum" style="color:var(--positive)">Bullish</strong></span>
+                    </div>
+                    <div class="chart-tools">
+                        <button class="tool-btn active" data-tool="trendlines">
+                            <i class="fas fa-sliders-h"></i> Trendlines
+                        </button>
+                        <button class="tool-btn" data-tool="levels">
+                            <i class="fas fa-layer-group"></i> S/R Levels
+                        </button>
+                        <button class="tool-btn" data-tool="fibonacci">
+                            <i class="fas fa-wave-square"></i> Fibonacci
+                        </button>
+                        <button class="tool-btn" data-tool="clear">
+                            <i class="fas fa-eraser"></i> Clear All
+                        </button>
                     </div>
                 </div>
                 <div class="timeframe-selector">
@@ -883,9 +943,9 @@
     <div class="footer">
         <div class="warning">
             <i class="fas fa-exclamation-triangle"></i> 
-            STRICT ENFORCEMENT: Signals BLOCKED outside RSI 20/80 zones. Updates ONLY on retracements (>1%).
+            VISUAL ANALYSIS RULES: Minimum 3 confirmations required. No trades on conflicting signals.
         </div>
-        <div>© KILLER ZONE Trading System | NAS100 & US30 Only | RSI ≤20 BUY / ≥80 SELL ONLY</div>
+        <div>© KILLER ZONE Visual Analysis Dashboard | Gold • BTC • EURUSD • NAS100 • US30</div>
     </div>
 
     <!-- External Libraries -->
@@ -893,118 +953,147 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     
     <script>
-        // KILLER ZONE Trading System with STRICT RSI 20/80 Enforcement
-        const KILLER_ZONE = {
-            // STRICT Configuration
+        // KILLER ZONE Visual Analysis System
+        const VISUAL_ANALYSIS = {
+            // Configuration
             config: {
-                instruments: {
+                assets: {
+                    XAUUSD: { 
+                        name: "Gold", 
+                        tvSymbol: "TVC:GOLD",
+                        category: "gold",
+                        color: "var(--gold)"
+                    },
+                    BTCUSD: { 
+                        name: "Bitcoin", 
+                        tvSymbol: "BINANCE:BTCUSDT",
+                        category: "btc",
+                        color: "var(--btc)"
+                    },
+                    EURUSD: { 
+                        name: "EUR/USD", 
+                        tvSymbol: "FX_IDC:EURUSD",
+                        category: "forex",
+                        color: "var(--forex)"
+                    },
                     NAS100: { 
                         name: "NAS100", 
-                        tvSymbol: "NASDAQ:NDX", 
-                        killZone: { 
-                            buy: 20,    // STRICT: RSI must be ≤20 for BUY
-                            sell: 80    // STRICT: RSI must be ≥80 for SELL
-                        } 
+                        tvSymbol: "NASDAQ:NDX",
+                        category: "indices",
+                        color: "var(--neutral)"
                     },
                     US30: { 
                         name: "US30", 
-                        tvSymbol: "FOREXCOM:DJI", 
-                        killZone: { 
-                            buy: 20,    // STRICT: RSI must be ≤20 for BUY
-                            sell: 80    // STRICT: RSI must be ≥80 for SELL
-                        } 
+                        tvSymbol: "FOREXCOM:DJI",
+                        category: "indices",
+                        color: "var(--neutral)"
                     }
                 },
-                sessions: {
-                    london: { start: 8, end: 12 }, // UTC
-                    ny: { start: 13, end: 20 },    // UTC
-                    both: { start: 8, end: 20 }
-                },
-                // STRICT: Only update on meaningful retracements
-                retracementThreshold: 1.0, // Minimum 1% retracement to trigger updates
-                // Kill Zone thresholds (STRICT)
-                killZoneBuy: 20,  // RSI must be ≤20
-                killZoneSell: 80, // RSI must be ≥80
-                // No signals allowed between 21-79
-                blockZone: { min: 21, max: 79 }
+                
+                // Visual confirmation categories
+                confirmations: [
+                    "Market Structure (HH/HL or LH/LL)",
+                    "Trend Direction Alignment",
+                    "RSI/Oscillator Confirmation",
+                    "Support/Resistance Alignment",
+                    "Candlestick Pattern",
+                    "Volume Confirmation",
+                    "Breakout/Rejection Pattern"
+                ]
             },
             
             // State Management
             state: {
-                activeInstrument: 'NAS100',
-                activeSession: 'ny',
+                activeAsset: 'XAUUSD',
+                analysisMode: 'realtime',
                 currentTimeframe: '60',
                 chartWidget: null,
                 
-                // Retracement tracking
-                retracementState: {
-                    NAS100: { 
-                        lastPrice: 17842.35, 
-                        lastRetracement: Date.now() - 120000, // 2 mins ago
-                        retracementDepth: 1.8,
-                        highSinceRetracement: 17842.35,
-                        lowSinceRetracement: 17550.00
+                // Asset data (NO EMA ALIGNMENT DATA)
+                assetData: {
+                    XAUUSD: {
+                        price: 2180.45,
+                        change: 0.65,
+                        trend: 'bullish',
+                        rsi: 62.5,
+                        structure: 'HH/HL',
+                        momentum: 'bullish',
+                        candlePattern: 'bullish_continuation',
+                        support: [2165, 2170],
+                        resistance: [2190, 2195],
+                        signal: 'BUY',
+                        confirmations: 3,
+                        analysis: "Bullish structure with clear HH/HL pattern"
                     },
-                    US30: { 
-                        lastPrice: 39215.60, 
-                        lastRetracement: null,
-                        retracementDepth: 0,
-                        highSinceRetracement: 39215.60,
-                        lowSinceRetracement: 39100.00
-                    }
-                },
-                
-                // Market data with STRICT kill zone enforcement
-                marketData: {
+                    BTCUSD: {
+                        price: 68245.80,
+                        change: 2.35,
+                        trend: 'bullish',
+                        rsi: 58.2,
+                        structure: 'HH/HL',
+                        momentum: 'bullish',
+                        candlePattern: 'bullish_continuation',
+                        support: [67000, 67500],
+                        resistance: [69000, 69500],
+                        signal: 'BUY',
+                        confirmations: 3,
+                        analysis: "Strong uptrend with bullish momentum"
+                    },
+                    EURUSD: {
+                        price: 1.0956,
+                        change: -0.15,
+                        trend: 'bearish',
+                        rsi: 42.3,
+                        structure: 'LH/LL',
+                        momentum: 'bearish',
+                        candlePattern: 'bearish_continuation',
+                        support: [1.0920, 1.0930],
+                        resistance: [1.0980, 1.1000],
+                        signal: 'SELL',
+                        confirmations: 3,
+                        analysis: "Downtrend with lower highs and lower lows"
+                    },
                     NAS100: {
                         price: 17842.35,
                         change: 0.85,
-                        rsi: 18.5, // STRICT: In buy zone (≤20)
                         trend: 'bullish',
-                        retracement: -1.8, // Meaningful retracement
+                        rsi: 68.7,
+                        structure: 'HH/HL',
+                        momentum: 'bullish',
+                        candlePattern: 'bullish_continuation',
+                        support: [17700, 17750],
+                        resistance: [17900, 17950],
                         signal: 'BUY',
-                        signalStrength: 'KILLER_ZONE',
-                        inKillZone: true,
-                        killZoneType: 'BUY'
+                        confirmations: 3,
+                        analysis: "Uptrend continuation, testing resistance"
                     },
                     US30: {
                         price: 39215.60,
                         change: -0.32,
-                        rsi: 65.2, // STRICT: In blocked zone (21-79)
-                        trend: 'bearish',
-                        retracement: 0.4, // Small move, no retracement
-                        signal: null,
-                        signalStrength: null,
-                        inKillZone: false,
-                        killZoneType: null
+                        trend: 'ranging',
+                        rsi: 49.5,
+                        structure: 'Ranging',
+                        momentum: 'neutral',
+                        candlePattern: 'indecision',
+                        support: [39000, 39100],
+                        resistance: [39300, 39400],
+                        signal: 'NO_TRADE',
+                        confirmations: 1,
+                        analysis: "Range-bound with conflicting signals"
                     }
                 },
                 
-                // Active signals (only when STRICT rules are met)
-                activeSignals: [
-                    {
-                        instrument: 'NAS100',
-                        type: 'BUY',
-                        rsi: 18.5,
-                        trend: 'bullish',
-                        retracement: -1.8,
-                        timestamp: Date.now() - 120000, // 2 mins ago
-                        strength: 'KILLER_ZONE',
-                        reason: 'RSI ≤20 + Retracement >1% + HTF Bullish'
-                    }
-                ],
-                
-                // Track blocked signals (for logging)
-                blockedSignals: []
+                // Active analysis
+                activeAnalysis: null
             },
             
-            // Initialize TradingView
+            // Initialize TradingView with visual analysis tools
             initTradingView() {
                 if (window.tvWidget) {
                     window.tvWidget.remove();
                 }
                 
-                const symbol = this.config.instruments[this.state.activeInstrument].tvSymbol;
+                const symbol = this.config.assets[this.state.activeAsset].tvSymbol;
                 
                 window.tvWidget = new TradingView.widget({
                     container_id: "tv_chart",
@@ -1021,11 +1110,13 @@
                     details: true,
                     hotlist: false,
                     calendar: false,
+                    drawing_toolbar: true,
+                    disabled_features: ["use_localstorage_for_settings"],
+                    enabled_features: ["study_templates"],
                     studies: [
                         "RSI@tv-basicstudies",
-                        "EMA@tv-basicstudies:20",
-                        "EMA@tv-basicstudies:50",
-                        "EMA@tv-basicstudies:200"
+                        "Volume@tv-basicstudies",
+                        "AverageTrueRange@tv-basicstudies"
                     ],
                     overrides: {
                         "paneProperties.background": "#0b102a",
@@ -1034,644 +1125,361 @@
                         "mainSeriesProperties.candleStyle.upColor": "#00c853",
                         "mainSeriesProperties.candleStyle.downColor": "#ff3d00",
                         "mainSeriesProperties.candleStyle.borderUpColor": "#00c853",
-                        "mainSeriesProperties.candleStyle.borderDownColor": "#ff3d00"
+                        "mainSeriesProperties.candleStyle.borderDownColor": "#ff3d00",
+                        "mainSeriesProperties.candleStyle.wickUpColor": "#00c853",
+                        "mainSeriesProperties.candleStyle.wickDownColor": "#ff3d00"
                     },
                     studies_overrides: {
                         "rsi.display": "line",
                         "rsi.linewidth": 2,
                         "rsi.plots.0.color": "#ff9800",
-                        "rsi.levels.0.color": "#00c853",
-                        "rsi.levels.0.value": 20,
-                        "rsi.levels.1.color": "#ff3d00",
-                        "rsi.levels.1.value": 80
+                        "volume.volume.color.0": "rgba(255, 61, 0, 0.5)",
+                        "volume.volume.color.1": "rgba(0, 200, 83, 0.5)"
                     }
                 });
                 
                 this.updateChartInfo();
             },
             
-            // STRICT: Smart Market Data Updates (Retracement-Based ONLY)
-            updateMarketData() {
-                const now = new Date();
-                const hour = now.getUTCHours();
-                
-                // Only update during active sessions
-                if (!this.isSessionActive()) {
-                    document.getElementById('update-status').textContent = 'Market Closed';
-                    document.getElementById('update-status').style.color = '#ff3d00';
-                    return;
-                }
-                
-                // Check for retracements in both instruments
-                const hasRetracement = this.checkRetracements();
-                
-                // Update status
-                if (hasRetracement) {
-                    document.getElementById('update-status').textContent = 'Retracement detected!';
-                    document.getElementById('update-status').style.color = '#ff9800';
-                } else {
-                    document.getElementById('update-status').textContent = 'Waiting for retracement (>1%)...';
-                    document.getElementById('update-status').style.color = '#cccccc';
-                }
-                
-                // Only update if retracement detected
-                if (hasRetracement) {
-                    Object.keys(this.config.instruments).forEach(instrument => {
-                        this.generateRealisticData(instrument, hour);
-                        this.strictSignalCheck(instrument); // STRICT signal checking
-                        this.updateInstrumentUI(instrument);
-                    });
-                    
-                    this.updateSignalsPanel();
-                    this.updateEnforcementPanel();
-                    this.updateLastUpdateTime();
-                }
+            // Perform visual analysis on selected asset
+            performVisualAnalysis(asset) {
+                const data = this.state.assetData[asset];
+                this.state.activeAnalysis = data;
+                this.updateVisualAnalysisUI();
+                this.updateSignalDecision();
             },
             
-            // Check for retracements (STRICT: >1% required)
-            checkRetracements() {
-                let hasRetracement = false;
-                const now = new Date();
+            // Update visual analysis UI (NO EMA ALIGNMENT)
+            updateVisualAnalysisUI() {
+                const data = this.state.activeAnalysis;
+                if (!data) return;
                 
-                Object.keys(this.config.instruments).forEach(instrument => {
-                    const state = this.state.retracementState[instrument];
-                    const currentData = this.state.marketData[instrument];
-                    
-                    // Simulate realistic retracement patterns
-                    // 30% chance of retracement during active session
-                    const isActiveSession = this.isSessionActive();
-                    const retracementChance = isActiveSession ? 0.3 : 0.1;
-                    
-                    if (Math.random() < retracementChance) {
-                        // Generate retracement depth (0.5% to 3%)
-                        const retracementDepth = -(0.5 + Math.random() * 2.5);
-                        
-                        if (Math.abs(retracementDepth) >= this.config.retracementThreshold) {
-                            // STRICT: Only count as retracement if >1%
-                            state.retracementDepth = Math.abs(retracementDepth);
-                            currentData.retracement = retracementDepth;
-                            state.lastRetracement = now;
-                            hasRetracement = true;
-                            
-                            // Update price based on retracement
-                            const priceChange = currentData.price * (retracementDepth / 100);
-                            currentData.price += priceChange;
-                            state.lastPrice = currentData.price;
-                            
-                            // Update RSI based on retracement direction
-                            if (retracementDepth < 0) {
-                                // Price drop = RSI decrease (towards buy zone)
-                                currentData.rsi = Math.max(0, currentData.rsi - Math.abs(retracementDepth) * 8);
-                            } else {
-                                // Price rise = RSI increase (towards sell zone)
-                                currentData.rsi = Math.min(100, currentData.rsi + Math.abs(retracementDepth) * 8);
-                            }
-                            
-                            // Update change percentage
-                            currentData.change = retracementDepth;
-                            
-                            // Log retracement
-                            this.logRetracement(instrument, retracementDepth);
-                        }
-                    }
-                });
-                
-                return hasRetracement;
-            },
-            
-            // Generate realistic data with STRICT kill zone patterns
-            generateRealisticData(instrument, hour) {
-                const data = this.state.marketData[instrument];
-                const state = this.state.retracementState[instrument];
-                
-                // Time-based patterns
-                let volatilityMultiplier = 1.0;
-                
-                // Higher volatility during NY session
-                if (hour >= 13 && hour < 17) {
-                    volatilityMultiplier = 1.8;
-                }
-                
-                // London session
-                if (hour >= 8 && hour < 12) {
-                    volatilityMultiplier = 1.3;
-                }
-                
-                // Add micro-movements (smaller after retracement)
-                const timeSinceRetracement = state.lastRetracement ? 
-                    (Date.now() - state.lastRetracement) / 60000 : 999; // minutes
-                
-                // Smaller moves immediately after retracement
-                const microMovement = (Math.random() - 0.5) * 0.05 * volatilityMultiplier;
-                data.price += data.price * (microMovement / 100);
-                
-                // Update RSI with realistic mean reversion
-                this.updateRealisticRSI(instrument);
-                
-                // Update trend
-                data.trend = data.rsi > 50 ? 'bullish' : 'bearish';
-                
-                // Determine kill zone status (STRICT)
-                data.inKillZone = data.rsi <= this.config.killZoneBuy || data.rsi >= this.config.killZoneSell;
-                data.killZoneType = data.rsi <= this.config.killZoneBuy ? 'BUY' : 
-                                   data.rsi >= this.config.killZoneSell ? 'SELL' : null;
-            },
-            
-            // Realistic RSI patterns with STRICT kill zone behavior
-            updateRealisticRSI(instrument) {
-                const data = this.state.marketData[instrument];
-                
-                // RSI tends to mean revert (move towards 50)
-                const meanReversionForce = (50 - data.rsi) * 0.05;
-                
-                // Add some randomness
-                const randomChange = (Math.random() - 0.5) * 1.5;
-                
-                // Apply changes
-                data.rsi += meanReversionForce + randomChange;
-                
-                // Keep within bounds
-                data.rsi = Math.max(0, Math.min(100, data.rsi));
-                
-                // STRICT: If in kill zone, RSI tends to stay extreme for a while
-                if (data.inKillZone) {
-                    // 70% chance to stay in kill zone
-                    if (Math.random() < 0.7) {
-                        if (data.killZoneType === 'BUY') {
-                            data.rsi = Math.min(20, data.rsi); // Keep ≤20
-                        } else {
-                            data.rsi = Math.max(80, data.rsi); // Keep ≥80
-                        }
-                    }
-                }
-            },
-            
-            // STRICT Signal Checking (RSI ≤20 or ≥80 ONLY)
-            strictSignalCheck(instrument) {
-                const data = this.state.marketData[instrument];
-                const retracementState = this.state.retracementState[instrument];
-                
-                // Reset signal
-                data.signal = null;
-                data.signalStrength = null;
-                
-                // Remove old signals (>30 minutes)
-                this.state.activeSignals = this.state.activeSignals.filter(signal => {
-                    return Date.now() - signal.timestamp < 1800000; // 30 minutes
-                });
-                
-                // Remove old blocked signals
-                this.state.blockedSignals = this.state.blockedSignals.filter(signal => {
-                    return Date.now() - signal.timestamp < 300000; // 5 minutes
-                });
-                
-                // STRICT RULE 1: Must be in Kill Zone (≤20 or ≥80)
-                const inBuyZone = data.rsi <= this.config.killZoneBuy;
-                const inSellZone = data.rsi >= this.config.killZoneSell;
-                
-                if (!inBuyZone && !inSellZone) {
-                    // STRICT: Block signal - RSI in 21-79 zone
-                    this.logBlockedSignal(instrument, 'RSI in blocked zone (21-79)');
-                    return;
-                }
-                
-                // STRICT RULE 2: Must have meaningful retracement (>1%)
-                const hasRetracement = Math.abs(data.retracement) >= this.config.retracementThreshold;
-                
-                if (!hasRetracement) {
-                    this.logBlockedSignal(instrument, 'Insufficient retracement (<1%)');
-                    return;
-                }
-                
-                // STRICT RULE 3: HTF Trend must align
-                const htfAligned = (inBuyZone && data.trend === 'bullish') || 
-                                   (inSellZone && data.trend === 'bearish');
-                
-                if (!htfAligned) {
-                    this.logBlockedSignal(instrument, 'HTF trend not aligned');
-                    return;
-                }
-                
-                // STRICT RULE 4: Must be in valid session
-                if (!this.isSessionActive()) {
-                    this.logBlockedSignal(instrument, 'Outside trading session');
-                    return;
-                }
-                
-                // ALL STRICT RULES PASSED - Generate signal!
-                const signalType = inBuyZone ? 'BUY' : 'SELL';
-                const signalStrength = 'KILLER_ZONE';
-                
-                data.signal = signalType;
-                data.signalStrength = signalStrength;
-                
-                // Add to active signals
-                const signal = {
-                    instrument: instrument,
-                    type: signalType,
-                    rsi: data.rsi,
-                    trend: data.trend,
-                    retracement: data.retracement,
-                    timestamp: Date.now(),
-                    strength: signalStrength,
-                    reason: `RSI ${data.rsi.toFixed(1)} (${data.killZoneType} zone) + Retracement ${data.retracement.toFixed(1)}% + HTF ${data.trend}`
-                };
-                
-                // Check if similar signal already exists
-                const existingSignal = this.state.activeSignals.find(s => 
-                    s.instrument === instrument && s.type === signalType);
-                
-                if (!existingSignal) {
-                    this.state.activeSignals.unshift(signal);
-                    this.triggerKillerZoneAlert(signal);
-                }
-            },
-            
-            // Log blocked signals
-            logBlockedSignal(instrument, reason) {
-                const blockedSignal = {
-                    instrument: instrument,
-                    reason: reason,
-                    timestamp: Date.now(),
-                    rsi: this.state.marketData[instrument].rsi
-                };
-                
-                this.state.blockedSignals.unshift(blockedSignal);
-                
-                // Keep only last 5 blocked signals
-                if (this.state.blockedSignals.length > 5) {
-                    this.state.blockedSignals.pop();
-                }
-                
-                // Log to console
-                console.log(`[KILLER ZONE BLOCKED] ${instrument}: ${reason} (RSI: ${this.state.marketData[instrument].rsi.toFixed(1)})`);
-            },
-            
-            // Trigger Killer Zone alert
-            triggerKillerZoneAlert(signal) {
-                const now = new Date();
-                const timeStr = now.toUTCString().split(' ')[4];
-                
-                // Show toast
-                toastr.success(
-                    `KILLER ZONE ${signal.type} ${signal.instrument}`,
-                    `RSI ${signal.rsi.toFixed(1)} | Retracement ${signal.retracement.toFixed(1)}%`,
-                    { 
-                        timeOut: 7000, 
-                        positionClass: 'toast-top-right',
-                        closeButton: true 
-                    }
+                // Market Structure
+                this.updateAnalysisItem('structure-hl', 
+                    data.structure.includes('HL') ? 'bullish' : 'neutral',
+                    data.structure.includes('HL') ? 'Confirmed ✓' : 'Not Present'
                 );
                 
-                // Log to console
-                console.log(`[KILLER ZONE] ${signal.type} ${signal.instrument} at ${timeStr} - RSI: ${signal.rsi.toFixed(1)}, Retracement: ${signal.retracement.toFixed(1)}%`);
-            },
-            
-            // Log retracement
-            logRetracement(instrument, depth) {
-                const now = new Date();
-                const timeStr = now.toUTCString().split(' ')[4];
-                const direction = depth > 0 ? 'up' : 'down';
+                this.updateAnalysisItem('structure-hh', 
+                    data.structure.includes('HH') ? 'bullish' : 'neutral',
+                    data.structure.includes('HH') ? 'Present ✓' : 'Not Present'
+                );
                 
-                // Update UI
-                document.getElementById('retracement-status').textContent = 
-                    `Retracement: ${instrument} ${Math.abs(depth).toFixed(1)}%`;
+                this.updateAnalysisItem('structure-lh', 
+                    data.structure.includes('LH') ? 'bearish' : 'neutral',
+                    data.structure.includes('LH') ? 'Present' : 'Not Present'
+                );
                 
-                // Log to console
-                console.log(`[RETRACEMENT] ${instrument} ${direction} ${Math.abs(depth).toFixed(1)}% at ${timeStr}`);
-            },
-            
-            // Session Management
-            isSessionActive() {
-                const now = new Date();
-                const hour = now.getUTCHours();
-                const session = this.config.sessions[this.state.activeSession];
+                this.updateAnalysisItem('structure-ll', 
+                    data.structure.includes('LL') ? 'bearish' : 'neutral',
+                    data.structure.includes('LL') ? 'Present' : 'Not Present'
+                );
                 
-                return hour >= session.start && hour <= session.end;
-            },
-            
-            // UI Updates
-            updateInstrumentUI(instrument) {
-                const data = this.state.marketData[instrument];
-                const priceEl = document.getElementById(`${instrument.toLowerCase()}-price`);
-                const changeEl = document.getElementById(`${instrument.toLowerCase()}-change`);
-                const rsiEl = document.getElementById(`${instrument.toLowerCase()}-rsi`);
-                const rsiStatusEl = document.getElementById(`${instrument.toLowerCase()}-rsi-status`);
-                const retracementEl = document.getElementById(`${instrument.toLowerCase()}-retracement`);
-                const card = document.querySelector(`.instrument-card[data-symbol="${instrument}"]`);
-                const signalBadge = card?.querySelector('.signal-badge');
+                // Trend & Momentum
+                this.updateAnalysisItem('trend-direction', 
+                    data.trend === 'bullish' ? 'bullish' : data.trend === 'bearish' ? 'bearish' : 'neutral',
+                    data.trend.charAt(0).toUpperCase() + data.trend.slice(1)
+                );
                 
-                if (priceEl) {
-                    priceEl.textContent = data.price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                // RSI Status with color coding
+                let rsiStatus = 'neutral';
+                let rsiText = `${data.rsi} (`;
+                if (data.rsi <= 30) {
+                    rsiStatus = 'bullish';
+                    rsiText += 'Oversold)';
+                } else if (data.rsi >= 70) {
+                    rsiStatus = 'bearish';
+                    rsiText += 'Overbought)';
+                } else if (data.rsi > 50) {
+                    rsiStatus = 'bullish';
+                    rsiText += 'Bullish Bias)';
+                } else {
+                    rsiStatus = 'bearish';
+                    rsiText += 'Bearish Bias)';
                 }
                 
-                if (changeEl) {
-                    changeEl.textContent = `${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)}%`;
-                    changeEl.className = `inst-change ${data.change >= 0 ? 'change-up' : 'change-down'}`;
-                }
+                this.updateAnalysisItem('rsi-status', rsiStatus, rsiText);
                 
-                if (rsiEl) {
-                    rsiEl.textContent = data.rsi.toFixed(1);
-                    
-                    // STRICT RSI coloring
-                    if (data.rsi <= this.config.killZoneBuy) {
-                        rsiEl.className = 'rsi-value rsi-kill-zone-buy';
-                        rsiStatusEl.textContent = `(BUY ZONE ≤${this.config.killZoneBuy})`;
-                    } else if (data.rsi >= this.config.killZoneSell) {
-                        rsiEl.className = 'rsi-value rsi-kill-zone-sell';
-                        rsiStatusEl.textContent = `(SELL ZONE ≥${this.config.killZoneSell})`;
-                    } else if (data.rsi >= 70) {
-                        rsiEl.className = 'rsi-value rsi-warning';
-                        rsiStatusEl.textContent = '(Near SELL zone)';
-                    } else if (data.rsi <= 30) {
-                        rsiEl.className = 'rsi-value rsi-warning';
-                        rsiStatusEl.textContent = '(Near BUY zone)';
-                    } else {
-                        rsiEl.className = 'rsi-value rsi-neutral';
-                        rsiStatusEl.textContent = '(NO ZONE 21-79)';
+                // Momentum based on trend
+                this.updateAnalysisItem('momentum', 
+                    data.momentum,
+                    data.momentum === 'bullish' ? 'Bullish Bars' : 
+                    data.momentum === 'bearish' ? 'Bearish Bars' : 'Mixed Momentum'
+                );
+                
+                // Candle Pattern
+                let candleStatus = 'neutral';
+                if (data.candlePattern.includes('bullish')) candleStatus = 'bullish';
+                else if (data.candlePattern.includes('bearish')) candleStatus = 'bearish';
+                
+                this.updateAnalysisItem('candle-pattern', 
+                    candleStatus,
+                    data.candlePattern.replace('_', ' ').charAt(0).toUpperCase() + 
+                    data.candlePattern.replace('_', ' ').slice(1)
+                );
+                
+                // Key Levels
+                this.updateAnalysisItem('support-level', 'neutral', 
+                    `${data.support[0]} - ${data.support[1]}`
+                );
+                
+                this.updateAnalysisItem('resistance-level', 'neutral', 
+                    `${data.resistance[0]} - ${data.resistance[1]}`
+                );
+                
+                this.updateAnalysisItem('price-position', 
+                    data.trend === 'bullish' ? 'bullish' : 'neutral',
+                    data.trend === 'bullish' ? 'Above Support ✓' : 'Near Support'
+                );
+                
+                this.updateAnalysisItem('breakout-status', 'neutral', 
+                    data.trend === 'bullish' ? 'Testing Resistance' : 
+                    data.trend === 'bearish' ? 'Testing Support' : 'Range Bound'
+                );
+                
+                // Update confirmations
+                this.updateConfirmations(data);
+            },
+            
+            updateAnalysisItem(elementId, type, value) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.className = `analysis-item ${type}`;
+                    element.querySelector('.item-value').textContent = value;
+                }
+            },
+            
+            updateConfirmations(data) {
+                const container = document.getElementById('confirmations-container');
+                if (!container) return;
+                
+                // Generate confirmations based on analysis (NO EMA)
+                const confirmations = [
+                    {
+                        confirmed: data.structure.includes('HH') && data.structure.includes('HL'),
+                        title: "Higher Lows Pattern",
+                        description: data.structure.includes('HH') && data.structure.includes('HL') ? 
+                            "Clear HH/HL structure confirms uptrend" : "Lack of clear structure"
+                    },
+                    {
+                        confirmed: data.trend !== 'ranging',
+                        title: "Trend Direction",
+                        description: data.trend !== 'ranging' ? 
+                            `Clear ${data.trend} trend established` : "No clear trend direction"
+                    },
+                    {
+                        confirmed: data.momentum === data.trend,
+                        title: "Momentum Confirmation",
+                        description: data.momentum === data.trend ? 
+                            `${data.trend} momentum confirms trend` : "Momentum conflict with trend"
+                    },
+                    {
+                        confirmed: (data.trend === 'bullish' && data.rsi > 50) || 
+                                  (data.trend === 'bearish' && data.rsi < 50),
+                        title: "RSI Trend Confirmation",
+                        description: data.trend === 'bullish' && data.rsi > 50 ? 
+                            "RSI shows bullish momentum" : 
+                            data.trend === 'bearish' && data.rsi < 50 ? 
+                            "RSI shows bearish momentum" : "RSI neutral/no confirmation"
                     }
-                }
-                
-                if (retracementEl) {
-                    const absRetracement = Math.abs(data.retracement);
-                    retracementEl.innerHTML = `<i class="fas fa-wave-square"></i> Retracement: ${data.retracement >= 0 ? '+' : ''}${data.retracement.toFixed(1)}%`;
-                    
-                    if (absRetracement >= this.config.retracementThreshold) {
-                        retracementEl.className = 'retracement-indicator retracement-active';
-                    } else {
-                        retracementEl.className = 'retracement-indicator';
-                    }
-                }
-                
-                if (card) {
-                    card.classList.remove('buy-signal', 'sell-signal');
-                    
-                    // Update signal badge
-                    if (signalBadge) {
-                        if (data.signal === 'BUY') {
-                            signalBadge.className = 'signal-badge signal-buy';
-                            signalBadge.textContent = 'KILLER ZONE BUY';
-                            card.classList.add('buy-signal');
-                        } else if (data.signal === 'SELL') {
-                            signalBadge.className = 'signal-badge signal-sell';
-                            signalBadge.textContent = 'KILLER ZONE SELL';
-                            card.classList.add('sell-signal');
-                        } else {
-                            signalBadge.style.display = 'none';
-                        }
-                    } else if (data.signal) {
-                        // Create signal badge if it doesn't exist
-                        const newBadge = document.createElement('div');
-                        newBadge.className = `signal-badge signal-${data.signal.toLowerCase()}`;
-                        newBadge.textContent = `KILLER ZONE ${data.signal}`;
-                        card.appendChild(newBadge);
-                        
-                        if (data.signal === 'BUY') {
-                            card.classList.add('buy-signal');
-                        } else {
-                            card.classList.add('sell-signal');
-                        }
-                    }
-                }
-                
-                // Update kill zone display
-                this.updateKillZoneDisplay();
-            },
-            
-            updateKillZoneDisplay() {
-                const nasData = this.state.marketData.NAS100;
-                const usData = this.state.marketData.US30;
-                
-                // Update buy zone status
-                const buyZoneActive = nasData.rsi <= this.config.killZoneBuy || usData.rsi <= this.config.killZoneBuy;
-                document.getElementById('buy-zone-status').textContent = buyZoneActive ? 'ACTIVE' : 'INACTIVE';
-                document.getElementById('buy-zone-status').style.color = buyZoneActive ? 'var(--positive)' : '#cccccc';
-                
-                // Update sell zone status
-                const sellZoneActive = nasData.rsi >= this.config.killZoneSell || usData.rsi >= this.config.killZoneSell;
-                document.getElementById('sell-zone-status').textContent = sellZoneActive ? 'ACTIVE' : 'INACTIVE';
-                document.getElementById('sell-zone-status').style.color = sellZoneActive ? 'var(--negative)' : '#cccccc';
-            },
-            
-            updateSignalsPanel() {
-                const container = document.getElementById('signals-container');
-                const noSignalsEl = document.getElementById('no-signals');
-                const countEl = document.getElementById('signals-count');
+                ];
                 
                 container.innerHTML = '';
                 
-                if (this.state.activeSignals.length === 0) {
-                    noSignalsEl.style.display = 'block';
-                    countEl.textContent = '0 Active';
-                    return;
-                }
-                
-                noSignalsEl.style.display = 'none';
-                countEl.textContent = `${this.state.activeSignals.length} Active`;
-                
-                this.state.activeSignals.forEach(signal => {
-                    const timeAgo = Math.round((Date.now() - signal.timestamp) / 60000);
-                    let timeText;
-                    if (timeAgo < 1) timeText = 'Just now';
-                    else if (timeAgo < 60) timeText = `${timeAgo} min${timeAgo > 1 ? 's' : ''} ago`;
-                    else timeText = `${Math.floor(timeAgo/60)}h ${timeAgo%60}m ago`;
-                    
-                    const signalEl = document.createElement('div');
-                    signalEl.className = `signal-item ${signal.type.toLowerCase()}`;
-                    signalEl.innerHTML = `
-                        <div class="signal-content">
-                            <div class="signal-info">
-                                <div class="signal-type">${signal.type} ${signal.instrument}</div>
-                                <div class="signal-details">
-                                    RSI: ${signal.rsi.toFixed(1)} (${signal.rsi <= 20 ? '≤20' : '≥80'}) • Retracement: ${signal.retracement.toFixed(1)}% • Trend: ${signal.trend}
-                                </div>
-                            </div>
-                            <div class="signal-strength">
-                                <div class="strength-high">KILLER ZONE</div>
-                                <div style="font-size: 0.8rem; margin-top: 3px;">${timeText}</div>
-                            </div>
+                confirmations.forEach((conf, index) => {
+                    const confElement = document.createElement('div');
+                    confElement.className = `confirmation-item ${conf.confirmed ? 'confirmed' : ''}`;
+                    confElement.innerHTML = `
+                        <div class="confirmation-check ${conf.confirmed ? 'check-confirmed' : ''}">
+                            <i class="fas fa-${conf.confirmed ? 'check' : 'minus'}"></i>
+                        </div>
+                        <div>
+                            <div style="font-weight:bold;">${conf.title}</div>
+                            <div style="font-size:0.8rem;color:var(--text-secondary)">${conf.description}</div>
                         </div>
                     `;
-                    container.appendChild(signalEl);
+                    container.appendChild(confElement);
                 });
+                
+                // Update confirmation count
+                const confirmedCount = confirmations.filter(c => c.confirmed).length;
+                document.getElementById('confirmation-count').textContent = 
+                    `${confirmedCount}/${confirmations.length} Confirmations`;
             },
             
-            updateEnforcementPanel() {
-                const instrument = this.state.activeInstrument;
-                const data = this.state.marketData[instrument];
+            updateSignalDecision() {
+                const data = this.state.activeAnalysis;
+                if (!data) return;
                 
-                // Update each STRICT rule
-                const rules = {
-                    'kill-zone': {
-                        passed: data.rsi <= this.config.killZoneBuy || data.rsi >= this.config.killZoneSell,
-                        details: `RSI: <strong>${data.rsi.toFixed(1)}</strong> ${data.rsi <= this.config.killZoneBuy ? '✓ ≤20 (BUY ZONE)' : data.rsi >= this.config.killZoneSell ? '✓ ≥80 (SELL ZONE)' : '✗ BLOCKED (21-79)'}`
-                    },
-                    'retracement': {
-                        passed: Math.abs(data.retracement) >= this.config.retracementThreshold,
-                        details: `Retracement: <strong>${data.retracement.toFixed(1)}%</strong> ${Math.abs(data.retracement) >= this.config.retracementThreshold ? `✓ ≥${this.config.retracementThreshold}%` : `✗ <${this.config.retracementThreshold}%`}`
-                    },
-                    'htf-trend': {
-                        passed: (data.rsi <= this.config.killZoneBuy && data.trend === 'bullish') || 
-                               (data.rsi >= this.config.killZoneSell && data.trend === 'bearish'),
-                        details: `Daily Trend: <strong>${data.trend}</strong> ${(data.rsi <= this.config.killZoneBuy && data.trend === 'bullish') ? '✓ Aligned' : (data.rsi >= this.config.killZoneSell && data.trend === 'bearish') ? '✓ Aligned' : '✗ Not Aligned'}`
-                    },
-                    'no-conflict': {
-                        passed: true,
-                        details: `No conflicting signals detected`
-                    },
-                    'session': {
-                        passed: this.isSessionActive(),
-                        details: `${this.state.activeSession === 'ny' ? 'New York' : this.state.activeSession === 'london' ? 'London' : 'Both'} Session ${this.isSessionActive() ? '✓ Active' : '✗ Closed'}`
-                    }
-                };
+                const decisionElement = document.querySelector('.signal-decision');
+                const decisionText = document.querySelector('.decision-text');
+                const trendBias = document.querySelector('.trend-bias');
+                const analysisSummary = document.querySelector('.analysis-summary');
                 
-                // Update UI
-                Object.keys(rules).forEach(ruleId => {
-                    const rule = rules[ruleId];
-                    const element = document.getElementById(`rule-${ruleId}`);
-                    const statusEl = element?.querySelector('.enforcement-status');
-                    const detailsEl = element?.querySelector('.enforcement-details');
-                    
-                    if (element && statusEl && detailsEl) {
-                        element.className = `enforcement-item ${rule.passed ? 'passed' : 'failed'}`;
-                        statusEl.textContent = rule.passed ? 'PASSED' : 'BLOCKED';
-                        statusEl.className = `enforcement-status ${rule.passed ? 'status-pass' : 'status-fail'}`;
-                        detailsEl.innerHTML = rule.details;
-                    }
-                });
+                // Update trend bias
+                trendBias.className = `trend-bias trend-${data.trend}`;
+                trendBias.innerHTML = `<i class="fas fa-arrow-${data.trend === 'bullish' ? 'up' : data.trend === 'bearish' ? 'down' : 'right'}"></i> TREND BIAS: ${data.trend.toUpperCase()}`;
                 
-                // Update trade decision
-                const tradeDecisionEl = document.getElementById('trade-decision');
-                const tradeReasonEl = document.getElementById('trade-reason');
+                // Update decision
+                decisionElement.className = `signal-decision signal-${data.signal.toLowerCase()}-decision`;
+                decisionText.className = `decision-text decision-${data.signal.toLowerCase().replace('_', '-')}`;
+                decisionText.innerHTML = `<i class="fas fa-${data.signal === 'BUY' ? 'thumbs-up' : data.signal === 'SELL' ? 'thumbs-down' : 'ban'}"></i> SIGNAL: ${data.signal.replace('_', ' ')}`;
                 
-                if (data.signal) {
-                    tradeDecisionEl.innerHTML = `✅ ${data.signal} ${instrument} - RSI ${data.rsi.toFixed(1)} (${data.killZoneType} ZONE)`;
-                    tradeDecisionEl.style.color = data.signal === 'BUY' ? 'var(--positive)' : 'var(--negative)';
-                    tradeReasonEl.innerHTML = `STRICT RULES PASSED: RSI ${data.rsi <= 20 ? '≤20' : '≥80'} ✓ | Retracement ${data.retracement.toFixed(1)}% ✓ | HTF ${data.trend} ✓`;
+                // Update analysis summary
+                analysisSummary.innerHTML = `
+                    <strong>ANALYSIS SUMMARY:</strong><br>
+                    ${data.analysis} Price is currently at ${this.formatPrice(data.price)}. 
+                    The ${data.trend} trend is confirmed by ${data.confirmations} visual confirmations. 
+                    ${data.signal === 'NO_TRADE' ? 'Conflicting signals prevent a clear trade setup.' : 'All visual confirmations align with the signal direction.'}
+                `;
+            },
+            
+            formatPrice(price) {
+                const asset = this.state.activeAsset;
+                if (asset === 'XAUUSD') {
+                    return price.toFixed(2);
+                } else if (asset === 'BTCUSD') {
+                    return price.toFixed(0);
+                } else if (asset === 'EURUSD') {
+                    return price.toFixed(4);
                 } else {
-                    tradeDecisionEl.innerHTML = '⛔ NO KILLER ZONE SIGNAL';
-                    tradeDecisionEl.style.color = 'var(--text-secondary)';
-                    
-                    // Show why signal is blocked
-                    if (data.rsi > this.config.killZoneBuy && data.rsi < this.config.killZoneSell) {
-                        tradeReasonEl.textContent = `BLOCKED: RSI ${data.rsi.toFixed(1)} in no-signal zone (21-79)`;
-                    } else if (Math.abs(data.retracement) < this.config.retracementThreshold) {
-                        tradeReasonEl.textContent = `BLOCKED: Retracement ${data.retracement.toFixed(1)}% < ${this.config.retracementThreshold}% threshold`;
-                    } else {
-                        tradeReasonEl.textContent = 'Waiting for STRICT Killer Zone conditions...';
-                    }
+                    return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
                 }
             },
             
             updateChartInfo() {
-                const data = this.state.marketData[this.state.activeInstrument];
-                const sessionName = this.state.activeSession === 'ny' ? 'New York' : 
-                                  this.state.activeSession === 'london' ? 'London' : 'Both';
+                const asset = this.config.assets[this.state.activeAsset];
+                const data = this.state.assetData[this.state.activeAsset];
                 
                 document.getElementById('chart-symbol-name').textContent = 
-                    `${this.config.instruments[this.state.activeInstrument].tvSymbol} (${this.state.activeInstrument})`;
+                    `${asset.name} (${this.state.activeAsset}) - ${this.getTimeframeText()} Chart`;
                 
-                document.getElementById('chart-rsi').textContent = data.rsi.toFixed(1);
-                document.getElementById('chart-trend').textContent = data.trend;
-                document.getElementById('chart-retracement').textContent = `${data.retracement >= 0 ? '+' : ''}${data.retracement.toFixed(1)}%`;
+                document.getElementById('chart-trend').textContent = 
+                    data.trend.charAt(0).toUpperCase() + data.trend.slice(1);
+                document.getElementById('chart-trend').style.color = 
+                    data.trend === 'bullish' ? 'var(--positive)' : 
+                    data.trend === 'bearish' ? 'var(--negative)' : 'var(--warning)';
                 
-                // Set colors based on kill zone
-                if (data.rsi <= this.config.killZoneBuy) {
-                    document.getElementById('chart-rsi').style.color = 'var(--positive)';
-                    document.getElementById('chart-zone').textContent = 'BUY (≤20)';
-                    document.getElementById('chart-zone').style.color = 'var(--positive)';
-                } else if (data.rsi >= this.config.killZoneSell) {
-                    document.getElementById('chart-rsi').style.color = 'var(--negative)';
-                    document.getElementById('chart-zone').textContent = 'SELL (≥80)';
-                    document.getElementById('chart-zone').style.color = 'var(--negative)';
-                } else {
-                    document.getElementById('chart-rsi').style.color = 'var(--neutral)';
-                    document.getElementById('chart-zone').textContent = 'BLOCKED';
-                    document.getElementById('chart-zone').style.color = '#cccccc';
-                }
+                document.getElementById('chart-rsi').textContent = data.rsi;
+                document.getElementById('chart-rsi').style.color = 
+                    data.rsi <= 30 ? 'var(--positive)' : 
+                    data.rsi >= 70 ? 'var(--negative)' : 'var(--warning)';
                 
-                document.getElementById('chart-trend').style.color = data.trend === 'bullish' ? 'var(--positive)' : 'var(--negative)';
-                document.getElementById('chart-retracement').style.color = Math.abs(data.retracement) >= this.config.retracementThreshold ? '#ff9800' : 'var(--text-secondary)';
+                document.getElementById('chart-structure').textContent = data.structure;
+                document.getElementById('chart-structure').style.color = 
+                    data.structure.includes('HH') ? 'var(--positive)' : 
+                    data.structure.includes('LH') ? 'var(--negative)' : 'var(--warning)';
                 
-                document.getElementById('current-instrument').textContent = this.state.activeInstrument;
+                document.getElementById('chart-momentum').textContent = 
+                    data.momentum.charAt(0).toUpperCase() + data.momentum.slice(1);
+                document.getElementById('chart-momentum').style.color = 
+                    data.momentum === 'bullish' ? 'var(--positive)' : 
+                    data.momentum === 'bearish' ? 'var(--negative)' : 'var(--warning)';
+                
+                document.getElementById('current-asset').textContent = `${asset.name} (${this.state.activeAsset})`;
             },
             
-            updateLastUpdateTime() {
-                const now = new Date();
-                const timeStr = now.toUTCString().split(' ')[4];
-                
-                // Update retracement status
-                const nasRetracement = Math.abs(this.state.marketData.NAS100.retracement);
-                const usRetracement = Math.abs(this.state.marketData.US30.retracement);
-                const hasRetracement = nasRetracement >= this.config.retracementThreshold || 
-                                      usRetracement >= this.config.retracementThreshold;
-                
-                if (hasRetracement) {
-                    document.getElementById('retracement-status').innerHTML = 
-                        `<i class="fas fa-wave-square" style="color:#ff9800;"></i> Retracement detected`;
-                }
+            getTimeframeText() {
+                const tfMap = {
+                    '1': '1M', '5': '5M', '15': '15M', 
+                    '60': '1H', '240': '4H', 'D': 'Daily'
+                };
+                return tfMap[this.state.currentTimeframe] || this.state.currentTimeframe;
             },
             
-            updateSessionDisplay() {
-                const session = this.getCurrentSession();
-                const now = new Date();
-                const hour = now.getUTCHours();
+            // Simulate market data updates
+            simulateMarketUpdates() {
+                Object.keys(this.state.assetData).forEach(asset => {
+                    const data = this.state.assetData[asset];
+                    
+                    // Small random price changes
+                    const randomChange = (Math.random() - 0.5) * 0.2;
+                    data.price += data.price * (randomChange / 100);
+                    
+                    // Update change percentage
+                    data.change = randomChange;
+                    
+                    // Small RSI fluctuations
+                    data.rsi += (Math.random() - 0.5) * 2;
+                    data.rsi = Math.max(0, Math.min(100, data.rsi));
+                    
+                    // Update asset card
+                    this.updateAssetCard(asset);
+                });
                 
-                let sessionName = 'Market Closed';
-                
-                if (session === 'london') {
-                    sessionName = 'London Session';
-                } else if (session === 'ny') {
-                    sessionName = 'New York Session';
-                }
-                
-                document.getElementById('current-session').textContent = sessionName;
-                
-                // Update status indicator
-                const statusEl = document.querySelector('.status-indicator');
-                if (this.isSessionActive()) {
-                    statusEl.className = 'status-indicator status-open';
-                } else {
-                    statusEl.className = 'status-indicator status-closed';
+                // Update active asset analysis if needed
+                if (this.state.activeAnalysis) {
+                    this.performVisualAnalysis(this.state.activeAsset);
                 }
             },
             
-            getCurrentSession() {
-                const now = new Date();
-                const hour = now.getUTCHours();
+            updateAssetCard(asset) {
+                const data = this.state.assetData[asset];
+                const priceEl = document.getElementById(`${asset.toLowerCase()}-price`);
+                const changeEl = document.getElementById(`${asset.toLowerCase()}-change`);
+                const card = document.querySelector(`.asset-card[data-symbol="${asset}"]`);
                 
-                if (hour >= 8 && hour < 12) return 'london';
-                if (hour >= 13 && hour < 20) return 'ny';
-                return 'closed';
+                if (priceEl) {
+                    // Format price based on asset type
+                    let formattedPrice;
+                    if (asset === 'XAUUSD') {
+                        formattedPrice = data.price.toFixed(2);
+                    } else if (asset === 'BTCUSD') {
+                        formattedPrice = data.price.toFixed(0);
+                    } else if (asset === 'EURUSD') {
+                        formattedPrice = data.price.toFixed(4);
+                    } else {
+                        formattedPrice = data.price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                    }
+                    priceEl.textContent = formattedPrice;
+                }
+                
+                if (changeEl) {
+                    changeEl.textContent = `${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)}%`;
+                    changeEl.className = `asset-change ${data.change >= 0 ? 'change-up' : 'change-down'}`;
+                }
+                
+                if (card) {
+                    card.classList.remove('buy-signal', 'sell-signal');
+                    if (data.signal === 'BUY') {
+                        card.classList.add('buy-signal');
+                    } else if (data.signal === 'SELL') {
+                        card.classList.add('sell-signal');
+                    }
+                }
             },
             
             // Event Handlers
             setupEventListeners() {
-                // Instrument selection
-                document.querySelectorAll('.instrument-card').forEach(card => {
+                // Asset selection
+                document.querySelectorAll('.asset-card').forEach(card => {
                     card.addEventListener('click', () => {
                         const symbol = card.getAttribute('data-symbol');
                         
                         // Remove active class from all cards
-                        document.querySelectorAll('.instrument-card').forEach(c => {
+                        document.querySelectorAll('.asset-card').forEach(c => {
                             c.classList.remove('active');
                         });
                         
                         // Add active class to clicked card
                         card.classList.add('active');
                         
-                        // Update state and chart
-                        this.state.activeInstrument = symbol;
+                        // Update state
+                        this.state.activeAsset = symbol;
+                        
+                        // Perform visual analysis
+                        this.performVisualAnalysis(symbol);
+                        
+                        // Update chart
                         this.updateChartInfo();
-                        this.updateEnforcementPanel();
                         this.initTradingView();
                     });
                 });
                 
-                // Session buttons
+                // Analysis mode buttons
                 document.querySelectorAll('.session-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
-                        const session = btn.getAttribute('data-session');
+                        const mode = btn.getAttribute('data-mode');
                         
                         // Remove active class from all buttons
                         document.querySelectorAll('.session-btn').forEach(b => {
@@ -1682,11 +1490,9 @@
                         btn.classList.add('active');
                         
                         // Update state
-                        this.state.activeSession = session;
-                        
-                        // Update session display
-                        this.updateSessionDisplay();
-                        this.updateEnforcementPanel();
+                        this.state.analysisMode = mode;
+                        document.getElementById('analysis-status').textContent = 
+                            mode === 'realtime' ? 'Live Analysis Active' : 'Historical Analysis Mode';
                     });
                 });
                 
@@ -1709,8 +1515,48 @@
                         if (window.tvWidget) {
                             window.tvWidget.setChartType(tf);
                         }
+                        
+                        this.updateChartInfo();
                     });
                 });
+                
+                // Chart tools
+                document.querySelectorAll('.tool-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const tool = btn.getAttribute('data-tool');
+                        
+                        // Remove active class from all buttons
+                        document.querySelectorAll('.tool-btn').forEach(b => {
+                            b.classList.remove('active');
+                        });
+                        
+                        // Add active class to clicked button
+                        btn.classList.add('active');
+                        
+                        // Handle tool activation
+                        this.handleChartTool(tool);
+                    });
+                });
+            },
+            
+            handleChartTool(tool) {
+                toastr.info(`Chart tool activated: ${tool}`, "Visual Analysis", { timeOut: 2000 });
+                
+                // In a real implementation, this would interact with TradingView's drawing tools
+                switch(tool) {
+                    case 'trendlines':
+                        console.log("Trendline drawing activated");
+                        break;
+                    case 'levels':
+                        console.log("Support/Resistance levels activated");
+                        break;
+                    case 'fibonacci':
+                        console.log("Fibonacci tool activated");
+                        break;
+                    case 'clear':
+                        console.log("Clearing all drawings");
+                        break;
+                }
             },
             
             // Initialize everything
@@ -1719,42 +1565,38 @@
                 toastr.options = {
                     positionClass: 'toast-top-right',
                     progressBar: true,
-                    timeOut: 7000,
-                    closeButton: true,
-                    newestOnTop: true
+                    timeOut: 3000,
+                    closeButton: true
                 };
                 
                 // Setup event listeners
                 this.setupEventListeners();
                 
-                // Initial UI updates
-                this.updateInstrumentUI('NAS100');
-                this.updateInstrumentUI('US30');
-                this.updateSessionDisplay();
-                this.updateSignalsPanel();
-                this.updateEnforcementPanel();
-                this.updateKillZoneDisplay();
+                // Initial visual analysis on default asset
+                this.performVisualAnalysis(this.state.activeAsset);
+                
+                // Update all asset cards
+                Object.keys(this.state.assetData).forEach(asset => {
+                    this.updateAssetCard(asset);
+                });
                 
                 // Initialize TradingView
                 setTimeout(() => {
                     this.initTradingView();
                 }, 1000);
                 
-                // Set up smart updates (check every 3 seconds for retracements)
+                // Set up market simulation updates
                 setInterval(() => {
-                    this.updateMarketData();
-                }, 3000);
-                
-                // Update session display every minute
-                setInterval(() => {
-                    this.updateSessionDisplay();
-                }, 60000);
+                    if (this.state.analysisMode === 'realtime') {
+                        this.simulateMarketUpdates();
+                    }
+                }, 5000);
             }
         };
         
-        // Start the STRICT KILLER ZONE system
+        // Start the Visual Analysis system
         document.addEventListener('DOMContentLoaded', () => {
-            KILLER_ZONE.init();
+            VISUAL_ANALYSIS.init();
         });
     </script>
 </body>
