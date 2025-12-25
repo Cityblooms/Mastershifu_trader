@@ -1,651 +1,480 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>KILLER ZONE - Multi-Asset Visual Analysis Dashboard</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-<style>
-    :root {
-        --primary-bg: #0b102a;
-        --secondary-bg: #121a3a;
-        --accent-color: gold;
-        --accent-dark: #b8860b;
-        --positive: #00c853;
-        --negative: #ff3d00;
-        --neutral: #5d7bdb;
-        --warning: #ff9800;
-        --text-primary: #ffffff;
-        --text-secondary: #cccccc;
-        --border-radius: 8px;
-        --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        --london-session: #2196F3;
-        --ny-session: #4CAF50;
-        --gold: #FFD700;
-        --btc: #F7931A;
-        --forex: #00BFFF;
-    }
-    
-    * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-    }
-    
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: var(--primary-bg);
-        color: var(--text-primary);
-        line-height: 1.6;
-        overflow-x: hidden;
-    }
-    
-    /* Header */
-    .header {
-        background: var(--secondary-bg);
-        padding: 15px 20px;
-        border-bottom: 2px solid var(--accent-color);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        box-shadow: var(--shadow);
-    }
-    
-    .header-content {
-        flex: 1;
-        min-width: 300px;
-    }
-    
-    h1 {
-        color: var(--accent-color);
-        margin-bottom: 5px;
-        font-size: 1.8rem;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    
-    .tagline {
-        color: var(--text-secondary);
-        font-size: 0.9rem;
-        margin-bottom: 5px;
-    }
-    
-    .rules {
-        font-size: 0.85rem;
-        color: var(--neutral);
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin-top: 8px;
-    }
-    
-    .rule {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
-    .rule i {
-        color: var(--accent-color);
-        font-size: 0.8rem;
-    }
-    
-    /* Session Controls */
-    .session-controls {
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: var(--border-radius);
-        padding: 15px;
-        min-width: 250px;
-        text-align: center;
-    }
-    
-    .session-buttons {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
-    }
-    
-    .session-btn {
-        flex: 1;
-        padding: 8px 15px;
-        border: none;
-        border-radius: 6px;
-        background: rgba(255, 255, 255, 0.1);
-        color: white;
-        cursor: pointer;
-        font-weight: bold;
-        transition: all 0.3s;
-    }
-    
-    .session-btn.active {
-        background: var(--accent-color);
-        color: var(--primary-bg);
-    }
-    
-    .market-status {
-        margin-top: 10px;
-        padding: 8px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
-        font-size: 0.9rem;
-    }
-    
-    .status-indicator {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        margin-right: 5px;
-    }
-    
-    .status-open {
-        background: var(--positive);
-        animation: pulse 2s infinite;
-    }
-    
-    .status-closed {
-        background: var(--negative);
-    }
-    
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
-    
-    /* Dashboard Layout */
-    .dashboard-container {
-        display: flex;
-        height: calc(100vh - 150px);
-        padding: 15px;
-        gap: 15px;
-    }
-    
-    /* Left Panel */
-    .left-panel {
-        width: 400px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    /* Asset Selection Panel */
-    .asset-panel {
-        background: var(--secondary-bg);
-        border-radius: var(--border-radius);
-        padding: 15px;
-        box-shadow: var(--shadow);
-    }
-    
-    .asset-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 15px;
-        color: var(--accent-color);
-        font-weight: bold;
-    }
-    
-    .asset-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-    }
-    
-    .asset-card {
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 6px;
-        padding: 12px;
-        border: 2px solid transparent;
-        transition: all 0.3s;
-        cursor: pointer;
-        position: relative;
-    }
-    
-    .asset-card.active {
-        border-color: var(--accent-color);
-        background: rgba(255, 215, 0, 0.1);
-    }
-    
-    .asset-card.gold {
-        border-left: 4px solid var(--gold);
-    }
-    
-    .asset-card.btc {
-        border-left: 4px solid var(--btc);
-    }
-    
-    .asset-card.forex {
-        border-left: 4px solid var(--forex);
-    }
-    
-    .asset-card.indices {
-        border-left: 4px solid var(--neutral);
-    }
-    
-    .asset-card.buy-signal {
-        border-color: var(--positive);
-        box-shadow: 0 0 10px rgba(0, 200, 83, 0.3);
-    }
-    
-    .asset-card.sell-signal {
-        border-color: var(--negative);
-        box-shadow: 0 0 10px rgba(255, 61, 0, 0.3);
-    }
-    
-    .signal-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        padding: 2px 6px;
-        border-radius: 10px;
-        font-size: 0.7rem;
-        font-weight: bold;
-    }
-    
-    .signal-buy {
-        background: rgba(0, 200, 83, 0.2);
-        color: var(--positive);
-    }
-    
-    .signal-sell {
-        background: rgba(255, 61, 0, 0.2);
-        color: var(--negative);
-    }
-    
-    .asset-name {
-        font-size: 1rem;
-        font-weight: bold;
-        margin-bottom: 5px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    
-    .asset-price {
-        font-size: 1.2rem;
-        font-weight: bold;
-        margin: 3px 0;
-    }
-    
-    .asset-change {
-        font-size: 0.85rem;
-        padding: 2px 6px;
-        border-radius: 10px;
-        display: inline-block;
-    }
-    
-    .change-up {
-        background: rgba(0, 200, 83, 0.2);
-        color: var(--positive);
-    }
-    
-    .change-down {
-        background: rgba(255, 61, 0, 0.2);
-        color: var(--negative);
-    }
-    
-    /* Visual Analysis Panel */
-    .analysis-panel {
-        background: var(--secondary-bg);
-        border-radius: var(--border-radius);
-        padding: 15px;
-        box-shadow: var(--shadow);
-        flex: 1;
-        overflow-y: auto;
-    }
-    
-    .analysis-header {
-        color: var(--accent-color);
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .analysis-section {
-        margin-bottom: 20px;
-    }
-    
-    .section-title {
-        color: var(--accent-color);
-        font-size: 1rem;
-        margin-bottom: 10px;
-        padding-bottom: 5px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .analysis-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-    
-    .analysis-item {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 6px;
-        padding: 10px;
-        border-left: 4px solid var(--neutral);
-    }
-    
-    .analysis-item.bullish {
-        border-left-color: var(--positive);
-        background: rgba(0, 200, 83, 0.1);
-    }
-    
-    .analysis-item.bearish {
-        border-left-color: var(--negative);
-        background: rgba(255, 61, 0, 0.1);
-    }
-    
-    .analysis-item.neutral {
-        border-left-color: var(--warning);
-        background: rgba(255, 152, 0, 0.1);
-    }
-    
-    .item-title {
-        font-weight: bold;
-        font-size: 0.9rem;
-        margin-bottom: 5px;
-    }
-    
-    .item-value {
-        font-size: 0.85rem;
-        color: var(--text-secondary);
-    }
-    
-    .confirmation-item {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 6px;
-        padding: 10px;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-    }
-    
-    .confirmation-item.confirmed {
-        border-left: 4px solid var(--positive);
-    }
-    
-    .confirmation-item.denied {
-        border-left: 4px solid var(--negative);
-    }
-    
-    .confirmation-check {
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.7rem;
-    }
-    
-    .check-confirmed {
-        background: rgba(0, 200, 83, 0.2);
-        color: var(--positive);
-    }
-    
-    .check-denied {
-        background: rgba(255, 61, 0, 0.2);
-        color: var(--negative);
-    }
-    
-    /* Signal Decision Panel */
-    .signal-panel {
-        background: var(--secondary-bg);
-        border-radius: var(--border-radius);
-        padding: 15px;
-        box-shadow: var(--shadow);
-    }
-    
-    .signal-header {
-        color: var(--accent-color);
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .signal-decision {
-        text-align: center;
-        padding: 20px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        animation: fadeIn 0.5s;
-    }
-    
-    .signal-buy-decision {
-        background: rgba(0, 200, 83, 0.1);
-        border: 2px solid var(--positive);
-    }
-    
-    .signal-sell-decision {
-        background: rgba(255, 61, 0, 0.1);
-        border: 2px solid var(--negative);
-    }
-    
-    .signal-no-trade {
-        background: rgba(255, 152, 0, 0.1);
-        border: 2px solid var(--warning);
-    }
-    
-    .decision-text {
-        font-size: 1.5rem;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
-    
-    .decision-buy {
-        color: var(--positive);
-    }
-    
-    .decision-sell {
-        color: var(--negative);
-    }
-    
-    .decision-no-trade {
-        color: var(--warning);
-    }
-    
-    .trend-bias {
-        font-size: 1.1rem;
-        margin-bottom: 10px;
-        font-weight: bold;
-    }
-    
-    .trend-bullish {
-        color: var(--positive);
-    }
-    
-    .trend-bearish {
-        color: var(--negative);
-    }
-    
-    .trend-ranging {
-        color: var(--warning);
-    }
-    
-    .analysis-summary {
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 6px;
-        padding: 12px;
-        font-size: 0.9rem;
-        line-height: 1.5;
-    }
-    
-    /* Chart Container */
-    .chart-container {
-        flex: 1;
-        border-radius: var(--border-radius);
-        overflow: hidden;
-        box-shadow: var(--shadow);
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .chart-header {
-        background: var(--secondary-bg);
-        padding: 12px 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .chart-info {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-    
-    .chart-symbol {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: var(--accent-color);
-    }
-    
-    .chart-stats {
-        display: flex;
-        gap: 15px;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-    }
-    
-    .timeframe-selector {
-        display: flex;
-        gap: 5px;
-        background: rgba(0, 0, 0, 0.3);
-        padding: 4px;
-        border-radius: 6px;
-    }
-    
-    .tf-btn {
-        background: transparent;
-        border: none;
-        border-radius: 4px;
-        padding: 6px 12px;
-        color: var(--text-secondary);
-        cursor: pointer;
-        font-size: 0.85rem;
-        transition: all 0.3s;
-    }
-    
-    .tf-btn:hover {
-        background: rgba(255, 255, 255, 0.1);
-    }
-    
-    .tf-btn.active {
-        background: var(--accent-color);
-        color: var(--primary-bg);
-        font-weight: bold;
-    }
-    
-    /* Chart Tools */
-    .chart-tools {
-        display: flex;
-        gap: 10px;
-        margin-top: 10px;
-    }
-    
-    .tool-btn {
-        padding: 5px 12px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-        color: var(--text-primary);
-        cursor: pointer;
-        font-size: 0.8rem;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
-    .tool-btn.active {
-        background: var(--neutral);
-        color: white;
-    }
-    
-    /* TradingView Chart */
-    #tv_chart_container {
-        flex: 1;
-        position: relative;
-    }
-    
-    /* Footer */
-    .footer {
-        background: var(--secondary-bg);
-        padding: 10px 20px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        text-align: center;
-    }
-    
-    .warning {
-        color: #ff9800;
-        margin: 5px 0;
-        font-style: italic;
-    }
-    
-    /* Responsive Design */
-    @media (max-width: 1400px) {
-        .dashboard-container {
-            flex-direction: column;
-            height: auto;
+    <meta charset="UTF-8">
+    <title>KILLER ZONE - Visual Analysis Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <style>
+        :root {
+            --primary-bg: #0b102a;
+            --secondary-bg: #121a3a;
+            --accent-color: gold;
+            --positive: #00c853;
+            --negative: #ff3d00;
+            --neutral: #5d7bdb;
+            --warning: #ff9800;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --border-radius: 8px;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --gold: #FFD700;
+            --btc: #F7931A;
+            --forex: #00BFFF;
         }
         
-        .left-panel {
-            width: 100%;
-            flex-direction: row;
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--secondary-bg);
+            padding: 15px 20px;
+            border-bottom: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             flex-wrap: wrap;
+            box-shadow: var(--shadow);
         }
         
-        .asset-panel, .analysis-panel, .signal-panel {
+        .header-content {
             flex: 1;
             min-width: 300px;
         }
-    }
-    
-    @media (max-width: 768px) {
-        .header {
-            flex-direction: column;
-            text-align: center;
+        
+        h1 {
+            color: var(--accent-color);
+            margin-bottom: 5px;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .rules {
+            font-size: 0.85rem;
+            color: var(--neutral);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 8px;
+        }
+        
+        /* Dashboard Layout */
+        .dashboard-container {
+            display: flex;
+            height: calc(100vh - 130px);
+            padding: 15px;
             gap: 15px;
         }
         
-        .session-controls {
-            width: 100%;
+        /* Left Panel */
+        .left-panel {
+            width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
         
-        .left-panel {
+        /* Asset Cards */
+        .asset-panel {
+            background: var(--secondary-bg);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+        }
+        
+        .asset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+        
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        
+        .asset-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .asset-card.active {
+            border-color: var(--accent-color);
+            background: rgba(255, 215, 0, 0.1);
+        }
+        
+        .asset-card.gold { border-left: 4px solid var(--gold); }
+        .asset-card.btc { border-left: 4px solid var(--btc); }
+        .asset-card.forex { border-left: 4px solid var(--forex); }
+        .asset-card.indices { border-left: 4px solid var(--neutral); }
+        
+        .asset-card.buy-signal { border-color: var(--positive); }
+        .asset-card.sell-signal { border-color: var(--negative); }
+        
+        /* Signal Badges - FIXED POSITIONING */
+        .signal-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .signal-buy {
+            background: linear-gradient(135deg, rgba(0, 200, 83, 0.15), rgba(0, 200, 83, 0.05));
+            color: var(--positive);
+            border: 1px solid rgba(0, 200, 83, 0.4);
+        }
+        
+        .signal-sell {
+            background: linear-gradient(135deg, rgba(255, 61, 0, 0.15), rgba(255, 61, 0, 0.05));
+            color: var(--negative);
+            border: 1px solid rgba(255, 61, 0, 0.4);
+        }
+        
+        .signal-no-trade {
+            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.05));
+            color: var(--warning);
+            border: 1px solid rgba(255, 152, 0, 0.4);
+        }
+        
+        .asset-name {
+            font-size: 1rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .asset-price {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin: 3px 0;
+        }
+        
+        .asset-change {
+            font-size: 0.85rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .change-up {
+            background: rgba(0, 200, 83, 0.2);
+            color: var(--positive);
+        }
+        
+        .change-down {
+            background: rgba(255, 61, 0, 0.2);
+            color: var(--negative);
+        }
+        
+        /* Analysis Panel */
+        .analysis-panel {
+            background: var(--secondary-bg);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .analysis-header {
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .analysis-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            color: var(--accent-color);
+            font-size: 1rem;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .analysis-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 10px;
+            border-left: 4px solid var(--neutral);
+        }
+        
+        .analysis-item.bullish {
+            border-left-color: var(--positive);
+            background: rgba(0, 200, 83, 0.1);
+        }
+        
+        .analysis-item.bearish {
+            border-left-color: var(--negative);
+            background: rgba(255, 61, 0, 0.1);
+        }
+        
+        .analysis-item.neutral {
+            border-left-color: var(--warning);
+            background: rgba(255, 152, 0, 0.1);
+        }
+        
+        .item-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        
+        .item-value {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .confirmation-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .confirmation-item.confirmed {
+            border-left: 4px solid var(--positive);
+        }
+        
+        .confirmation-item.denied {
+            border-left: 4px solid var(--negative);
+        }
+        
+        .confirmation-check {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+        }
+        
+        .check-confirmed {
+            background: rgba(0, 200, 83, 0.2);
+            color: var(--positive);
+        }
+        
+        .check-denied {
+            background: rgba(255, 61, 0, 0.2);
+            color: var(--negative);
+        }
+        
+        /* Signal Decision Panel */
+        .signal-panel {
+            background: var(--secondary-bg);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--shadow);
+        }
+        
+        .signal-header {
+            color: var(--accent-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .signal-decision {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            animation: fadeIn 0.5s;
+        }
+        
+        .signal-buy-decision {
+            background: rgba(0, 200, 83, 0.1);
+            border: 2px solid var(--positive);
+        }
+        
+        .signal-sell-decision {
+            background: rgba(255, 61, 0, 0.1);
+            border: 2px solid var(--negative);
+        }
+        
+        .signal-no-trade {
+            background: rgba(255, 152, 0, 0.1);
+            border: 2px solid var(--warning);
+        }
+        
+        .decision-text {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .decision-buy { color: var(--positive); }
+        .decision-sell { color: var(--negative); }
+        .decision-no-trade { color: var(--warning); }
+        
+        .trend-bias {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .trend-bullish { color: var(--positive); }
+        .trend-bearish { color: var(--negative); }
+        .trend-ranging { color: var(--warning); }
+        
+        .analysis-summary {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            flex: 1;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            display: flex;
             flex-direction: column;
         }
         
         .chart-header {
-            flex-direction: column;
-            gap: 10px;
-            align-items: flex-start;
+            background: var(--secondary-bg);
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .timeframe-selector, .chart-tools {
-            align-self: stretch;
-            justify-content: center;
+        .chart-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
-    }
-    
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>
+        
+        .chart-symbol {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+        
+        .chart-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+        
+        /* Footer */
+        .footer {
+            background: var(--secondary-bg);
+            padding: 10px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+        
+        .warning {
+            color: #ff9800;
+            margin: 5px 0;
+            font-style: italic;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .dashboard-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .left-panel {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            
+            .asset-panel, .analysis-panel, .signal-panel {
+                flex: 1;
+                min-width: 300px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .left-panel {
+                flex-direction: column;
+            }
+            
+            .chart-header {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+        }
+    </style>
 </head>
-
 <body>
     <!-- Header -->
     <div class="header">
@@ -657,22 +486,6 @@
                 <div class="rule"><i class="fas fa-check-triple"></i> 3+ Confirmations Required</div>
                 <div class="rule"><i class="fas fa-times"></i> No Conflicts Allowed</div>
                 <div class="rule"><i class="fas fa-bullseye"></i> Accuracy Over Frequency</div>
-            </div>
-        </div>
-        
-        <div class="session-controls">
-            <div>ANALYSIS MODE</div>
-            <div class="session-buttons">
-                <button class="session-btn active" data-mode="realtime">
-                    <i class="fas fa-sync-alt"></i> Live Analysis
-                </button>
-                <button class="session-btn" data-mode="simulation">
-                    <i class="fas fa-chart-bar"></i> Historical Test
-                </button>
-            </div>
-            <div class="market-status">
-                <span class="status-indicator status-open"></span>
-                <span id="analysis-status">Live Analysis Active</span>
             </div>
         </div>
     </div>
@@ -688,7 +501,9 @@
                     <span id="asset-count">5 Assets</span>
                 </div>
                 <div class="asset-grid">
+                    <!-- Gold Card -->
                     <div class="asset-card gold active" data-symbol="XAUUSD" data-name="Gold">
+                        <div class="signal-badge signal-buy">BUY</div>
                         <div class="asset-name">
                             <i class="fas fa-gem" style="color:var(--gold)"></i>
                             <span>Gold (XAUUSD)</span>
@@ -696,8 +511,9 @@
                         <div class="asset-price" id="gold-price">2,180.45</div>
                         <div class="asset-change change-up" id="gold-change">+0.65%</div>
                     </div>
-                    
+                    <!-- Bitcoin Card -->
                     <div class="asset-card btc" data-symbol="BTCUSD" data-name="Bitcoin">
+                        <div class="signal-badge signal-buy">BUY</div>
                         <div class="asset-name">
                             <i class="fab fa-bitcoin" style="color:var(--btc)"></i>
                             <span>Bitcoin (BTCUSD)</span>
@@ -705,8 +521,9 @@
                         <div class="asset-price" id="btc-price">68,245.80</div>
                         <div class="asset-change change-up" id="btc-change">+2.35%</div>
                     </div>
-                    
+                    <!-- EURUSD Card -->
                     <div class="asset-card forex" data-symbol="EURUSD" data-name="EURUSD">
+                        <div class="signal-badge signal-sell">SELL</div>
                         <div class="asset-name">
                             <i class="fas fa-euro-sign" style="color:var(--forex)"></i>
                             <span>EUR/USD</span>
@@ -714,8 +531,9 @@
                         <div class="asset-price" id="eurusd-price">1.0956</div>
                         <div class="asset-change change-down" id="eurusd-change">-0.15%</div>
                     </div>
-                    
+                    <!-- NAS100 Card -->
                     <div class="asset-card indices" data-symbol="NAS100" data-name="NAS100">
+                        <div class="signal-badge signal-buy">BUY</div>
                         <div class="asset-name">
                             <i class="fas fa-chart-line" style="color:var(--neutral)"></i>
                             <span>NAS100</span>
@@ -723,8 +541,9 @@
                         <div class="asset-price" id="nas100-price">17,842.35</div>
                         <div class="asset-change change-up" id="nas100-change">+0.85%</div>
                     </div>
-                    
+                    <!-- US30 Card (FIXED: Now shows NO TRADE) -->
                     <div class="asset-card indices" data-symbol="US30" data-name="US30">
+                        <div class="signal-badge signal-no-trade">NO TRADE</div>
                         <div class="asset-name">
                             <i class="fas fa-industry" style="color:var(--neutral)"></i>
                             <span>US30 (Dow)</span>
@@ -769,7 +588,7 @@
                     </div>
                 </div>
                 
-                <!-- Trend & Indicators -->
+                <!-- Trend & Momentum -->
                 <div class="analysis-section">
                     <div class="section-title">TREND & MOMENTUM</div>
                     <div class="analysis-grid">
@@ -777,17 +596,17 @@
                             <div class="item-title">Trend Direction</div>
                             <div class="item-value">Bullish</div>
                         </div>
-                        <div class="analysis-item neutral" id="rsi-status">
+                        <div class="analysis-item bullish" id="rsi-status">
                             <div class="item-title">RSI Status</div>
-                            <div class="item-value">62.5 (Neutral)</div>
+                            <div class="item-value">62.5 (Bullish Bias)</div>
                         </div>
                         <div class="analysis-item bullish" id="momentum">
                             <div class="item-title">Momentum</div>
                             <div class="item-value">Bullish Bars</div>
                         </div>
-                        <div class="analysis-item" id="candle-pattern">
+                        <div class="analysis-item bullish" id="candle-pattern">
                             <div class="item-title">Candle Pattern</div>
-                            <div class="item-value">Bullish Continuation</div>
+                            <div class="item-value">Bullish continuation</div>
                         </div>
                     </div>
                 </div>
@@ -798,11 +617,11 @@
                     <div class="analysis-grid">
                         <div class="analysis-item" id="support-level">
                             <div class="item-title">Support Zone</div>
-                            <div class="item-value">2,165 - 2,170</div>
+                            <div class="item-value">2165 - 2170</div>
                         </div>
                         <div class="analysis-item" id="resistance-level">
                             <div class="item-title">Resistance Zone</div>
-                            <div class="item-value">2,190 - 2,195</div>
+                            <div class="item-value">2190 - 2195</div>
                         </div>
                         <div class="analysis-item bullish" id="price-position">
                             <div class="item-title">Price Position</div>
@@ -842,17 +661,17 @@
                                 <i class="fas fa-check"></i>
                             </div>
                             <div>
-                                <div style="font-weight:bold;">Bullish Candlestick Pattern</div>
-                                <div style="font-size:0.8rem;color:var(--text-secondary)">Series of bullish closes above key support</div>
+                                <div style="font-weight:bold;">Momentum Confirmation</div>
+                                <div style="font-size:0.8rem;color:var(--text-secondary)">bullish momentum confirms trend</div>
                             </div>
                         </div>
-                        <div class="confirmation-item">
-                            <div class="confirmation-check">
-                                <i class="fas fa-minus"></i>
+                        <div class="confirmation-item confirmed">
+                            <div class="confirmation-check check-confirmed">
+                                <i class="fas fa-check"></i>
                             </div>
                             <div>
-                                <div style="font-weight:bold;">RSI Confirmation</div>
-                                <div style="font-size:0.8rem;color:var(--text-secondary)">RSI neutral, not overbought/sold</div>
+                                <div style="font-weight:bold;">RSI Trend Confirmation</div>
+                                <div style="font-size:0.8rem;color:var(--text-secondary)">RSI shows bullish momentum</div>
                             </div>
                         </div>
                     </div>
@@ -863,7 +682,7 @@
             <div class="signal-panel">
                 <div class="signal-header">
                     <span><i class="fas fa-flag-checkered"></i> TRADE DECISION</span>
-                    <span id="confirmation-count">3/4 Confirmations</span>
+                    <span id="confirmation-count">4/4 Confirmations</span>
                 </div>
                 
                 <div class="signal-decision signal-buy-decision">
@@ -874,17 +693,13 @@
                         <i class="fas fa-thumbs-up"></i> SIGNAL: BUY
                     </div>
                     <div style="font-size:0.9rem;margin-bottom:10px;color:var(--text-secondary)">
-                        Confidence: High (3/4 visual confirmations)
+                        Confidence: High (4/4 visual confirmations)
                     </div>
                 </div>
                 
-                <div class="analysis-summary">
+                <div class="analysis-summary" id="analysis-summary">
                     <strong>ANALYSIS SUMMARY:</strong><br>
-                    Gold shows a clear bullish structure with higher highs and higher lows. 
-                    Price is trading in a confirmed uptrend with strong support at 2,165. 
-                    Bullish candlestick patterns and momentum confirm the trend direction. 
-                    RSI at 62.5 provides neutral confirmation without overbought concerns. 
-                    No conflicting signals observed.
+                    Bullish structure with clear HH/HL pattern. Strong uptrend intact above key support.
                 </div>
                 
                 <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius:6px; font-size:0.85rem;">
@@ -902,39 +717,21 @@
         <div class="chart-container">
             <div class="chart-header">
                 <div class="chart-info">
-                    <div class="chart-symbol" id="chart-symbol-name">Gold (XAUUSD) - 1H Chart</div>
+                    <div class="chart-symbol" id="chart-symbol-name">Gold (XAUUSD) - Visual Analysis</div>
                     <div class="chart-stats">
                         <span>Trend: <strong id="chart-trend" style="color:var(--positive)">Bullish</strong></span>
                         <span>RSI: <strong id="chart-rsi">62.5</strong></span>
                         <span>Structure: <strong id="chart-structure" style="color:var(--positive)">HH/HL</strong></span>
                         <span>Momentum: <strong id="chart-momentum" style="color:var(--positive)">Bullish</strong></span>
                     </div>
-                    <div class="chart-tools">
-                        <button class="tool-btn active" data-tool="trendlines">
-                            <i class="fas fa-sliders-h"></i> Trendlines
-                        </button>
-                        <button class="tool-btn" data-tool="levels">
-                            <i class="fas fa-layer-group"></i> S/R Levels
-                        </button>
-                        <button class="tool-btn" data-tool="fibonacci">
-                            <i class="fas fa-wave-square"></i> Fibonacci
-                        </button>
-                        <button class="tool-btn" data-tool="clear">
-                            <i class="fas fa-eraser"></i> Clear All
-                        </button>
-                    </div>
-                </div>
-                <div class="timeframe-selector">
-                    <button class="tf-btn" data-tf="1">1M</button>
-                    <button class="tf-btn" data-tf="5">5M</button>
-                    <button class="tf-btn" data-tf="15">15M</button>
-                    <button class="tf-btn active" data-tf="60">1H</button>
-                    <button class="tf-btn" data-tf="240">4H</button>
-                    <button class="tf-btn" data-tv="D">D</button>
                 </div>
             </div>
-            <div id="tv_chart_container" style="height: 100%;">
-                <div id="tv_chart" style="height: 100%;"></div>
+            <div id="tv_chart_container" style="height: 100%; padding: 20px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.2);">
+                <div style="text-align: center; color: var(--text-secondary);">
+                    <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                    <div>Chart visualization would appear here</div>
+                    <div style="font-size: 0.8rem; margin-top: 5px;">Connected to TradingView in production</div>
+                </div>
             </div>
         </div>
     </div>
@@ -948,213 +745,201 @@
         <div>© KILLER ZONE Visual Analysis Dashboard | Gold • BTC • EURUSD • NAS100 • US30</div>
     </div>
 
-    <!-- External Libraries -->
-    <script src="https://s3.tradingview.com/tv.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    
     <script>
-        // KILLER ZONE Visual Analysis System
-        const VISUAL_ANALYSIS = {
+        // KILLER ZONE Visual Analysis System - STANDALONE VERSION
+        const KILLER_ZONE = {
             // Configuration
             config: {
                 assets: {
-                    XAUUSD: { 
-                        name: "Gold", 
-                        tvSymbol: "TVC:GOLD",
-                        category: "gold",
-                        color: "var(--gold)"
-                    },
-                    BTCUSD: { 
-                        name: "Bitcoin", 
-                        tvSymbol: "BINANCE:BTCUSDT",
-                        category: "btc",
-                        color: "var(--btc)"
-                    },
-                    EURUSD: { 
-                        name: "EUR/USD", 
-                        tvSymbol: "FX_IDC:EURUSD",
-                        category: "forex",
-                        color: "var(--forex)"
-                    },
-                    NAS100: { 
-                        name: "NAS100", 
-                        tvSymbol: "NASDAQ:NDX",
-                        category: "indices",
-                        color: "var(--neutral)"
-                    },
-                    US30: { 
-                        name: "US30", 
-                        tvSymbol: "FOREXCOM:DJI",
-                        category: "indices",
-                        color: "var(--neutral)"
-                    }
-                },
-                
-                // Visual confirmation categories
-                confirmations: [
-                    "Market Structure (HH/HL or LH/LL)",
-                    "Trend Direction Alignment",
-                    "RSI/Oscillator Confirmation",
-                    "Support/Resistance Alignment",
-                    "Candlestick Pattern",
-                    "Volume Confirmation",
-                    "Breakout/Rejection Pattern"
-                ]
-            },
-            
-            // State Management
-            state: {
-                activeAsset: 'XAUUSD',
-                analysisMode: 'realtime',
-                currentTimeframe: '60',
-                chartWidget: null,
-                
-                // Asset data (NO EMA ALIGNMENT DATA)
-                assetData: {
-                    XAUUSD: {
-                        price: 2180.45,
-                        change: 0.65,
-                        trend: 'bullish',
-                        rsi: 62.5,
-                        structure: 'HH/HL',
-                        momentum: 'bullish',
-                        candlePattern: 'bullish_continuation',
-                        support: [2165, 2170],
-                        resistance: [2190, 2195],
-                        signal: 'BUY',
-                        confirmations: 3,
-                        analysis: "Bullish structure with clear HH/HL pattern"
-                    },
-                    BTCUSD: {
-                        price: 68245.80,
-                        change: 2.35,
-                        trend: 'bullish',
-                        rsi: 58.2,
-                        structure: 'HH/HL',
-                        momentum: 'bullish',
-                        candlePattern: 'bullish_continuation',
-                        support: [67000, 67500],
-                        resistance: [69000, 69500],
-                        signal: 'BUY',
-                        confirmations: 3,
-                        analysis: "Strong uptrend with bullish momentum"
-                    },
-                    EURUSD: {
-                        price: 1.0956,
-                        change: -0.15,
-                        trend: 'bearish',
-                        rsi: 42.3,
-                        structure: 'LH/LL',
-                        momentum: 'bearish',
-                        candlePattern: 'bearish_continuation',
-                        support: [1.0920, 1.0930],
-                        resistance: [1.0980, 1.1000],
-                        signal: 'SELL',
-                        confirmations: 3,
-                        analysis: "Downtrend with lower highs and lower lows"
-                    },
-                    NAS100: {
-                        price: 17842.35,
-                        change: 0.85,
-                        trend: 'bullish',
-                        rsi: 68.7,
-                        structure: 'HH/HL',
-                        momentum: 'bullish',
-                        candlePattern: 'bullish_continuation',
-                        support: [17700, 17750],
-                        resistance: [17900, 17950],
-                        signal: 'BUY',
-                        confirmations: 3,
-                        analysis: "Uptrend continuation, testing resistance"
-                    },
-                    US30: {
-                        price: 39215.60,
-                        change: -0.32,
-                        trend: 'ranging',
-                        rsi: 49.5,
-                        structure: 'Ranging',
-                        momentum: 'neutral',
-                        candlePattern: 'indecision',
-                        support: [39000, 39100],
-                        resistance: [39300, 39400],
-                        signal: 'NO_TRADE',
-                        confirmations: 1,
-                        analysis: "Range-bound with conflicting signals"
-                    }
-                },
-                
-                // Active analysis
-                activeAnalysis: null
-            },
-            
-            // Initialize TradingView with visual analysis tools
-            initTradingView() {
-                if (window.tvWidget) {
-                    window.tvWidget.remove();
+                    XAUUSD: { name: "Gold", category: "gold" },
+                    BTCUSD: { name: "Bitcoin", category: "btc" },
+                    EURUSD: { name: "EUR/USD", category: "forex" },
+                    NAS100: { name: "NAS100", category: "indices" },
+                    US30: { name: "US30", category: "indices" }
                 }
+            },
+
+            // Complete analysis data for ALL assets
+            assetData: {
+                XAUUSD: {
+                    price: 2180.45, change: 0.65,
+                    trend: 'bullish', rsi: 62.5, structure: 'HH/HL', momentum: 'bullish',
+                    support: [2165, 2170], resistance: [2190, 2195],
+                    signal: 'BUY', confirmations: 4,
+                    analysis: "Bullish structure with clear HH/HL pattern. Strong uptrend intact above key support."
+                },
+                BTCUSD: {
+                    price: 68245.80, change: 2.35,
+                    trend: 'bullish', rsi: 58.2, structure: 'HH/HL', momentum: 'bullish',
+                    support: [67000, 67500], resistance: [69000, 69500],
+                    signal: 'BUY', confirmations: 3,
+                    analysis: "Strong bullish momentum. Price holding above psychological $68k support in an uptrend."
+                },
+                EURUSD: {
+                    price: 1.0956, change: -0.15,
+                    trend: 'bearish', rsi: 42.3, structure: 'LH/LL', momentum: 'bearish',
+                    support: [1.0920, 1.0930], resistance: [1.0980, 1.1000],
+                    signal: 'SELL', confirmations: 3,
+                    analysis: "Established downtrend with lower highs. Price struggling below 1.0980 resistance zone."
+                },
+                NAS100: {
+                    price: 17842.35, change: 0.85,
+                    trend: 'bullish', rsi: 68.7, structure: 'HH/HL', momentum: 'bullish',
+                    support: [17700, 17750], resistance: [17900, 17950],
+                    signal: 'BUY', confirmations: 3,
+                    warning: "RSI near overbought (68.7). Monitor for potential pullback.",
+                    analysis: "Uptrend continuation but testing key resistance. RSI suggests caution near term."
+                },
+                // FIXED: US30 now properly shows NO TRADE signal
+                US30: {
+                    price: 39215.60, change: -0.32,
+                    trend: 'ranging', rsi: 49.5, structure: 'Ranging', momentum: 'neutral',
+                    support: [39000, 39100], resistance: [39300, 39400],
+                    signal: 'NO_TRADE', confirmations: 1,
+                    analysis: "Market in tight consolidation range (39000-39400). Conflicting signals: No clear HH/HL or LH/LL structure. Wait for breakout."
+                }
+            },
+
+            // Current active asset
+            activeAsset: 'XAUUSD',
+
+            // Initialize the dashboard
+            init() {
+                console.log('KILLER ZONE Dashboard Initialized');
                 
-                const symbol = this.config.assets[this.state.activeAsset].tvSymbol;
+                // Setup all event listeners
+                this.setupEventListeners();
                 
-                window.tvWidget = new TradingView.widget({
-                    container_id: "tv_chart",
-                    autosize: true,
-                    symbol: symbol,
-                    interval: this.state.currentTimeframe,
-                    timezone: "UTC",
-                    theme: "dark",
-                    style: "1",
-                    toolbar_bg: "#0b102a",
-                    enable_publishing: false,
-                    hide_side_toolbar: false,
-                    allow_symbol_change: false,
-                    details: true,
-                    hotlist: false,
-                    calendar: false,
-                    drawing_toolbar: true,
-                    disabled_features: ["use_localstorage_for_settings"],
-                    enabled_features: ["study_templates"],
-                    studies: [
-                        "RSI@tv-basicstudies",
-                        "Volume@tv-basicstudies",
-                        "AverageTrueRange@tv-basicstudies"
-                    ],
-                    overrides: {
-                        "paneProperties.background": "#0b102a",
-                        "paneProperties.vertGridProperties.color": "rgba(255,255,255,0.05)",
-                        "paneProperties.horzGridProperties.color": "rgba(255,255,255,0.05)",
-                        "mainSeriesProperties.candleStyle.upColor": "#00c853",
-                        "mainSeriesProperties.candleStyle.downColor": "#ff3d00",
-                        "mainSeriesProperties.candleStyle.borderUpColor": "#00c853",
-                        "mainSeriesProperties.candleStyle.borderDownColor": "#ff3d00",
-                        "mainSeriesProperties.candleStyle.wickUpColor": "#00c853",
-                        "mainSeriesProperties.candleStyle.wickDownColor": "#ff3d00"
-                    },
-                    studies_overrides: {
-                        "rsi.display": "line",
-                        "rsi.linewidth": 2,
-                        "rsi.plots.0.color": "#ff9800",
-                        "volume.volume.color.0": "rgba(255, 61, 0, 0.5)",
-                        "volume.volume.color.1": "rgba(0, 200, 83, 0.5)"
-                    }
+                // Initialize all asset cards with their signals
+                this.initializeAssetCards();
+                
+                // Load the default analysis (Gold)
+                this.loadAssetAnalysis('XAUUSD');
+            },
+
+            // Setup all event listeners
+            setupEventListeners() {
+                // Asset card clicks
+                document.querySelectorAll('.asset-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        const symbol = card.getAttribute('data-symbol');
+                        
+                        // Remove active class from all cards
+                        document.querySelectorAll('.asset-card').forEach(c => {
+                            c.classList.remove('active');
+                        });
+                        
+                        // Add active class to clicked card
+                        card.classList.add('active');
+                        
+                        // Load analysis for this asset
+                        this.loadAssetAnalysis(symbol);
+                    });
                 });
                 
-                this.updateChartInfo();
+                console.log('Event listeners setup complete');
             },
-            
-            // Perform visual analysis on selected asset
-            performVisualAnalysis(asset) {
-                const data = this.state.assetData[asset];
-                this.state.activeAnalysis = data;
-                this.updateVisualAnalysisUI();
-                this.updateSignalDecision();
+
+            // Initialize all asset cards with their signals
+            initializeAssetCards() {
+                Object.keys(this.assetData).forEach(symbol => {
+                    this.updateAssetCard(symbol);
+                });
+                console.log('Asset cards initialized with signals');
             },
-            
-            // Update visual analysis UI (NO EMA ALIGNMENT)
-            updateVisualAnalysisUI() {
-                const data = this.state.activeAnalysis;
+
+            // Update a single asset card
+            updateAssetCard(symbol) {
+                const data = this.assetData[symbol];
+                const card = document.querySelector(`.asset-card[data-symbol="${symbol}"]`);
+                
+                if (!card || !data) return;
+
+                // Update price display
+                const priceEl = card.querySelector('.asset-price');
+                const changeEl = card.querySelector('.asset-change');
+                
+                if (priceEl) {
+                    priceEl.textContent = this.formatPrice(symbol, data.price);
+                }
+                
+                if (changeEl) {
+                    changeEl.textContent = `${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)}%`;
+                    changeEl.className = `asset-change ${data.change >= 0 ? 'change-up' : 'change-down'}`;
+                }
+
+                // Update signal badge - CRITICAL FIX
+                const badge = card.querySelector('.signal-badge');
+                if (badge) {
+                    // Remove all existing signal classes
+                    badge.classList.remove('signal-buy', 'signal-sell', 'signal-no-trade');
+                    
+                    // Determine badge type and text
+                    let badgeClass = '';
+                    let badgeText = '';
+                    
+                    switch(data.signal) {
+                        case 'BUY':
+                            badgeClass = 'signal-buy';
+                            badgeText = 'BUY';
+                            card.classList.add('buy-signal');
+                            card.classList.remove('sell-signal');
+                            break;
+                        case 'SELL':
+                            badgeClass = 'signal-sell';
+                            badgeText = 'SELL';
+                            card.classList.add('sell-signal');
+                            card.classList.remove('buy-signal');
+                            break;
+                        case 'NO_TRADE':
+                        default:
+                            badgeClass = 'signal-no-trade';
+                            badgeText = 'NO TRADE';
+                            card.classList.remove('buy-signal', 'sell-signal');
+                    }
+                    
+                    // Apply the badge
+                    badge.className = `signal-badge ${badgeClass}`;
+                    badge.textContent = badgeText;
+                }
+            },
+
+            // Format price based on asset type
+            formatPrice(symbol, price) {
+                if (symbol === 'XAUUSD') return price.toFixed(2);
+                if (symbol === 'BTCUSD') return price.toFixed(0);
+                if (symbol === 'EURUSD') return price.toFixed(4);
+                // For indices, add comma formatting
+                return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            },
+
+            // Load analysis for a specific asset
+            loadAssetAnalysis(symbol) {
+                const data = this.assetData[symbol];
                 if (!data) return;
                 
-                // Market Structure
+                this.activeAsset = symbol;
+                
+                // Update the analysis panel
+                this.updateAnalysisPanel(data);
+                
+                // Update the trade decision
+                this.updateTradeDecision(data);
+                
+                // Update chart info
+                this.updateChartInfo(data);
+                
+                console.log(`Analysis loaded for ${symbol}: ${data.signal} signal`);
+            },
+
+            // Update the analysis panel
+            updateAnalysisPanel(data) {
+                // Update current asset display
+                document.getElementById('current-asset').textContent = 
+                    `${this.config.assets[this.activeAsset].name} (${this.activeAsset})`;
+                
+                // Update market structure
                 this.updateAnalysisItem('structure-hl', 
                     data.structure.includes('HL') ? 'bullish' : 'neutral',
                     data.structure.includes('HL') ? 'Confirmed ✓' : 'Not Present'
@@ -1175,13 +960,14 @@
                     data.structure.includes('LL') ? 'Present' : 'Not Present'
                 );
                 
-                // Trend & Momentum
+                // Update trend & momentum
                 this.updateAnalysisItem('trend-direction', 
-                    data.trend === 'bullish' ? 'bullish' : data.trend === 'bearish' ? 'bearish' : 'neutral',
+                    data.trend === 'bullish' ? 'bullish' : 
+                    data.trend === 'bearish' ? 'bearish' : 'neutral',
                     data.trend.charAt(0).toUpperCase() + data.trend.slice(1)
                 );
                 
-                // RSI Status with color coding
+                // Update RSI
                 let rsiStatus = 'neutral';
                 let rsiText = `${data.rsi} (`;
                 if (data.rsi <= 30) {
@@ -1197,28 +983,28 @@
                     rsiStatus = 'bearish';
                     rsiText += 'Bearish Bias)';
                 }
-                
                 this.updateAnalysisItem('rsi-status', rsiStatus, rsiText);
                 
-                // Momentum based on trend
+                // Update momentum
                 this.updateAnalysisItem('momentum', 
                     data.momentum,
                     data.momentum === 'bullish' ? 'Bullish Bars' : 
                     data.momentum === 'bearish' ? 'Bearish Bars' : 'Mixed Momentum'
                 );
                 
-                // Candle Pattern
+                // Update candle pattern
                 let candleStatus = 'neutral';
-                if (data.candlePattern.includes('bullish')) candleStatus = 'bullish';
-                else if (data.candlePattern.includes('bearish')) candleStatus = 'bearish';
+                let candleText = 'Indecision';
+                if (data.momentum === 'bullish') {
+                    candleStatus = 'bullish';
+                    candleText = 'Bullish continuation';
+                } else if (data.momentum === 'bearish') {
+                    candleStatus = 'bearish';
+                    candleText = 'Bearish continuation';
+                }
+                this.updateAnalysisItem('candle-pattern', candleStatus, candleText);
                 
-                this.updateAnalysisItem('candle-pattern', 
-                    candleStatus,
-                    data.candlePattern.replace('_', ' ').charAt(0).toUpperCase() + 
-                    data.candlePattern.replace('_', ' ').slice(1)
-                );
-                
-                // Key Levels
+                // Update key levels
                 this.updateAnalysisItem('support-level', 'neutral', 
                     `${data.support[0]} - ${data.support[1]}`
                 );
@@ -1240,20 +1026,25 @@
                 // Update confirmations
                 this.updateConfirmations(data);
             },
-            
+
+            // Helper to update analysis items
             updateAnalysisItem(elementId, type, value) {
                 const element = document.getElementById(elementId);
                 if (element) {
                     element.className = `analysis-item ${type}`;
-                    element.querySelector('.item-value').textContent = value;
+                    const valueEl = element.querySelector('.item-value');
+                    if (valueEl) {
+                        valueEl.textContent = value;
+                    }
                 }
             },
-            
+
+            // Update the confirmations list
             updateConfirmations(data) {
                 const container = document.getElementById('confirmations-container');
                 if (!container) return;
                 
-                // Generate confirmations based on analysis (NO EMA)
+                // Define confirmations for this asset
                 const confirmations = [
                     {
                         confirmed: data.structure.includes('HH') && data.structure.includes('HL'),
@@ -1284,9 +1075,10 @@
                     }
                 ];
                 
+                // Clear and rebuild the confirmations container
                 container.innerHTML = '';
                 
-                confirmations.forEach((conf, index) => {
+                confirmations.forEach(conf => {
                     const confElement = document.createElement('div');
                     confElement.className = `confirmation-item ${conf.confirmed ? 'confirmed' : ''}`;
                     confElement.innerHTML = `
@@ -1306,297 +1098,111 @@
                 document.getElementById('confirmation-count').textContent = 
                     `${confirmedCount}/${confirmations.length} Confirmations`;
             },
-            
-            updateSignalDecision() {
-                const data = this.state.activeAnalysis;
-                if (!data) return;
-                
-                const decisionElement = document.querySelector('.signal-decision');
+
+            // Update the trade decision panel
+            updateTradeDecision(data) {
+                const decisionEl = document.querySelector('.signal-decision');
                 const decisionText = document.querySelector('.decision-text');
                 const trendBias = document.querySelector('.trend-bias');
-                const analysisSummary = document.querySelector('.analysis-summary');
+                const analysisSummary = document.getElementById('analysis-summary');
+                
+                if (!decisionEl || !decisionText || !trendBias || !analysisSummary) return;
                 
                 // Update trend bias
                 trendBias.className = `trend-bias trend-${data.trend}`;
                 trendBias.innerHTML = `<i class="fas fa-arrow-${data.trend === 'bullish' ? 'up' : data.trend === 'bearish' ? 'down' : 'right'}"></i> TREND BIAS: ${data.trend.toUpperCase()}`;
                 
-                // Update decision
-                decisionElement.className = `signal-decision signal-${data.signal.toLowerCase()}-decision`;
-                decisionText.className = `decision-text decision-${data.signal.toLowerCase().replace('_', '-')}`;
-                decisionText.innerHTML = `<i class="fas fa-${data.signal === 'BUY' ? 'thumbs-up' : data.signal === 'SELL' ? 'thumbs-down' : 'ban'}"></i> SIGNAL: ${data.signal.replace('_', ' ')}`;
+                // Update signal decision
+                let decisionClass = '';
+                let decisionTextClass = '';
+                let decisionIcon = '';
+                let decisionDisplay = '';
+                
+                switch(data.signal) {
+                    case 'BUY':
+                        decisionClass = 'signal-buy-decision';
+                        decisionTextClass = 'decision-buy';
+                        decisionIcon = 'thumbs-up';
+                        decisionDisplay = 'BUY';
+                        break;
+                    case 'SELL':
+                        decisionClass = 'signal-sell-decision';
+                        decisionTextClass = 'decision-sell';
+                        decisionIcon = 'thumbs-down';
+                        decisionDisplay = 'SELL';
+                        break;
+                    case 'NO_TRADE':
+                    default:
+                        decisionClass = 'signal-no-trade';
+                        decisionTextClass = 'decision-no-trade';
+                        decisionIcon = 'ban';
+                        decisionDisplay = 'NO TRADE';
+                }
+                
+                decisionEl.className = `signal-decision ${decisionClass}`;
+                decisionText.className = `decision-text ${decisionTextClass}`;
+                decisionText.innerHTML = `<i class="fas fa-${decisionIcon}"></i> SIGNAL: ${decisionDisplay}`;
                 
                 // Update analysis summary
-                analysisSummary.innerHTML = `
-                    <strong>ANALYSIS SUMMARY:</strong><br>
-                    ${data.analysis} Price is currently at ${this.formatPrice(data.price)}. 
-                    The ${data.trend} trend is confirmed by ${data.confirmations} visual confirmations. 
-                    ${data.signal === 'NO_TRADE' ? 'Conflicting signals prevent a clear trade setup.' : 'All visual confirmations align with the signal direction.'}
-                `;
-            },
-            
-            formatPrice(price) {
-                const asset = this.state.activeAsset;
-                if (asset === 'XAUUSD') {
-                    return price.toFixed(2);
-                } else if (asset === 'BTCUSD') {
-                    return price.toFixed(0);
-                } else if (asset === 'EURUSD') {
-                    return price.toFixed(4);
-                } else {
-                    return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                let summaryText = `<strong>ANALYSIS SUMMARY:</strong><br>${data.analysis}`;
+                if (data.warning) {
+                    summaryText += `<br><br><i style="color:var(--warning)"><i class="fas fa-exclamation-triangle"></i> Note: ${data.warning}</i>`;
                 }
+                analysisSummary.innerHTML = summaryText;
             },
-            
-            updateChartInfo() {
-                const asset = this.config.assets[this.state.activeAsset];
-                const data = this.state.assetData[this.state.activeAsset];
-                
+
+            // Update chart information
+            updateChartInfo(data) {
                 document.getElementById('chart-symbol-name').textContent = 
-                    `${asset.name} (${this.state.activeAsset}) - ${this.getTimeframeText()} Chart`;
+                    `${this.config.assets[this.activeAsset].name} (${this.activeAsset}) - Visual Analysis`;
                 
-                document.getElementById('chart-trend').textContent = 
-                    data.trend.charAt(0).toUpperCase() + data.trend.slice(1);
-                document.getElementById('chart-trend').style.color = 
-                    data.trend === 'bullish' ? 'var(--positive)' : 
-                    data.trend === 'bearish' ? 'var(--negative)' : 'var(--warning)';
-                
-                document.getElementById('chart-rsi').textContent = data.rsi;
-                document.getElementById('chart-rsi').style.color = 
-                    data.rsi <= 30 ? 'var(--positive)' : 
-                    data.rsi >= 70 ? 'var(--negative)' : 'var(--warning)';
-                
-                document.getElementById('chart-structure').textContent = data.structure;
-                document.getElementById('chart-structure').style.color = 
-                    data.structure.includes('HH') ? 'var(--positive)' : 
-                    data.structure.includes('LH') ? 'var(--negative)' : 'var(--warning)';
-                
-                document.getElementById('chart-momentum').textContent = 
-                    data.momentum.charAt(0).toUpperCase() + data.momentum.slice(1);
-                document.getElementById('chart-momentum').style.color = 
-                    data.momentum === 'bullish' ? 'var(--positive)' : 
-                    data.momentum === 'bearish' ? 'var(--negative)' : 'var(--warning)';
-                
-                document.getElementById('current-asset').textContent = `${asset.name} (${this.state.activeAsset})`;
-            },
-            
-            getTimeframeText() {
-                const tfMap = {
-                    '1': '1M', '5': '5M', '15': '15M', 
-                    '60': '1H', '240': '4H', 'D': 'Daily'
-                };
-                return tfMap[this.state.currentTimeframe] || this.state.currentTimeframe;
-            },
-            
-            // Simulate market data updates
-            simulateMarketUpdates() {
-                Object.keys(this.state.assetData).forEach(asset => {
-                    const data = this.state.assetData[asset];
-                    
-                    // Small random price changes
-                    const randomChange = (Math.random() - 0.5) * 0.2;
-                    data.price += data.price * (randomChange / 100);
-                    
-                    // Update change percentage
-                    data.change = randomChange;
-                    
-                    // Small RSI fluctuations
-                    data.rsi += (Math.random() - 0.5) * 2;
-                    data.rsi = Math.max(0, Math.min(100, data.rsi));
-                    
-                    // Update asset card
-                    this.updateAssetCard(asset);
-                });
-                
-                // Update active asset analysis if needed
-                if (this.state.activeAnalysis) {
-                    this.performVisualAnalysis(this.state.activeAsset);
-                }
-            },
-            
-            updateAssetCard(asset) {
-                const data = this.state.assetData[asset];
-                const priceEl = document.getElementById(`${asset.toLowerCase()}-price`);
-                const changeEl = document.getElementById(`${asset.toLowerCase()}-change`);
-                const card = document.querySelector(`.asset-card[data-symbol="${asset}"]`);
-                
-                if (priceEl) {
-                    // Format price based on asset type
-                    let formattedPrice;
-                    if (asset === 'XAUUSD') {
-                        formattedPrice = data.price.toFixed(2);
-                    } else if (asset === 'BTCUSD') {
-                        formattedPrice = data.price.toFixed(0);
-                    } else if (asset === 'EURUSD') {
-                        formattedPrice = data.price.toFixed(4);
-                    } else {
-                        formattedPrice = data.price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-                    }
-                    priceEl.textContent = formattedPrice;
+                // Update trend
+                const trendEl = document.getElementById('chart-trend');
+                if (trendEl) {
+                    trendEl.textContent = data.trend.charAt(0).toUpperCase() + data.trend.slice(1);
+                    trendEl.style.color = data.trend === 'bullish' ? 'var(--positive)' : 
+                                         data.trend === 'bearish' ? 'var(--negative)' : 'var(--warning)';
                 }
                 
-                if (changeEl) {
-                    changeEl.textContent = `${data.change >= 0 ? '+' : ''}${data.change.toFixed(2)}%`;
-                    changeEl.className = `asset-change ${data.change >= 0 ? 'change-up' : 'change-down'}`;
+                // Update RSI
+                const rsiEl = document.getElementById('chart-rsi');
+                if (rsiEl) {
+                    rsiEl.textContent = data.rsi;
+                    rsiEl.style.color = data.rsi <= 30 ? 'var(--positive)' : 
+                                       data.rsi >= 70 ? 'var(--negative)' : 'var(--warning)';
                 }
                 
-                if (card) {
-                    card.classList.remove('buy-signal', 'sell-signal');
-                    if (data.signal === 'BUY') {
-                        card.classList.add('buy-signal');
-                    } else if (data.signal === 'SELL') {
-                        card.classList.add('sell-signal');
-                    }
+                // Update structure
+                const structureEl = document.getElementById('chart-structure');
+                if (structureEl) {
+                    structureEl.textContent = data.structure;
+                    structureEl.style.color = data.structure.includes('HH') ? 'var(--positive)' : 
+                                             data.structure.includes('LH') ? 'var(--negative)' : 'var(--warning)';
                 }
-            },
-            
-            // Event Handlers
-            setupEventListeners() {
-                // Asset selection
-                document.querySelectorAll('.asset-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        const symbol = card.getAttribute('data-symbol');
-                        
-                        // Remove active class from all cards
-                        document.querySelectorAll('.asset-card').forEach(c => {
-                            c.classList.remove('active');
-                        });
-                        
-                        // Add active class to clicked card
-                        card.classList.add('active');
-                        
-                        // Update state
-                        this.state.activeAsset = symbol;
-                        
-                        // Perform visual analysis
-                        this.performVisualAnalysis(symbol);
-                        
-                        // Update chart
-                        this.updateChartInfo();
-                        this.initTradingView();
-                    });
-                });
                 
-                // Analysis mode buttons
-                document.querySelectorAll('.session-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const mode = btn.getAttribute('data-mode');
-                        
-                        // Remove active class from all buttons
-                        document.querySelectorAll('.session-btn').forEach(b => {
-                            b.classList.remove('active');
-                        });
-                        
-                        // Add active class to clicked button
-                        btn.classList.add('active');
-                        
-                        // Update state
-                        this.state.analysisMode = mode;
-                        document.getElementById('analysis-status').textContent = 
-                            mode === 'realtime' ? 'Live Analysis Active' : 'Historical Analysis Mode';
-                    });
-                });
-                
-                // Timeframe buttons
-                document.querySelectorAll('.tf-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const tf = btn.getAttribute('data-tf');
-                        
-                        // Remove active class from all buttons
-                        document.querySelectorAll('.tf-btn').forEach(b => {
-                            b.classList.remove('active');
-                        });
-                        
-                        // Add active class to clicked button
-                        btn.classList.add('active');
-                        
-                        // Update state and chart
-                        this.state.currentTimeframe = tf;
-                        
-                        if (window.tvWidget) {
-                            window.tvWidget.setChartType(tf);
-                        }
-                        
-                        this.updateChartInfo();
-                    });
-                });
-                
-                // Chart tools
-                document.querySelectorAll('.tool-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const tool = btn.getAttribute('data-tool');
-                        
-                        // Remove active class from all buttons
-                        document.querySelectorAll('.tool-btn').forEach(b => {
-                            b.classList.remove('active');
-                        });
-                        
-                        // Add active class to clicked button
-                        btn.classList.add('active');
-                        
-                        // Handle tool activation
-                        this.handleChartTool(tool);
-                    });
-                });
-            },
-            
-            handleChartTool(tool) {
-                toastr.info(`Chart tool activated: ${tool}`, "Visual Analysis", { timeOut: 2000 });
-                
-                // In a real implementation, this would interact with TradingView's drawing tools
-                switch(tool) {
-                    case 'trendlines':
-                        console.log("Trendline drawing activated");
-                        break;
-                    case 'levels':
-                        console.log("Support/Resistance levels activated");
-                        break;
-                    case 'fibonacci':
-                        console.log("Fibonacci tool activated");
-                        break;
-                    case 'clear':
-                        console.log("Clearing all drawings");
-                        break;
+                // Update momentum
+                const momentumEl = document.getElementById('chart-momentum');
+                if (momentumEl) {
+                    momentumEl.textContent = data.momentum.charAt(0).toUpperCase() + data.momentum.slice(1);
+                    momentumEl.style.color = data.momentum === 'bullish' ? 'var(--positive)' : 
+                                           data.momentum === 'bearish' ? 'var(--negative)' : 'var(--warning)';
                 }
-            },
-            
-            // Initialize everything
-            init() {
-                // Setup toastr
-                toastr.options = {
-                    positionClass: 'toast-top-right',
-                    progressBar: true,
-                    timeOut: 3000,
-                    closeButton: true
-                };
-                
-                // Setup event listeners
-                this.setupEventListeners();
-                
-                // Initial visual analysis on default asset
-                this.performVisualAnalysis(this.state.activeAsset);
-                
-                // Update all asset cards
-                Object.keys(this.state.assetData).forEach(asset => {
-                    this.updateAssetCard(asset);
-                });
-                
-                // Initialize TradingView
-                setTimeout(() => {
-                    this.initTradingView();
-                }, 1000);
-                
-                // Set up market simulation updates
-                setInterval(() => {
-                    if (this.state.analysisMode === 'realtime') {
-                        this.simulateMarketUpdates();
-                    }
-                }, 5000);
             }
         };
-        
-        // Start the Visual Analysis system
-        document.addEventListener('DOMContentLoaded', () => {
-            VISUAL_ANALYSIS.init();
+
+        // Initialize the dashboard when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            KILLER_ZONE.init();
+            
+            // Show welcome message
+            setTimeout(() => {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('Dashboard loaded successfully!', 'KILLER ZONE', {
+                        positionClass: 'toast-top-right',
+                        timeOut: 3000
+                    });
+                }
+            }, 500);
         });
     </script>
 </body>
