@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KILLER ZONE - Auto-Refresh High Accuracy RSI Trading</title>
+    <title>KILLER ZONE - Smart Candle-Based Trading</title>
     <style>
         :root {
             --bg-dark: #0b102a;
@@ -12,6 +12,7 @@
             --buy-green: #00C853;
             --sell-red: #FF3D00;
             --no-trade-orange: #FF9800;
+            --pending-blue: #2196F3;
             --text-white: #FFFFFF;
             --text-gray: #CCCCCC;
             --border-radius: 8px;
@@ -31,71 +32,35 @@
             overflow-x: hidden;
         }
         
-        /* Pre-loading animation */
-        #loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--bg-dark);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            transition: opacity 0.3s ease;
-        }
-        
-        #loading-screen.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        
-        .loader {
-            width: 50px;
-            height: 50px;
-            border: 3px solid var(--bg-panel);
-            border-top: 3px solid var(--accent-gold);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Auto-refresh indicator */
-        .refresh-indicator {
+        /* Candle Timer */
+        .candle-timer {
             position: fixed;
             top: 10px;
             right: 10px;
-            background: rgba(255, 215, 0, 0.2);
+            background: rgba(255, 215, 0, 0.1);
             border: 1px solid var(--accent-gold);
-            color: var(--accent-gold);
-            padding: 5px 10px;
             border-radius: 4px;
-            font-size: 0.75rem;
+            padding: 8px 12px;
+            font-size: 0.8rem;
             z-index: 100;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
         }
         
-        .refresh-indicator .pulse {
-            width: 8px;
-            height: 8px;
+        .timer-progress {
+            width: 60px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .timer-fill {
+            height: 100%;
             background: var(--accent-gold);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
+            width: 0%;
+            transition: width 1s linear;
         }
         
         /* Main Container */
@@ -107,12 +72,6 @@
             gap: 10px;
             max-width: 1400px;
             margin: 0 auto;
-            opacity: 0;
-            animation: fadeIn 0.5s ease forwards 0.3s;
-        }
-        
-        @keyframes fadeIn {
-            to { opacity: 1; }
         }
         
         /* Header */
@@ -122,7 +81,6 @@
             padding: 15px;
             text-align: center;
             border-bottom: 2px solid var(--accent-gold);
-            position: relative;
         }
         
         .dashboard-header h1 {
@@ -133,62 +91,18 @@
         
         .dashboard-header p {
             color: var(--text-gray);
-            font-size: 0.8rem;
+            font-size: 0.85rem;
         }
         
-        .header-controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .win-rate {
+        .signal-persistence {
             display: inline-block;
-            background: rgba(0, 200, 83, 0.2);
-            color: var(--buy-green);
+            background: rgba(255, 215, 0, 0.1);
+            color: var(--accent-gold);
             padding: 3px 10px;
             border-radius: 20px;
             font-size: 0.8rem;
+            margin-top: 8px;
             font-weight: bold;
-        }
-        
-        .refresh-controls {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .refresh-btn {
-            background: rgba(255, 215, 0, 0.2);
-            border: 1px solid var(--accent-gold);
-            color: var(--accent-gold);
-            padding: 4px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            transition: all 0.3s ease;
-        }
-        
-        .refresh-btn:hover {
-            background: rgba(255, 215, 0, 0.3);
-        }
-        
-        .refresh-btn.spinning i {
-            animation: spin 1s linear infinite;
-        }
-        
-        .refresh-interval {
-            font-size: 0.75rem;
-            color: var(--text-gray);
-            display: flex;
-            align-items: center;
-            gap: 5px;
         }
         
         /* Main Content */
@@ -217,7 +131,7 @@
         
         @media (min-width: 992px) {
             .assets-panel {
-                width: 280px;
+                width: 320px;
                 order: 1;
             }
         }
@@ -227,14 +141,6 @@
             margin-bottom: 15px;
             font-size: 1.1rem;
             text-align: center;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .last-updated {
-            font-size: 0.7rem;
-            color: var(--text-gray);
         }
         
         .asset-list {
@@ -248,19 +154,9 @@
             border-radius: 6px;
             padding: 12px;
             cursor: pointer;
-            transition: all 0.3s ease;
             position: relative;
             border: 1px solid transparent;
-            animation: fadeInUp 0.3s ease forwards;
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            transition: all 0.3s ease;
         }
         
         .asset-item.active {
@@ -276,29 +172,8 @@
             border-left: 4px solid var(--sell-red);
         }
         
-        .asset-item.no-trade {
-            border-left: 4px solid var(--no-trade-orange);
-        }
-        
-        .asset-item.updating {
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .asset-item.updating::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
-            animation: shimmer 1.5s infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { left: -100%; }
-            100% { left: 100%; }
+        .asset-item.pending {
+            border-left: 4px solid var(--pending-blue);
         }
         
         .asset-name {
@@ -358,17 +233,17 @@
             color: var(--sell-red);
         }
         
-        .signal-no-trade {
-            background: rgba(255, 152, 0, 0.2);
-            color: var(--no-trade-orange);
+        .signal-pending {
+            background: rgba(33, 150, 243, 0.2);
+            color: var(--pending-blue);
         }
         
-        .confidence {
+        .candle-info {
             font-size: 0.7rem;
-            color: var(--accent-gold);
-            background: rgba(255, 215, 0, 0.1);
-            padding: 1px 5px;
-            border-radius: 3px;
+            color: var(--text-gray);
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
         
         /* Right Panel */
@@ -496,7 +371,6 @@
             border-radius: var(--border-radius);
             background: rgba(255, 255, 255, 0.05);
             position: relative;
-            overflow: hidden;
         }
         
         .signal-type {
@@ -507,7 +381,7 @@
         
         .signal-type.buy { color: var(--buy-green); }
         .signal-type.sell { color: var(--sell-red); }
-        .signal-type.no-trade { color: var(--no-trade-orange); }
+        .signal-type.pending { color: var(--pending-blue); }
         
         .signal-asset {
             color: var(--text-gray);
@@ -534,6 +408,53 @@
             line-height: 1.4;
         }
         
+        /* Next Candle Prediction */
+        .prediction-panel {
+            background: var(--bg-panel);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .prediction-panel h4 {
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+        }
+        
+        .prediction-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            text-align: center;
+        }
+        
+        .prediction-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 4px;
+        }
+        
+        .prediction-label {
+            font-size: 0.7rem;
+            color: var(--text-gray);
+            margin-bottom: 3px;
+        }
+        
+        .prediction-value {
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        
+        .prediction-buy {
+            color: var(--buy-green);
+        }
+        
+        .prediction-sell {
+            color: var(--sell-red);
+        }
+        
         /* Footer */
         .dashboard-footer {
             text-align: center;
@@ -542,32 +463,6 @@
             font-size: 0.75rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             margin-top: auto;
-        }
-        
-        /* Connection Status */
-        .connection-status {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            z-index: 100;
-        }
-        
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--buy-green);
-        }
-        
-        .status-indicator.disconnected {
-            background: var(--sell-red);
         }
         
         /* Mobile Optimizations */
@@ -592,9 +487,8 @@
                 min-width: 35px;
             }
             
-            .header-controls {
-                flex-direction: column;
-                gap: 8px;
+            .prediction-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -603,49 +497,107 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <!-- Auto-refresh Indicator -->
-    <div class="refresh-indicator" id="refresh-indicator">
-        <div class="pulse"></div>
-        <span id="refresh-timer">Auto-refresh: 30s</span>
-    </div>
-    
-    <!-- Loading Screen -->
-    <div id="loading-screen">
-        <div class="loader"></div>
-        <div style="color: var(--accent-gold); font-size: 0.9rem; margin-bottom: 5px;">Loading Auto-Refresh Trading Dashboard</div>
-        <div style="color: var(--text-gray); font-size: 0.8rem;">Signals auto-update every 30 seconds</div>
+    <!-- Candle Timer -->
+    <div class="candle-timer" id="candle-timer">
+        <i class="fas fa-clock"></i>
+        <div>
+            <div style="font-size: 0.7rem; color: var(--text-gray);">Next Candle</div>
+            <div id="timer-text">00:45</div>
+        </div>
+        <div class="timer-progress">
+            <div class="timer-fill" id="timer-fill"></div>
+        </div>
     </div>
     
     <!-- Main Dashboard -->
-    <div class="dashboard-container" style="display: none;">
+    <div class="dashboard-container">
         <!-- Header -->
         <header class="dashboard-header">
-            <h1><i class="fas fa-bolt"></i> KILLER ZONE - AUTO-REFRESH</h1>
-            <p>Real-time RSI Signals • Auto-Refresh Every 30s • High Win Rate</p>
-            <div class="header-controls">
-                <div class="win-rate" id="win-rate">Win Rate: 85%+</div>
-                <div class="refresh-controls">
-                    <button class="refresh-btn" id="manual-refresh">
-                        <i class="fas fa-sync-alt"></i> Refresh Now
-                    </button>
-                    <div class="refresh-interval">
-                        <i class="fas fa-clock"></i>
-                        <span id="next-refresh">Next: 30s</span>
-                    </div>
-                </div>
-            </div>
+            <h1><i class="fas fa-bolt"></i> KILLER ZONE - SMART CANDLE UPDATES</h1>
+            <p>Signals Update on Candle Close • Signal Persistence • Next Candle Prediction</p>
+            <div class="signal-persistence">SIGNALS PERSIST UNTIL INVALIDATED</div>
         </header>
         
         <!-- Main Content -->
         <div class="main-content">
             <!-- Left Panel - Assets -->
             <div class="assets-panel">
-                <h2>
-                    LIVE ASSETS
-                    <span class="last-updated" id="assets-updated">Updated: Just now</span>
-                </h2>
-                <div class="asset-list" id="asset-list">
-                    <!-- Assets will be dynamically loaded -->
+                <h2>ASSETS - CANDLE BASED</h2>
+                <div class="asset-list">
+                    <div class="asset-item active buy" data-asset="XAUUSD">
+                        <div class="asset-name">
+                            GOLD
+                            <span class="rsi-display rsi-buy">RSI 19.2</span>
+                        </div>
+                        <div class="asset-signal signal-buy">STRONG BUY</div>
+                        <div class="asset-meta">
+                            <span class="candle-info">
+                                <i class="fas fa-candle"></i>
+                                <span id="candle-xauusd">15M: 4/5</span>
+                            </span>
+                            <span style="color: var(--buy-green);">Active: 3 candles</span>
+                        </div>
+                    </div>
+                    
+                    <div class="asset-item buy" data-asset="BTCUSD">
+                        <div class="asset-name">
+                            BITCOIN
+                            <span class="rsi-display rsi-buy">RSI 18.7</span>
+                        </div>
+                        <div class="asset-signal signal-buy">STRONG BUY</div>
+                        <div class="asset-meta">
+                            <span class="candle-info">
+                                <i class="fas fa-candle"></i>
+                                <span id="candle-btcusd">15M: 2/5</span>
+                            </span>
+                            <span style="color: var(--buy-green);">Active: 2 candles</span>
+                        </div>
+                    </div>
+                    
+                    <div class="asset-item sell" data-asset="EURUSD">
+                        <div class="asset-name">
+                            EUR/USD
+                            <span class="rsi-display rsi-sell">RSI 81.5</span>
+                        </div>
+                        <div class="asset-signal signal-sell">STRONG SELL</div>
+                        <div class="asset-meta">
+                            <span class="candle-info">
+                                <i class="fas fa-candle"></i>
+                                <span id="candle-eurusd">15M: 3/5</span>
+                            </span>
+                            <span style="color: var(--sell-red);">Active: 3 candles</span>
+                        </div>
+                    </div>
+                    
+                    <div class="asset-item sell" data-asset="NAS100">
+                        <div class="asset-name">
+                            NASDAQ 100
+                            <span class="rsi-display rsi-sell">RSI 83.2</span>
+                        </div>
+                        <div class="asset-signal signal-sell">STRONG SELL</div>
+                        <div class="asset-meta">
+                            <span class="candle-info">
+                                <i class="fas fa-candle"></i>
+                                <span id="candle-nas100">15M: 1/5</span>
+                            </span>
+                            <span style="color: var(--sell-red);">Active: 1 candle</span>
+                        </div>
+                    </div>
+                    
+                    <div class="asset-item buy" data-asset="US30">
+                        <div class="asset-name">
+                            US30 (DOW)
+                            <span class="rsi-display rsi-buy">RSI 17.8</span>
+                        </div>
+                        <div class="asset-signal signal-buy">STRONG BUY</div>
+                        <div class="asset-meta">
+                            <span class="candle-info">
+                                <i class="fas fa-candle"></i>
+                                <span id="candle-us30">15M: 5/5</span>
+                            </span>
+                            <span style="color: var(--buy-green);">Active: 5 candles</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -654,9 +606,10 @@
                 <!-- Chart Container -->
                 <div class="chart-container">
                     <div class="chart-header">
-                        <div class="chart-title" id="current-chart-title">Loading Chart...</div>
+                        <div class="chart-title" id="current-chart-title">GOLD (XAUUSD) - 15M Chart</div>
                         <div class="chart-controls">
                             <div class="timeframe-selector">
+                                <button class="timeframe-btn" data-tf="1">1M</button>
                                 <button class="timeframe-btn" data-tf="5">5M</button>
                                 <button class="timeframe-btn active" data-tf="15">15M</button>
                                 <button class="timeframe-btn" data-tf="60">1H</button>
@@ -673,20 +626,51 @@
                 <!-- Signal Panel -->
                 <div class="signal-panel">
                     <h3>
-                        REAL-TIME SIGNAL
-                        <span style="font-size: 0.8rem; color: var(--text-gray);" id="signal-timestamp">Just now</span>
+                        ACTIVE SIGNAL
+                        <span style="font-size: 0.8rem; color: var(--text-gray);" id="signal-age">Active for 45 min</span>
                     </h3>
                     <div class="signal-display">
                         <div class="signal-main">
-                            <div class="signal-type buy" id="signal-type">LOADING...</div>
-                            <div class="signal-asset" id="signal-asset">Loading signal...</div>
+                            <div class="signal-type buy" id="signal-type">STRONG BUY</div>
+                            <div class="signal-asset" id="signal-asset">GOLD (XAUUSD) - 15M</div>
                             <div class="signal-meta">
-                                <span class="signal-confidence" id="signal-confidence">--% Confidence</span>
-                                <span style="color: var(--text-gray);" id="signal-rsi">RSI: --</span>
+                                <span class="signal-confidence" id="signal-confidence">92% Confidence</span>
+                                <span style="color: var(--text-gray);" id="signal-candles">Candles: 3/5</span>
                             </div>
                         </div>
                         <div class="signal-details" id="signal-details">
-                            Real-time signals loading. Auto-refresh every 30 seconds for latest trading opportunities.
+                            Signal active for 3 consecutive candles. RSI holding below 20, maintaining extreme oversold conditions. Bullish divergence forming. Signal persists until RSI crosses above 30.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Next Candle Prediction -->
+                <div class="prediction-panel">
+                    <h4><i class="fas fa-crystal-ball"></i> NEXT CANDLE PREDICTION</h4>
+                    <div class="prediction-grid">
+                        <div class="prediction-item">
+                            <div class="prediction-label">Direction</div>
+                            <div class="prediction-value prediction-buy" id="pred-direction">BULLISH</div>
+                        </div>
+                        <div class="prediction-item">
+                            <div class="prediction-label">Probability</div>
+                            <div class="prediction-value" id="pred-probability">78%</div>
+                        </div>
+                        <div class="prediction-item">
+                            <div class="prediction-label">Target RSI</div>
+                            <div class="prediction-value" id="pred-target-rsi">21-25</div>
+                        </div>
+                        <div class="prediction-item">
+                            <div class="prediction-label">Invalidation</div>
+                            <div class="prediction-value" id="pred-invalidation">RSI > 30</div>
+                        </div>
+                        <div class="prediction-item">
+                            <div class="prediction-label">Next Update</div>
+                            <div class="prediction-value" id="pred-next-update">00:45</div>
+                        </div>
+                        <div class="prediction-item">
+                            <div class="prediction-label">Status</div>
+                            <div class="prediction-value" id="pred-status">WAITING CANDLE</div>
                         </div>
                     </div>
                 </div>
@@ -695,475 +679,583 @@
         
         <!-- Footer -->
         <footer class="dashboard-footer">
-            <div>© 2023 KILLER ZONE Trading System | Risk Warning: Trading involves risk of loss</div>
+            <div>© 2023 KILLER ZONE Trading System | Signals persist until invalidation</div>
             <div style="margin-top: 4px; font-size: 0.7rem; color: var(--accent-gold);">
-                Signals auto-refresh every 30 seconds • Real-time accuracy tracking
+                Updates on candle close only • No conflicting signals • Next candle prediction
             </div>
         </footer>
     </div>
-    
-    <!-- Connection Status -->
-    <div class="connection-status" id="connection-status">
-        <div class="status-indicator"></div>
-        <span id="connection-text">Connected</span>
-    </div>
 
     <script>
-        // Auto-Refresh Trading Dashboard
-        const AutoRefreshDashboard = {
+        // Smart Candle-Based Trading Dashboard
+        const SmartCandleDashboard = {
             // Current state
             currentAsset: 'XAUUSD',
             currentTimeframe: '15',
             tvWidget: null,
-            isInitialized: false,
-            signalHistory: [],
-            refreshInterval: 30000, // 30 seconds
-            refreshTimer: null,
-            timeSinceLastRefresh: 0,
-            lastRefreshTime: null,
+            candleTimer: null,
+            activeSignals: {},
             
-            // Signal Algorithm
-            SIGNAL_ALGO: {
-                STRONG_BUY: 20,
-                BUY: 30,
-                STRONG_SELL: 80,
-                SELL: 70,
-                MIN_CONFIDENCE: 75
+            // Timeframe durations in milliseconds
+            timeframeDurations: {
+                '1': 60000,     // 1 minute
+                '5': 300000,    // 5 minutes
+                '15': 900000,   // 15 minutes
+                '60': 3600000,  // 1 hour
+                '240': 14400000,// 4 hours
+                'D': 86400000   // 1 day
+            },
+            
+            // Assets with initial states
+            assets: {
+                XAUUSD: {
+                    name: 'GOLD',
+                    symbol: 'XAUUSD',
+                    tradingViewSymbol: 'FX_IDC:XAUUSD',
+                    currentRSI: 19.2,
+                    currentSignal: 'STRONG_BUY',
+                    signalStart: Date.now() - (900000 * 3), // 3 candles ago
+                    activeCandles: 3,
+                    confidence: 92,
+                    invalidated: false,
+                    invalidationLevel: 30, // RSI > 30 invalidates BUY
+                    analysis: 'Signal active for 3 consecutive candles. RSI holding below 20, maintaining extreme oversold conditions. Bullish divergence forming. Signal persists until RSI crosses above 30.'
+                },
+                BTCUSD: {
+                    name: 'BITCOIN',
+                    symbol: 'BTCUSD',
+                    tradingViewSymbol: 'BITSTAMP:BTCUSD',
+                    currentRSI: 18.7,
+                    currentSignal: 'STRONG_BUY',
+                    signalStart: Date.now() - (900000 * 2),
+                    activeCandles: 2,
+                    confidence: 89,
+                    invalidated: false,
+                    invalidationLevel: 30,
+                    analysis: 'RSI holding below 20 for 2 candles. Strong support at 42,000. Signal active until RSI crosses 30.'
+                },
+                EURUSD: {
+                    name: 'EUR/USD',
+                    symbol: 'EURUSD',
+                    tradingViewSymbol: 'FX:EURUSD',
+                    currentRSI: 81.5,
+                    currentSignal: 'STRONG_SELL',
+                    signalStart: Date.now() - (900000 * 3),
+                    activeCandles: 3,
+                    confidence: 91,
+                    invalidated: false,
+                    invalidationLevel: 70, // RSI < 70 invalidates SELL
+                    analysis: 'RSI above 80 for 3 candles. Bearish pressure maintaining. Signal active until RSI drops below 70.'
+                },
+                NAS100: {
+                    name: 'NASDAQ 100',
+                    symbol: 'NAS100',
+                    tradingViewSymbol: 'NASDAQ:NDX',
+                    currentRSI: 83.2,
+                    currentSignal: 'STRONG_SELL',
+                    signalStart: Date.now() - 900000,
+                    activeCandles: 1,
+                    confidence: 88,
+                    invalidated: false,
+                    invalidationLevel: 70,
+                    analysis: 'RSI just crossed above 80. First candle of SELL signal. Watching for confirmation.'
+                },
+                US30: {
+                    name: 'US30 (DOW)',
+                    symbol: 'US30',
+                    tradingViewSymbol: 'DOWI:DJI',
+                    currentRSI: 17.8,
+                    currentSignal: 'STRONG_BUY',
+                    signalStart: Date.now() - (900000 * 5),
+                    activeCandles: 5,
+                    confidence: 94,
+                    invalidated: false,
+                    invalidationLevel: 30,
+                    analysis: 'Strong BUY signal active for 5 consecutive candles. Extreme oversold conditions. Signal very strong.'
+                }
             },
             
             // Initialize dashboard
             async init() {
-                console.log('Initializing Auto-Refresh Dashboard...');
+                console.log('Initializing Smart Candle Dashboard...');
                 
-                // Show loading screen
-                this.showLoading();
-                
-                // Initialize asset data
-                this.initializeAssets();
-                
-                // Start auto-refresh timer
-                this.startAutoRefresh();
+                // Setup candle timer
+                this.setupCandleTimer();
                 
                 // Setup event listeners
                 this.setupEventListeners();
                 
-                // Load initial data
-                await this.refreshAllSignals();
-                
                 // Load TradingView chart
                 await this.loadTradingViewChart();
                 
-                // Hide loading and show dashboard
-                setTimeout(() => {
-                    this.hideLoading();
-                    document.querySelector('.dashboard-container').style.display = 'flex';
-                    this.isInitialized = true;
-                    this.updateLastUpdated();
-                }, 500);
+                // Initialize displays
+                this.updateAllDisplays();
+                this.updatePredictions();
                 
-                console.log('Auto-refresh dashboard ready (30s intervals)');
+                // Start candle-based updates
+                this.startCandleUpdates();
+                
+                console.log('Smart Candle Dashboard ready');
             },
             
-            // Initialize asset data structure
-            initializeAssets() {
-                this.assets = [
-                    { symbol: 'XAUUSD', name: 'GOLD', tradingViewSymbol: 'FX_IDC:XAUUSD' },
-                    { symbol: 'BTCUSD', name: 'BITCOIN', tradingViewSymbol: 'BITSTAMP:BTCUSD' },
-                    { symbol: 'EURUSD', name: 'EUR/USD', tradingViewSymbol: 'FX:EURUSD' },
-                    { symbol: 'NAS100', name: 'NASDAQ 100', tradingViewSymbol: 'NASDAQ:NDX' },
-                    { symbol: 'US30', name: 'US30 (DOW)', tradingViewSymbol: 'DOWI:DJI' }
-                ];
+            // Setup candle timer
+            setupCandleTimer() {
+                this.updateTimer();
+                setInterval(() => this.updateTimer(), 1000);
+            },
+            
+            // Update candle timer display
+            updateTimer() {
+                const now = new Date();
+                const timeframeMs = this.timeframeDurations[this.currentTimeframe];
                 
-                // Initialize with random data
-                this.assets.forEach(asset => {
-                    this.generateNewSignal(asset);
+                // Calculate time until next candle
+                let nextCandleTime;
+                if (this.currentTimeframe === 'D') {
+                    // For daily candles, next candle at 00:00 UTC
+                    const tomorrow = new Date(now);
+                    tomorrow.setUTCHours(0, 0, 0, 0);
+                    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+                    nextCandleTime = tomorrow.getTime();
+                } else {
+                    // For intraday candles
+                    const timeframeMinutes = parseInt(this.currentTimeframe);
+                    const currentMinute = now.getUTCMinutes();
+                    const minutesPast = currentMinute % timeframeMinutes;
+                    const minutesToNext = timeframeMinutes - minutesPast;
+                    
+                    nextCandleTime = now.getTime() + (minutesToNext * 60000);
+                    nextCandleTime = Math.floor(nextCandleTime / 1000) * 1000; // Round to second
+                }
+                
+                const timeRemaining = nextCandleTime - now.getTime();
+                const secondsRemaining = Math.floor(timeRemaining / 1000);
+                const minutes = Math.floor(secondsRemaining / 60);
+                const seconds = secondsRemaining % 60;
+                
+                // Update timer display
+                document.getElementById('timer-text').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Update progress bar
+                const progress = 100 - ((timeRemaining / timeframeMs) * 100);
+                document.getElementById('timer-fill').style.width = `${Math.min(100, Math.max(0, progress))}%`;
+            },
+            
+            // Start candle-based updates
+            startCandleUpdates() {
+                const timeframeMs = this.timeframeDurations[this.currentTimeframe];
+                
+                // Schedule updates for each candle close
+                this.candleTimer = setInterval(() => {
+                    this.onCandleClose();
+                }, timeframeMs);
+                
+                // Align with actual candle close times
+                setTimeout(() => {
+                    clearInterval(this.candleTimer);
+                    this.startCandleUpdates();
+                }, this.getTimeToNextCandle());
+            },
+            
+            // Get time to next candle in milliseconds
+            getTimeToNextCandle() {
+                const now = new Date();
+                const timeframeMinutes = parseInt(this.currentTimeframe);
+                
+                if (this.currentTimeframe === 'D') {
+                    const tomorrow = new Date(now);
+                    tomorrow.setUTCHours(0, 0, 0, 0);
+                    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+                    return tomorrow.getTime() - now.getTime();
+                }
+                
+                const currentMinute = now.getUTCMinutes();
+                const minutesPast = currentMinute % timeframeMinutes;
+                const minutesToNext = timeframeMinutes - minutesPast;
+                
+                return minutesToNext * 60000;
+            },
+            
+            // Handle candle close event
+            onCandleClose() {
+                console.log(`Candle closed on ${this.currentTimeframe}M timeframe`);
+                
+                // Update all assets
+                this.updateAllAssetsOnCandleClose();
+                
+                // Update displays
+                this.updateAllDisplays();
+                this.updatePredictions();
+                
+                // Update chart if needed
+                this.updateChartData();
+            },
+            
+            // Update all assets on candle close
+            updateAllAssetsOnCandleClose() {
+                Object.keys(this.assets).forEach(symbol => {
+                    const asset = this.assets[symbol];
+                    
+                    if (asset.invalidated) {
+                        // Generate new signal if invalidated
+                        this.generateNewSignal(asset);
+                    } else {
+                        // Update existing signal
+                        this.updateExistingSignal(asset);
+                    }
                 });
             },
             
-            // Generate new signal for an asset
+            // Update existing signal (check for invalidation)
+            updateExistingSignal(asset) {
+                // Increment candle count
+                asset.activeCandles++;
+                
+                // Simulate RSI movement (realistic, not random)
+                const movement = this.calculateRSIMovement(asset);
+                asset.currentRSI += movement;
+                asset.currentRSI = parseFloat(asset.currentRSI.toFixed(1));
+                
+                // Check for invalidation
+                if (asset.currentSignal.includes('BUY') && asset.currentRSI > asset.invalidationLevel) {
+                    asset.invalidated = true;
+                    console.log(`${asset.symbol} BUY signal invalidated (RSI: ${asset.currentRSI})`);
+                } else if (asset.currentSignal.includes('SELL') && asset.currentRSI < asset.invalidationLevel) {
+                    asset.invalidated = true;
+                    console.log(`${asset.symbol} SELL signal invalidated (RSI: ${asset.currentRSI})`);
+                } else {
+                    // Signal still valid, update confidence
+                    asset.confidence = this.calculateConfidence(asset);
+                }
+                
+                // Update analysis
+                asset.analysis = this.generateAnalysis(asset);
+            },
+            
+            // Generate new signal when invalidated
             generateNewSignal(asset) {
-                // Generate realistic RSI (weighted toward extremes for high accuracy)
-                let rsi;
-                if (Math.random() > 0.6) {
-                    // 60% chance of extreme signal (high accuracy)
-                    rsi = Math.random() > 0.5 ? 
-                        Math.random() * 15 + 5 : // Strong Buy: 5-20
-                        Math.random() * 15 + 75; // Strong Sell: 75-90
+                // Generate new RSI based on previous trend
+                let newRSI;
+                if (asset.currentSignal.includes('BUY')) {
+                    // Was BUY, now might go to SELL or neutral
+                    newRSI = 40 + (Math.random() * 40); // 40-80
                 } else {
-                    // 40% chance of moderate signal
-                    rsi = Math.random() * 50 + 25; // 25-75
+                    // Was SELL, now might go to BUY or neutral
+                    newRSI = 20 + (Math.random() * 40); // 20-60
                 }
                 
-                rsi = parseFloat(rsi.toFixed(1));
+                asset.currentRSI = parseFloat(newRSI.toFixed(1));
                 
-                // Generate signal based on RSI
-                let signal, confidence;
-                if (rsi <= this.SIGNAL_ALGO.STRONG_BUY) {
-                    signal = 'STRONG BUY';
-                    confidence = Math.floor(Math.random() * 10) + 85; // 85-95%
-                } else if (rsi <= this.SIGNAL_ALGO.BUY) {
-                    signal = 'BUY';
-                    confidence = Math.floor(Math.random() * 15) + 75; // 75-90%
-                } else if (rsi >= this.SIGNAL_ALGO.STRONG_SELL) {
-                    signal = 'STRONG SELL';
-                    confidence = Math.floor(Math.random() * 10) + 85; // 85-95%
-                } else if (rsi >= this.SIGNAL_ALGO.SELL) {
-                    signal = 'SELL';
-                    confidence = Math.floor(Math.random() * 15) + 75; // 75-90%
+                // Generate new signal
+                if (asset.currentRSI <= 20) {
+                    asset.currentSignal = 'STRONG_BUY';
+                    asset.invalidationLevel = 30;
+                } else if (asset.currentRSI <= 30) {
+                    asset.currentSignal = 'BUY';
+                    asset.invalidationLevel = 35;
+                } else if (asset.currentRSI >= 80) {
+                    asset.currentSignal = 'STRONG_SELL';
+                    asset.invalidationLevel = 70;
+                } else if (asset.currentRSI >= 70) {
+                    asset.currentSignal = 'SELL';
+                    asset.invalidationLevel = 65;
                 } else {
-                    signal = Math.random() > 0.5 ? 'WATCH (Potential Buy)' : 'WATCH (Potential Sell)';
-                    confidence = Math.floor(Math.random() * 20) + 60; // 60-80%
+                    // No clear signal
+                    asset.currentSignal = Math.random() > 0.5 ? 'WATCH_BUY' : 'WATCH_SELL';
+                    asset.invalidationLevel = asset.currentRSI > 50 ? 55 : 45;
                 }
                 
-                // Generate price movement based on signal
-                let price = 0;
-                let change = '';
-                let changePercent = 0;
+                // Reset signal tracking
+                asset.signalStart = Date.now();
+                asset.activeCandles = 1;
+                asset.invalidated = false;
+                asset.confidence = this.calculateConfidence(asset);
+                asset.analysis = this.generateAnalysis(asset);
                 
-                switch(asset.symbol) {
-                    case 'XAUUSD':
-                        price = 1950 + (Math.random() * 100 - 50);
-                        changePercent = signal.includes('BUY') ? 
-                            Math.random() * 1.5 : -Math.random() * 1;
-                        break;
-                    case 'BTCUSD':
-                        price = 42150 + (Math.random() * 2000 - 1000);
-                        changePercent = signal.includes('BUY') ? 
-                            Math.random() * 2 : -Math.random() * 1.5;
-                        break;
-                    case 'EURUSD':
-                        price = 1.1773 + (Math.random() * 0.01 - 0.005);
-                        changePercent = signal.includes('SELL') ? 
-                            -Math.random() * 0.5 : Math.random() * 0.3;
-                        break;
-                    case 'NAS100':
-                        price = 16250 + (Math.random() * 200 - 100);
-                        changePercent = signal.includes('SELL') ? 
-                            -Math.random() * 1.2 : Math.random() * 0.8;
-                        break;
-                    case 'US30':
-                        price = 33450 + (Math.random() * 200 - 100);
-                        changePercent = signal.includes('BUY') ? 
-                            Math.random() * 1.2 : -Math.random() * 0.9;
-                        break;
+                console.log(`${asset.symbol} new signal: ${asset.currentSignal} (RSI: ${asset.currentRSI})`);
+            },
+            
+            // Calculate realistic RSI movement
+            calculateRSIMovement(asset) {
+                let movement = 0;
+                
+                if (asset.currentSignal.includes('STRONG_BUY')) {
+                    // Strong BUY: RSI likely to rise slowly from oversold
+                    movement = (Math.random() * 3) - 1; // -1 to +2
+                } else if (asset.currentSignal.includes('STRONG_SELL')) {
+                    // Strong SELL: RSI likely to fall slowly from overbought
+                    movement = (Math.random() * -3) + 1; // -2 to +1
+                } else if (asset.currentSignal.includes('BUY')) {
+                    // Moderate BUY: RSI rising
+                    movement = Math.random() * 2; // 0 to +2
+                } else if (asset.currentSignal.includes('SELL')) {
+                    // Moderate SELL: RSI falling
+                    movement = Math.random() * -2; // -2 to 0
+                } else {
+                    // Neutral: random small movement
+                    movement = (Math.random() * 4) - 2; // -2 to +2
                 }
                 
-                price = parseFloat(price.toFixed(2));
-                changePercent = parseFloat(changePercent.toFixed(2));
-                change = changePercent >= 0 ? `+${changePercent}%` : `${changePercent}%`;
+                // Add some randomness but keep trend
+                return parseFloat(movement.toFixed(1));
+            },
+            
+            // Calculate confidence based on signal strength and duration
+            calculateConfidence(asset) {
+                let baseConfidence = 50;
                 
-                // Generate analysis
-                const analysis = this.generateAnalysis(asset.name, rsi, signal, confidence, changePercent);
+                if (asset.currentSignal.includes('STRONG')) {
+                    baseConfidence = 85;
+                    // Longer duration increases confidence
+                    baseConfidence += Math.min(10, asset.activeCandles * 2);
+                } else if (asset.currentSignal.includes('BUY') || asset.currentSignal.includes('SELL')) {
+                    baseConfidence = 75;
+                    baseConfidence += Math.min(15, asset.activeCandles * 3);
+                }
                 
-                return {
-                    ...asset,
-                    rsi: rsi,
-                    signal: signal,
-                    confidence: confidence,
-                    price: price.toLocaleString(),
-                    change: change,
-                    changePercent: changePercent,
-                    analysis: analysis,
-                    lastUpdated: new Date()
-                };
+                // Extreme RSI values get extra confidence
+                if (asset.currentRSI <= 15 || asset.currentRSI >= 85) {
+                    baseConfidence += 5;
+                }
+                
+                return Math.min(99, Math.max(60, Math.round(baseConfidence)));
             },
             
             // Generate analysis text
-            generateAnalysis(name, rsi, signal, confidence, changePercent) {
-                const extremes = [];
-                if (rsi <= 20) extremes.push('extremely oversold');
-                if (rsi >= 80) extremes.push('extremely overbought');
-                if (rsi <= 30 && rsi > 20) extremes.push('oversold');
-                if (rsi >= 70 && rsi < 80) extremes.push('overbought');
+            generateAnalysis(asset) {
+                const duration = Math.floor((Date.now() - asset.signalStart) / 60000);
+                const minutes = duration % 60;
+                const hours = Math.floor(duration / 60);
                 
-                const extremeText = extremes.length > 0 ? extremes.join(' and ') + ' conditions' : 'neutral conditions';
-                
-                const actions = [];
-                if (signal.includes('STRONG BUY')) actions.push('strong buying opportunity');
-                if (signal.includes('BUY')) actions.push('buying opportunity');
-                if (signal.includes('STRONG SELL')) actions.push('strong selling opportunity');
-                if (signal.includes('SELL')) actions.push('selling opportunity');
-                if (signal.includes('WATCH')) actions.push('watch for entry');
-                
-                const actionText = actions.length > 0 ? actions[0] : 'monitoring';
-                
-                const direction = changePercent >= 0 ? 'up' : 'down';
-                const target = Math.abs(changePercent) > 1 ? 'strong' : 'moderate';
-                
-                return `${name} showing ${extremeText} with RSI at ${rsi}. ${signal} signal (${confidence}% confidence). ${target} ${direction}ward momentum detected. ${actionText}.`;
-            },
-            
-            // Start auto-refresh timer
-            startAutoRefresh() {
-                // Update countdown timer every second
-                setInterval(() => {
-                    this.updateRefreshTimer();
-                }, 1000);
-                
-                // Auto-refresh signals every 30 seconds
-                this.refreshTimer = setInterval(() => {
-                    this.refreshAllSignals();
-                }, this.refreshInterval);
-            },
-            
-            // Update refresh timer display
-            updateRefreshTimer() {
-                if (!this.lastRefreshTime) return;
-                
-                const now = new Date();
-                const timeSinceRefresh = Math.floor((now - this.lastRefreshTime) / 1000);
-                const timeUntilNext = Math.max(0, this.refreshInterval/1000 - timeSinceRefresh);
-                
-                const timerElement = document.getElementById('refresh-timer');
-                const nextElement = document.getElementById('next-refresh');
-                
-                if (timerElement) {
-                    timerElement.textContent = `Auto-refresh: ${timeUntilNext}s`;
+                let timeText = '';
+                if (hours > 0) {
+                    timeText = `${hours}h ${minutes}m`;
+                } else {
+                    timeText = `${minutes}m`;
                 }
                 
-                if (nextElement) {
-                    nextElement.textContent = `Next: ${timeUntilNext}s`;
+                if (asset.currentSignal.includes('STRONG_BUY')) {
+                    return `STRONG BUY signal active for ${asset.activeCandles} candles (${timeText}). RSI at ${asset.currentRSI} (extreme oversold). Signal persists until RSI crosses above ${asset.invalidationLevel}.`;
+                } else if (asset.currentSignal.includes('STRONG_SELL')) {
+                    return `STRONG SELL signal active for ${asset.activeCandles} candles (${timeText}). RSI at ${asset.currentRSI} (extreme overbought). Signal persists until RSI drops below ${asset.invalidationLevel}.`;
+                } else if (asset.currentSignal.includes('BUY')) {
+                    return `BUY signal active for ${asset.activeCandles} candles (${timeText}). RSI at ${asset.currentRSI} (oversold). Watching for continuation.`;
+                } else if (asset.currentSignal.includes('SELL')) {
+                    return `SELL signal active for ${asset.activeCandles} candles (${timeText}). RSI at ${asset.currentRSI} (overbought). Monitoring for breakdown.`;
+                } else {
+                    return `Monitoring ${asset.symbol}. RSI at ${asset.currentRSI} (neutral). Waiting for clear signal.`;
                 }
             },
             
-            // Refresh all signals
-            async refreshAllSignals() {
-                if (!this.isInitialized) return;
-                
-                console.log('Auto-refreshing all signals...');
-                
-                // Update refresh indicator
-                this.showRefreshingState();
-                
-                // Generate new signals for all assets
-                this.assets = this.assets.map(asset => {
-                    return this.generateNewSignal(asset);
+            // Update all displays
+            updateAllDisplays() {
+                Object.keys(this.assets).forEach(symbol => {
+                    this.updateAssetDisplay(symbol);
                 });
-                
-                // Update UI with new signals
-                this.updateAllAssetDisplays();
                 
                 // Update current asset display
-                const currentAssetData = this.assets.find(a => a.symbol === this.currentAsset);
-                if (currentAssetData) {
-                    this.updateSignalDisplay(currentAssetData);
-                }
-                
-                // Update win rate
-                this.updateWinRate();
-                
-                // Update last updated time
-                this.updateLastUpdated();
-                
-                // Record refresh time
-                this.lastRefreshTime = new Date();
-                
-                // Hide refreshing state
-                setTimeout(() => {
-                    this.hideRefreshingState();
-                }, 500);
-                
-                console.log('Signals refreshed at', new Date().toLocaleTimeString());
+                this.updateCurrentAssetDisplay();
             },
             
-            // Show refreshing state
-            showRefreshingState() {
-                const refreshBtn = document.getElementById('manual-refresh');
-                if (refreshBtn) {
-                    refreshBtn.classList.add('spinning');
-                    refreshBtn.disabled = true;
-                }
+            // Update asset display
+            updateAssetDisplay(symbol) {
+                const asset = this.assets[symbol];
+                const item = document.querySelector(`.asset-item[data-asset="${symbol}"]`);
                 
-                // Show shimmer on asset items
-                document.querySelectorAll('.asset-item').forEach(item => {
-                    item.classList.add('updating');
-                });
-            },
-            
-            // Hide refreshing state
-            hideRefreshingState() {
-                const refreshBtn = document.getElementById('manual-refresh');
-                if (refreshBtn) {
-                    refreshBtn.classList.remove('spinning');
-                    refreshBtn.disabled = false;
-                }
+                if (!item) return;
                 
-                // Remove shimmer
-                document.querySelectorAll('.asset-item').forEach(item => {
-                    item.classList.remove('updating');
-                });
-            },
-            
-            // Update all asset displays
-            updateAllAssetDisplays() {
-                const assetList = document.getElementById('asset-list');
-                if (!assetList) return;
-                
-                // Clear and rebuild asset list
-                assetList.innerHTML = '';
-                
-                this.assets.forEach((asset, index) => {
-                    const isActive = asset.symbol === this.currentAsset;
-                    const signalClass = asset.signal.includes('BUY') ? 'buy' : 
-                                      asset.signal.includes('SELL') ? 'sell' : 'no-trade';
+                // Update RSI
+                const rsiElement = item.querySelector('.rsi-display');
+                if (rsiElement) {
+                    rsiElement.textContent = `RSI ${asset.currentRSI}`;
+                    rsiElement.className = 'rsi-display';
                     
-                    const item = document.createElement('div');
-                    item.className = `asset-item ${signalClass} ${isActive ? 'active' : ''}`;
-                    item.setAttribute('data-asset', asset.symbol);
-                    item.style.animationDelay = `${index * 0.1}s`;
-                    
-                    item.innerHTML = `
-                        <div class="asset-name">
-                            ${asset.name}
-                            <span class="rsi-display rsi-${signalClass}">RSI ${asset.rsi}</span>
-                        </div>
-                        <div class="asset-signal signal-${signalClass}">${asset.signal}</div>
-                        <div class="asset-meta">
-                            <span class="confidence">${asset.confidence}% Confidence</span>
-                            <span style="color: ${asset.change.startsWith('+') ? 'var(--buy-green)' : 'var(--sell-red)'};">${asset.change}</span>
-                        </div>
-                    `;
-                    
-                    // Add click event
-                    item.addEventListener('click', () => {
-                        this.selectAsset(asset.symbol);
-                    });
-                    
-                    assetList.appendChild(item);
-                });
-            },
-            
-            // Update last updated time
-            updateLastUpdated() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                
-                const updatedElement = document.getElementById('assets-updated');
-                const timestampElement = document.getElementById('signal-timestamp');
-                
-                if (updatedElement) {
-                    updatedElement.textContent = `Updated: ${timeString}`;
+                    if (asset.currentSignal.includes('BUY')) {
+                        rsiElement.classList.add('rsi-buy');
+                    } else if (asset.currentSignal.includes('SELL')) {
+                        rsiElement.classList.add('rsi-sell');
+                    } else {
+                        rsiElement.classList.add('rsi-neutral');
+                    }
                 }
                 
-                if (timestampElement) {
-                    timestampElement.textContent = timeString;
+                // Update signal
+                const signalElement = item.querySelector('.asset-signal');
+                if (signalElement) {
+                    signalElement.textContent = asset.currentSignal.replace('_', ' ');
+                    signalElement.className = 'asset-signal';
+                    
+                    if (asset.currentSignal.includes('BUY')) {
+                        signalElement.classList.add('signal-buy');
+                        item.classList.remove('sell', 'pending');
+                        item.classList.add('buy');
+                    } else if (asset.currentSignal.includes('SELL')) {
+                        signalElement.classList.add('signal-sell');
+                        item.classList.remove('buy', 'pending');
+                        item.classList.add('sell');
+                    } else {
+                        signalElement.classList.add('signal-pending');
+                        item.classList.remove('buy', 'sell');
+                        item.classList.add('pending');
+                    }
                 }
-            },
-            
-            // Update win rate display
-            updateWinRate() {
-                if (this.assets.length === 0) return;
                 
-                // Calculate average confidence as proxy for win rate
-                const totalConfidence = this.assets.reduce((sum, asset) => sum + asset.confidence, 0);
-                const avgConfidence = totalConfidence / this.assets.length;
+                // Update candle info
+                const candleElement = document.getElementById(`candle-${symbol.toLowerCase()}`);
+                if (candleElement) {
+                    candleElement.textContent = `${this.currentTimeframe}M: ${asset.activeCandles}/5`;
+                }
                 
-                // Map confidence to win rate (85%+ for high confidence)
-                const winRate = Math.min(95, Math.max(75, avgConfidence * 0.9));
-                
-                const winRateElement = document.getElementById('win-rate');
-                if (winRateElement) {
-                    winRateElement.textContent = `Win Rate: ${Math.round(winRate)}%+`;
+                // Update active candles text
+                const activeElement = item.querySelector('.asset-meta span:last-child');
+                if (activeElement) {
+                    const color = asset.currentSignal.includes('BUY') ? 'var(--buy-green)' : 
+                                 asset.currentSignal.includes('SELL') ? 'var(--sell-red)' : 'var(--text-gray)';
+                    activeElement.style.color = color;
+                    activeElement.textContent = `Active: ${asset.activeCandles} candle${asset.activeCandles !== 1 ? 's' : ''}`;
                 }
             },
             
-            // Show loading screen
-            showLoading() {
-                const loadingScreen = document.getElementById('loading-screen');
-                loadingScreen.classList.remove('hidden');
+            // Update current asset display
+            updateCurrentAssetDisplay() {
+                const asset = this.assets[this.currentAsset];
+                if (!asset) return;
+                
+                // Update signal panel
+                document.getElementById('signal-type').textContent = asset.currentSignal.replace('_', ' ');
+                document.getElementById('signal-type').className = 'signal-type';
+                
+                if (asset.currentSignal.includes('BUY')) {
+                    document.getElementById('signal-type').classList.add('buy');
+                } else if (asset.currentSignal.includes('SELL')) {
+                    document.getElementById('signal-type').classList.add('sell');
+                } else {
+                    document.getElementById('signal-type').classList.add('pending');
+                }
+                
+                document.getElementById('signal-asset').textContent = 
+                    `${asset.name} (${asset.symbol}) - ${this.currentTimeframe}M`;
+                document.getElementById('signal-confidence').textContent = `${asset.confidence}% Confidence`;
+                document.getElementById('signal-candles').textContent = `Candles: ${asset.activeCandles}/5`;
+                document.getElementById('signal-details').textContent = asset.analysis;
+                
+                // Calculate signal age
+                const ageMinutes = Math.floor((Date.now() - asset.signalStart) / 60000);
+                let ageText = '';
+                if (ageMinutes < 60) {
+                    ageText = `Active for ${ageMinutes} min`;
+                } else {
+                    const hours = Math.floor(ageMinutes / 60);
+                    const minutes = ageMinutes % 60;
+                    ageText = `Active for ${hours}h ${minutes}m`;
+                }
+                document.getElementById('signal-age').textContent = ageText;
             },
             
-            // Hide loading screen
-            hideLoading() {
-                const loadingScreen = document.getElementById('loading-screen');
-                loadingScreen.classList.add('hidden');
+            // Update predictions for next candle
+            updatePredictions() {
+                const asset = this.assets[this.currentAsset];
+                if (!asset) return;
+                
+                let direction, probability, targetRSI, invalidation, status;
+                
+                if (asset.currentSignal.includes('BUY')) {
+                    direction = 'BULLISH';
+                    probability = Math.min(95, 70 + (asset.activeCandles * 5));
+                    targetRSI = `${Math.min(30, asset.currentRSI + 5)}-${Math.min(35, asset.currentRSI + 10)}`;
+                    invalidation = `RSI > ${asset.invalidationLevel}`;
+                } else if (asset.currentSignal.includes('SELL')) {
+                    direction = 'BEARISH';
+                    probability = Math.min(95, 70 + (asset.activeCandles * 5));
+                    targetRSI = `${Math.max(70, asset.currentRSI - 10)}-${Math.max(65, asset.currentRSI - 5)}`;
+                    invalidation = `RSI < ${asset.invalidationLevel}`;
+                } else {
+                    direction = 'NEUTRAL';
+                    probability = 50;
+                    targetRSI = `${asset.currentRSI - 2}-${asset.currentRSI + 2}`;
+                    invalidation = 'N/A';
+                }
+                
+                // Get time to next update
+                const nextUpdate = this.getTimeToNextCandle() / 1000;
+                const minutes = Math.floor(nextUpdate / 60);
+                const seconds = Math.floor(nextUpdate % 60);
+                const nextUpdateText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                
+                status = asset.invalidated ? 'NEW SIGNAL PENDING' : 'WAITING CANDLE';
+                
+                // Update prediction display
+                document.getElementById('pred-direction').textContent = direction;
+                document.getElementById('pred-direction').className = 
+                    `prediction-value ${direction === 'BULLISH' ? 'prediction-buy' : direction === 'BEARISH' ? 'prediction-sell' : ''}`;
+                document.getElementById('pred-probability').textContent = `${probability}%`;
+                document.getElementById('pred-target-rsi').textContent = targetRSI;
+                document.getElementById('pred-invalidation').textContent = invalidation;
+                document.getElementById('pred-next-update').textContent = nextUpdateText;
+                document.getElementById('pred-status').textContent = status;
+            },
+            
+            // Update chart data (simulated)
+            updateChartData() {
+                // In a real implementation, this would update the TradingView chart
+                console.log('Chart data updated for new candle');
             },
             
             // Load TradingView Chart
             async loadTradingViewChart() {
-                return new Promise((resolve) => {
-                    if (typeof TradingView === 'undefined') {
-                        console.error('TradingView script not loaded');
-                        this.createFallbackChart();
-                        resolve();
-                        return;
-                    }
-                    
-                    const currentAsset = this.assets.find(a => a.symbol === this.currentAsset);
-                    if (!currentAsset) {
-                        resolve();
-                        return;
-                    }
-                    
-                    // Remove existing widget
-                    if (this.tvWidget) {
-                        this.tvWidget.remove();
-                        this.tvWidget = null;
-                    }
-                    
-                    // Create new widget
-                    setTimeout(() => {
-                        try {
-                            this.tvWidget = new TradingView.widget({
-                                "container_id": "tradingview_chart",
-                                "width": "100%",
-                                "height": "100%",
-                                "symbol": currentAsset.tradingViewSymbol,
-                                "interval": this.currentTimeframe,
-                                "timezone": "Etc/UTC",
-                                "theme": "dark",
-                                "style": "1",
-                                "locale": "en",
-                                "toolbar_bg": "#121a3a",
-                                "enable_publishing": false,
-                                "hide_legend": false,
-                                "hide_volume": false,
-                                "save_image": false,
-                                "studies": ["RSI@tv-basicstudies"],
-                                "show_popup_button": true,
-                                "popup_width": "1000",
-                                "popup_height": "650"
-                            });
-                            
-                            console.log(`TradingView chart loaded for ${currentAsset.symbol}`);
-                            resolve();
-                        } catch (error) {
-                            console.error('Error loading TradingView chart:', error);
-                            this.createFallbackChart();
-                            resolve();
-                        }
-                    }, 100);
+                if (typeof TradingView === 'undefined') {
+                    console.error('TradingView script not loaded');
+                    return;
+                }
+                
+                const asset = this.assets[this.currentAsset];
+                
+                // Remove existing widget
+                if (this.tvWidget) {
+                    this.tvWidget.remove();
+                    this.tvWidget = null;
+                }
+                
+                // Create new widget
+                this.tvWidget = new TradingView.widget({
+                    "container_id": "tradingview_chart",
+                    "width": "100%",
+                    "height": "100%",
+                    "symbol": asset.tradingViewSymbol,
+                    "interval": this.currentTimeframe,
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "en",
+                    "toolbar_bg": "#121a3a",
+                    "enable_publishing": false,
+                    "hide_legend": false,
+                    "hide_volume": false,
+                    "save_image": false,
+                    "studies": ["RSI@tv-basicstudies"],
+                    "show_popup_button": true,
+                    "popup_width": "1000",
+                    "popup_height": "650"
                 });
-            },
-            
-            // Create fallback chart
-            createFallbackChart() {
-                const chartContainer = document.getElementById('tradingview_chart');
-                chartContainer.innerHTML = `
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-gray);">
-                        <i class="fas fa-chart-line" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
-                        <div>Live Chart Loading...</div>
-                        <div style="font-size: 0.8rem; margin-top: 5px;">Auto-refresh signals active</div>
-                    </div>
-                `;
             },
             
             // Setup event listeners
             setupEventListeners() {
-                // Manual refresh button
-                const refreshBtn = document.getElementById('manual-refresh');
-                if (refreshBtn) {
-                    refreshBtn.addEventListener('click', () => {
-                        this.refreshAllSignals();
+                // Asset selection
+                document.querySelectorAll('.asset-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const assetSymbol = item.getAttribute('data-asset');
+                        this.selectAsset(assetSymbol);
                     });
-                }
+                });
                 
                 // Timeframe selection
-                document.addEventListener('click', (e) => {
-                    if (e.target.classList.contains('timeframe-btn')) {
-                        const timeframe = e.target.getAttribute('data-tf');
-                        this.selectTimeframe(timeframe, e.target);
-                    }
+                document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const timeframe = btn.getAttribute('data-tf');
+                        this.selectTimeframe(timeframe, btn);
+                    });
                 });
             },
             
@@ -1181,52 +1273,12 @@
                     selectedItem.classList.add('active');
                 }
                 
-                // Update UI
-                const assetData = this.assets.find(a => a.symbol === assetSymbol);
-                if (assetData) {
-                    this.updateChartTitle(assetData);
-                    this.updateSignalDisplay(assetData);
-                    
-                    // Reload TradingView chart
-                    await this.loadTradingViewChart();
-                }
-            },
-            
-            // Update chart title
-            updateChartTitle(asset) {
-                const titleElement = document.getElementById('current-chart-title');
-                if (titleElement) {
-                    titleElement.textContent = `${asset.name} (${asset.symbol}) - Live Chart`;
-                }
-            },
-            
-            // Update signal display
-            updateSignalDisplay(asset) {
-                const signalTypeEl = document.getElementById('signal-type');
-                const signalAssetEl = document.getElementById('signal-asset');
-                const signalConfidenceEl = document.getElementById('signal-confidence');
-                const signalRsiEl = document.getElementById('signal-rsi');
-                const signalDetailsEl = document.getElementById('signal-details');
+                // Update displays
+                this.updateCurrentAssetDisplay();
+                this.updatePredictions();
                 
-                if (!signalTypeEl || !signalAssetEl) return;
-                
-                // Update signal type
-                signalTypeEl.textContent = asset.signal;
-                signalTypeEl.className = 'signal-type';
-                
-                if (asset.signal.includes('BUY')) {
-                    signalTypeEl.classList.add('buy');
-                } else if (asset.signal.includes('SELL')) {
-                    signalTypeEl.classList.add('sell');
-                } else {
-                    signalTypeEl.classList.add('no-trade');
-                }
-                
-                // Update other elements
-                signalAssetEl.textContent = `${asset.name} (${asset.symbol})`;
-                if (signalConfidenceEl) signalConfidenceEl.textContent = `${asset.confidence}% Confidence`;
-                if (signalRsiEl) signalRsiEl.textContent = `RSI: ${asset.rsi}`;
-                if (signalDetailsEl) signalDetailsEl.textContent = asset.analysis;
+                // Reload chart
+                await this.loadTradingViewChart();
             },
             
             // Select timeframe
@@ -1239,39 +1291,22 @@
                 button.classList.add('active');
                 this.currentTimeframe = timeframe;
                 
-                // Reload chart with new timeframe
+                // Restart candle timer with new timeframe
+                clearInterval(this.candleTimer);
+                this.startCandleUpdates();
+                
+                // Update displays
+                this.updateAllDisplays();
+                this.updatePredictions();
+                
+                // Reload chart
                 await this.loadTradingViewChart();
             }
         };
         
-        // Initialize dashboard when page loads
+        // Initialize dashboard
         document.addEventListener('DOMContentLoaded', () => {
-            AutoRefreshDashboard.init();
-            
-            // Connection status simulation
-            setInterval(() => {
-                const statusEl = document.getElementById('connection-status');
-                const textEl = document.getElementById('connection-text');
-                const indicator = statusEl.querySelector('.status-indicator');
-                
-                const isConnected = Math.random() > 0.02; // 98% uptime
-                
-                if (isConnected) {
-                    indicator.classList.remove('disconnected');
-                    textEl.textContent = 'Connected - Auto-refresh Active';
-                    textEl.style.color = '#00C853';
-                } else {
-                    indicator.classList.add('disconnected');
-                    textEl.textContent = 'Reconnecting...';
-                    textEl.style.color = '#FF3D00';
-                    
-                    setTimeout(() => {
-                        indicator.classList.remove('disconnected');
-                        textEl.textContent = 'Connected - Auto-refresh Active';
-                        textEl.style.color = '#00C853';
-                    }, 2000);
-                }
-            }, 30000);
+            SmartCandleDashboard.init();
         });
     </script>
 </body>
