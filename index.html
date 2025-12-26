@@ -2,1151 +2,705 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>KILLER ZONE - Fixed Visual Analysis Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <title>KILLER ZONE - Clean Trading Dashboard</title>
     <style>
         :root {
-            --primary-bg: #0b102a;
-            --secondary-bg: #121a3a;
-            --accent-color: gold;
-            --positive: #00c853;
-            --negative: #ff3d00;
-            --neutral: #5d7bdb;
-            --warning: #ff9800;
-            --text-primary: #ffffff;
-            --text-secondary: #cccccc;
+            --bg-dark: #0b102a;
+            --bg-panel: #121a3a;
+            --accent-gold: #FFD700;
+            --buy-green: #00C853;
+            --sell-red: #FF3D00;
+            --no-trade-orange: #FF9800;
+            --text-white: #FFFFFF;
+            --text-gray: #CCCCCC;
             --border-radius: 8px;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            --gold: #FFD700;
-            --btc: #F7931A;
-            --forex: #00BFFF;
         }
         
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--primary-bg);
-            color: var(--text-primary);
-            line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-white);
+            min-height: 100vh;
             overflow-x: hidden;
         }
         
-        .header {
-            background: var(--secondary-bg);
-            padding: 15px 20px;
-            border-bottom: 2px solid var(--accent-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            box-shadow: var(--shadow);
-        }
-        
-        .header-content { flex: 1; min-width: 300px; }
-        
-        h1 {
-            color: var(--accent-color);
-            margin-bottom: 5px;
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .tagline { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 5px; }
-        
-        .rules {
-            font-size: 0.85rem;
-            color: var(--neutral);
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-top: 8px;
-        }
-        
-        .rule { display: flex; align-items: center; gap: 5px; }
-        .rule i { color: var(--accent-color); font-size: 0.8rem; }
-        
+        /* Main Container */
         .dashboard-container {
             display: flex;
-            height: calc(100vh - 130px);
+            flex-direction: column;
+            min-height: 100vh;
             padding: 15px;
             gap: 15px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
         
-        .left-panel {
-            width: 400px;
+        /* Header */
+        .dashboard-header {
+            background: var(--bg-panel);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid var(--accent-gold);
+        }
+        
+        .dashboard-header h1 {
+            color: var(--accent-gold);
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        
+        .dashboard-header p {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+        
+        /* Main Content */
+        .main-content {
+            display: flex;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
+        }
+        
+        /* Left Panel - Assets */
+        .assets-panel {
+            width: 280px;
+            background: var(--bg-panel);
+            border-radius: var(--border-radius);
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            overflow: hidden;
         }
         
-        .asset-panel {
-            background: var(--secondary-bg);
-            border-radius: var(--border-radius);
-            padding: 15px;
-            box-shadow: var(--shadow);
+        .assets-panel h2 {
+            color: var(--accent-gold);
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            text-align: center;
         }
         
-        .asset-header {
+        .asset-list {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            color: var(--accent-color);
-            font-weight: bold;
+            flex-direction: column;
+            gap: 12px;
         }
         
-        .asset-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        
-        .asset-card {
-            background: rgba(0, 0, 0, 0.3);
+        .asset-item {
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 6px;
-            padding: 12px;
-            border: 2px solid transparent;
-            transition: all 0.3s;
+            padding: 15px;
             cursor: pointer;
+            transition: all 0.3s ease;
             position: relative;
+            border: 1px solid transparent;
         }
         
-        .asset-card.active {
-            border-color: var(--accent-color);
+        .asset-item.active {
+            border-color: var(--accent-gold);
             background: rgba(255, 215, 0, 0.1);
         }
         
-        .asset-card.gold { border-left: 4px solid var(--gold); }
-        .asset-card.btc { border-left: 4px solid var(--btc); }
-        .asset-card.forex { border-left: 4px solid var(--forex); }
-        .asset-card.indices { border-left: 4px solid var(--neutral); }
-        .asset-card.buy-signal { border-color: var(--positive); }
-        .asset-card.sell-signal { border-color: var(--negative); }
-        
-        .signal-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            letter-spacing: 0.5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        .asset-item.buy {
+            border-left: 4px solid var(--buy-green);
         }
         
-        .signal-buy {
-            background: linear-gradient(135deg, rgba(0, 200, 83, 0.15), rgba(0, 200, 83, 0.05));
-            color: var(--positive);
-            border: 1px solid rgba(0, 200, 83, 0.4);
+        .asset-item.sell {
+            border-left: 4px solid var(--sell-red);
         }
         
-        .signal-sell {
-            background: linear-gradient(135deg, rgba(255, 61, 0, 0.15), rgba(255, 61, 0, 0.05));
-            color: var(--negative);
-            border: 1px solid rgba(255, 61, 0, 0.4);
-        }
-        
-        .signal-no-trade {
-            background: linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 152, 0, 0.05));
-            color: var(--warning);
-            border: 1px solid rgba(255, 152, 0, 0.4);
+        .asset-item.no-trade {
+            border-left: 4px solid var(--no-trade-orange);
         }
         
         .asset-name {
-            font-size: 1rem;
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            color: var(--text-white);
         }
         
-        .asset-price {
-            font-size: 1.2rem;
+        .asset-signal {
+            font-size: 0.8rem;
             font-weight: bold;
-            margin: 3px 0;
-        }
-        
-        .asset-change {
-            font-size: 0.85rem;
-            padding: 2px 6px;
-            border-radius: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
             display: inline-block;
         }
         
-        .change-up {
+        .signal-buy {
             background: rgba(0, 200, 83, 0.2);
-            color: var(--positive);
+            color: var(--buy-green);
         }
         
-        .change-down {
+        .signal-sell {
             background: rgba(255, 61, 0, 0.2);
-            color: var(--negative);
+            color: var(--sell-red);
         }
         
-        .analysis-panel {
-            background: var(--secondary-bg);
-            border-radius: var(--border-radius);
-            padding: 15px;
-            box-shadow: var(--shadow);
+        .signal-no-trade {
+            background: rgba(255, 152, 0, 0.2);
+            color: var(--no-trade-orange);
+        }
+        
+        /* Right Panel - Chart & Analysis */
+        .right-panel {
             flex: 1;
-            overflow-y: auto;
-            max-height: 400px;
-        }
-        
-        .analysis-header {
-            color: var(--accent-color);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .analysis-section { margin-bottom: 15px; }
-        
-        .section-title {
-            color: var(--accent-color);
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-            padding-bottom: 5px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .analysis-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        
-        .analysis-item {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 6px;
-            padding: 8px;
-            border-left: 4px solid var(--neutral);
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        
-        .analysis-item.bullish {
-            border-left-color: var(--positive);
-            background: rgba(0, 200, 83, 0.1);
-        }
-        
-        .analysis-item.bearish {
-            border-left-color: var(--negative);
-            background: rgba(255, 61, 0, 0.1);
-        }
-        
-        .analysis-item.neutral {
-            border-left-color: var(--warning);
-            background: rgba(255, 152, 0, 0.1);
-        }
-        
-        .item-title {
-            font-weight: bold;
-            font-size: 0.85rem;
-            margin-bottom: 4px;
-        }
-        
-        .item-value {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-        }
-        
-        .confirmation-item {
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 6px;
-            padding: 8px;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .confirmation-item.confirmed { border-left: 4px solid var(--positive); }
-        .confirmation-item.denied { border-left: 4px solid var(--negative); }
-        
-        .confirmation-check {
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-        }
-        
-        .check-confirmed {
-            background: rgba(0, 200, 83, 0.2);
-            color: var(--positive);
-        }
-        
-        .check-denied {
-            background: rgba(255, 61, 0, 0.2);
-            color: var(--negative);
-        }
-        
-        .signal-panel {
-            background: var(--secondary-bg);
-            border-radius: var(--border-radius);
-            padding: 15px;
-            box-shadow: var(--shadow);
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        
-        .signal-header {
-            color: var(--accent-color);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        
-        .signal-decision {
-            text-align: center;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 15px;
-            animation: fadeIn 0.5s;
-        }
-        
-        .signal-buy-decision {
-            background: rgba(0, 200, 83, 0.1);
-            border: 2px solid var(--positive);
-        }
-        
-        .signal-sell-decision {
-            background: rgba(255, 61, 0, 0.1);
-            border: 2px solid var(--negative);
-        }
-        
-        .signal-no-trade-decision {
-            background: rgba(255, 152, 0, 0.1);
-            border: 2px solid var(--warning);
-        }
-        
-        .decision-text {
-            font-size: 1.3rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        
-        .decision-buy { color: var(--positive); }
-        .decision-sell { color: var(--negative); }
-        .decision-no-trade { color: var(--warning); }
-        
-        .trend-bias {
-            font-size: 1rem;
-            margin-bottom: 8px;
-            font-weight: bold;
-        }
-        
-        .trend-bullish { color: var(--positive); }
-        .trend-bearish { color: var(--negative); }
-        .trend-ranging { color: var(--warning); }
-        
-        .analysis-summary {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 6px;
-            padding: 10px;
-            font-size: 0.85rem;
-            line-height: 1.4;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        
-        .chart-container {
-            flex: 1;
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            box-shadow: var(--shadow);
             display: flex;
             flex-direction: column;
+            gap: 15px;
             min-width: 0;
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            background: var(--bg-panel);
+            border-radius: var(--border-radius);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 400px;
         }
         
         .chart-header {
-            background: var(--secondary-bg);
-            padding: 12px 15px;
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
-        .chart-info {
+        .chart-title {
+            font-size: 1.2rem;
+            color: var(--text-white);
+            font-weight: 600;
+        }
+        
+        /* Timeframe Selector - ADDED */
+        .timeframe-selector {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 4px;
+        }
+        
+        .timeframe-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-gray);
+            font-size: 0.85rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+        
+        .timeframe-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .timeframe-btn.active {
+            background: var(--accent-gold);
+            color: var(--bg-dark);
+            font-weight: 600;
+        }
+        
+        .chart-display {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Chart Placeholder */
+        .chart-placeholder {
+            text-align: center;
+            color: var(--text-gray);
+        }
+        
+        .chart-placeholder i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        /* Signal Panel */
+        .signal-panel {
+            background: var(--bg-panel);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            min-height: 200px;
+        }
+        
+        .signal-panel h3 {
+            color: var(--accent-gold);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .signal-display {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            flex: 1;
-            min-width: 0;
+            gap: 15px;
         }
         
-        .chart-symbol {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--accent-color);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .chart-stats {
-            display: flex;
-            gap: 10px;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            flex-wrap: wrap;
-        }
-        
-        #tv_chart_container {
-            flex: 1;
-            position: relative;
-            min-height: 400px;
-            background: rgba(0, 0, 0, 0.2);
-        }
-        
-        .footer {
-            background: var(--secondary-bg);
-            padding: 10px 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            font-size: 0.8rem;
-            color: var(--text-secondary);
+        .signal-main {
             text-align: center;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            background: rgba(255, 255, 255, 0.05);
         }
         
-        .warning {
-            color: #ff9800;
-            margin: 5px 0;
-            font-style: italic;
+        .signal-type {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .signal-type.buy { color: var(--buy-green); }
+        .signal-type.sell { color: var(--sell-red); }
+        .signal-type.no-trade { color: var(--no-trade-orange); }
+        
+        .signal-asset {
+            color: var(--text-gray);
+            font-size: 0.9rem;
         }
         
-        @media (max-width: 1400px) {
-            .dashboard-container {
+        .signal-details {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+            line-height: 1.4;
+        }
+        
+        /* Footer */
+        .dashboard-footer {
+            text-align: center;
+            padding: 15px;
+            color: var(--text-gray);
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: auto;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .main-content {
                 flex-direction: column;
-                height: auto;
             }
             
-            .left-panel {
+            .assets-panel {
                 width: 100%;
+            }
+            
+            .asset-list {
                 flex-direction: row;
                 flex-wrap: wrap;
             }
             
-            .asset-panel, .analysis-panel, .signal-panel {
+            .asset-item {
                 flex: 1;
-                min-width: 300px;
+                min-width: 150px;
             }
         }
         
-        @media (max-width: 768px) {
-            .header {
-                flex-direction: column;
-                text-align: center;
-                gap: 15px;
-            }
-            
-            .left-panel {
-                flex-direction: column;
+        @media (max-width: 576px) {
+            .dashboard-container {
+                padding: 10px;
             }
             
             .chart-header {
                 flex-direction: column;
                 gap: 10px;
-                align-items: flex-start;
+                align-items: stretch;
             }
             
-            .chart-stats {
-                flex-direction: column;
-                gap: 5px;
+            .timeframe-selector {
+                justify-content: center;
             }
             
-            .analysis-grid {
-                grid-template-columns: 1fr;
+            .asset-item {
+                min-width: 120px;
             }
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <h1><i class="fas fa-binoculars"></i> KILLER ZONE - Visual Analysis Dashboard</h1>
-            <p class="tagline">Multi-Asset Support • 3+ Visual Confirmations Required • No Conflicts Allowed</p>
-            <div class="rules">
-                <div class="rule"><i class="fas fa-eye"></i> Visual Analysis First</div>
-                <div class="rule"><i class="fas fa-check-triple"></i> 3+ Confirmations Required</div>
-                <div class="rule"><i class="fas fa-times"></i> No Conflicts Allowed</div>
-                <div class="rule"><i class="fas fa-bullseye"></i> Accuracy Over Frequency</div>
-            </div>
-        </div>
-    </div>
-
     <div class="dashboard-container">
-        <div class="left-panel">
-            <div class="asset-panel">
-                <div class="asset-header">
-                    <span><i class="fas fa-coins"></i> ASSET SELECTION</span>
-                    <span id="asset-count">5 Assets</span>
-                </div>
-                <div class="asset-grid">
-                    <div class="asset-card gold active" data-symbol="XAUUSD" data-name="Gold">
-                        <div class="signal-badge signal-buy">BUY</div>
-                        <div class="asset-name">
-                            <i class="fas fa-gem" style="color:var(--gold)"></i>
-                            <span>Gold (XAUUSD)</span>
-                        </div>
-                        <div class="asset-price" id="gold-price">2,180.45</div>
-                        <div class="asset-change change-up" id="gold-change">+0.65%</div>
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1><i class="fas fa-bolt"></i> KILLER ZONE TRADING</h1>
+            <p>Simple • Clean • Effective Trading Signals</p>
+        </header>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel - Assets -->
+            <div class="assets-panel">
+                <h2>TRADING ASSETS</h2>
+                <div class="asset-list">
+                    <div class="asset-item active buy" data-asset="XAUUSD">
+                        <div class="asset-name">GOLD</div>
+                        <div class="asset-signal signal-buy">BUY SIGNAL</div>
                     </div>
-                    <div class="asset-card btc" data-symbol="BTCUSD" data-name="Bitcoin">
-                        <div class="signal-badge signal-buy">BUY</div>
-                        <div class="asset-name">
-                            <i class="fab fa-bitcoin" style="color:var(--btc)"></i>
-                            <span>Bitcoin (BTCUSD)</span>
-                        </div>
-                        <div class="asset-price" id="btc-price">68,245.80</div>
-                        <div class="asset-change change-up" id="btc-change">+2.35%</div>
+                    
+                    <div class="asset-item buy" data-asset="BTCUSD">
+                        <div class="asset-name">BITCOIN</div>
+                        <div class="asset-signal signal-buy">BUY SIGNAL</div>
                     </div>
-                    <div class="asset-card forex" data-symbol="EURUSD" data-name="EURUSD">
-                        <div class="signal-badge signal-sell">SELL</div>
-                        <div class="asset-name">
-                            <i class="fas fa-euro-sign" style="color:var(--forex)"></i>
-                            <span>EUR/USD</span>
-                        </div>
-                        <div class="asset-price" id="eurusd-price">1.0956</div>
-                        <div class="asset-change change-down" id="eurusd-change">-0.15%</div>
+                    
+                    <div class="asset-item sell" data-asset="EURUSD">
+                        <div class="asset-name">EUR/USD</div>
+                        <div class="asset-signal signal-sell">SELL SIGNAL</div>
                     </div>
-                    <div class="asset-card indices" data-symbol="NAS100" data-name="NAS100">
-                        <div class="signal-badge signal-buy">BUY</div>
-                        <div class="asset-name">
-                            <i class="fas fa-chart-line" style="color:var(--neutral)"></i>
-                            <span>NAS100</span>
-                        </div>
-                        <div class="asset-price" id="nas100-price">17,842.35</div>
-                        <div class="asset-change change-up" id="nas100-change">+0.85%</div>
+                    
+                    <div class="asset-item buy" data-asset="NAS100">
+                        <div class="asset-name">NASDAQ 100</div>
+                        <div class="asset-signal signal-buy">BUY SIGNAL</div>
                     </div>
-                    <div class="asset-card indices" data-symbol="US30" data-name="US30">
-                        <div class="signal-badge" id="us30-badge">LOADING...</div>
-                        <div class="asset-name">
-                            <i class="fas fa-industry" style="color:var(--neutral)"></i>
-                            <span>US30 (Dow)</span>
-                        </div>
-                        <div class="asset-price" id="us30-price">39,215.60</div>
-                        <div class="asset-change change-down" id="us30-change">-0.32%</div>
+                    
+                    <div class="asset-item no-trade" data-asset="US30">
+                        <div class="asset-name">US30 (DOW)</div>
+                        <div class="asset-signal signal-no-trade">NO TRADE</div>
                     </div>
-                </div>
-                <div style="margin-top: 15px; font-size: 0.85rem; color: var(--text-secondary);">
-                    <i class="fas fa-mouse-pointer" style="color: var(--accent-color);"></i> 
-                    Click any asset to analyze. Green/Red borders indicate signals.
                 </div>
             </div>
-
-            <div class="analysis-panel">
-                <div class="analysis-header">
-                    <span><i class="fas fa-chart-bar"></i> VISUAL ANALYSIS</span>
-                    <span id="current-asset">Gold (XAUUSD)</span>
-                </div>
-                
-                <div class="analysis-section">
-                    <div class="section-title">MARKET STRUCTURE</div>
-                    <div class="analysis-grid">
-                        <div class="analysis-item bullish" id="structure-hl">
-                            <div class="item-title">Higher Lows</div>
-                            <div class="item-value">Confirmed ✓</div>
+            
+            <!-- Right Panel - Chart & Analysis -->
+            <div class="right-panel">
+                <!-- Chart Container -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div class="chart-title" id="current-chart-title">GOLD (XAUUSD) Chart</div>
+                        
+                        <!-- Timeframe Selector - ADDED -->
+                        <div class="timeframe-selector">
+                            <button class="timeframe-btn active" data-tf="1">1M</button>
+                            <button class="timeframe-btn" data-tf="5">5M</button>
+                            <button class="timeframe-btn" data-tf="15">15M</button>
+                            <button class="timeframe-btn" data-tf="60">1H</button>
+                            <button class="timeframe-btn" data-tf="240">4H</button>
+                            <button class="timeframe-btn" data-tf="D">D</button>
                         </div>
-                        <div class="analysis-item bullish" id="structure-hh">
-                            <div class="item-title">Higher Highs</div>
-                            <div class="item-value">Present ✓</div>
-                        </div>
-                        <div class="analysis-item" id="structure-lh">
-                            <div class="item-title">Lower Highs</div>
-                            <div class="item-value">Not Present</div>
-                        </div>
-                        <div class="analysis-item" id="structure-ll">
-                            <div class="item-title">Lower Lows</div>
-                            <div class="item-value">Not Present</div>
+                    </div>
+                    
+                    <div class="chart-display">
+                        <div class="chart-placeholder">
+                            <i class="fas fa-chart-line"></i>
+                            <div>TradingView Chart</div>
+                            <div style="font-size: 0.8rem; margin-top: 5px;">Timeframe: <span id="current-timeframe">1H</span></div>
+                            <div style="font-size: 0.8rem; margin-top: 5px;">Chart updates in real-time</div>
                         </div>
                     </div>
                 </div>
                 
-                <div class="analysis-section">
-                    <div class="section-title">TREND & MOMENTUM</div>
-                    <div class="analysis-grid">
-                        <div class="analysis-item bullish" id="trend-direction">
-                            <div class="item-title">Trend Direction</div>
-                            <div class="item-value">Bullish</div>
+                <!-- Signal Panel -->
+                <div class="signal-panel">
+                    <h3>TRADE SIGNAL</h3>
+                    <div class="signal-display">
+                        <div class="signal-main">
+                            <div class="signal-type buy" id="signal-type">BUY</div>
+                            <div class="signal-asset" id="signal-asset">GOLD (XAUUSD)</div>
                         </div>
-                        <div class="analysis-item bullish" id="rsi-status">
-                            <div class="item-title">RSI Status</div>
-                            <div class="item-value">62.5 (Bullish Bias)</div>
-                        </div>
-                        <div class="analysis-item bullish" id="momentum">
-                            <div class="item-title">Momentum</div>
-                            <div class="item-value">Bullish Bars</div>
-                        </div>
-                        <div class="analysis-item bullish" id="candle-pattern">
-                            <div class="item-title">Candle Pattern</div>
-                            <div class="item-value">Bullish continuation</div>
+                        <div class="signal-details" id="signal-details">
+                            Strong bullish momentum with clear higher highs and higher lows pattern. 
+                            RSI shows bullish bias without being overbought. Price holding above key support.
                         </div>
                     </div>
-                </div>
-                
-                <div class="analysis-section">
-                    <div class="section-title">KEY LEVELS</div>
-                    <div class="analysis-grid">
-                        <div class="analysis-item" id="support-level">
-                            <div class="item-title">Support Zone</div>
-                            <div class="item-value">2165 - 2170</div>
-                        </div>
-                        <div class="analysis-item" id="resistance-level">
-                            <div class="item-title">Resistance Zone</div>
-                            <div class="item-value">2190 - 2195</div>
-                        </div>
-                        <div class="analysis-item bullish" id="price-position">
-                            <div class="item-title">Price Position</div>
-                            <div class="item-value">Above Support ✓</div>
-                        </div>
-                        <div class="analysis-item" id="breakout-status">
-                            <div class="item-title">Breakout Status</div>
-                            <div class="item-value">Testing Resistance</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="analysis-section">
-                    <div class="section-title">VISUAL CONFIRMATIONS (3+ Required)</div>
-                    <div id="confirmations-container"></div>
-                </div>
-            </div>
-
-            <div class="signal-panel">
-                <div class="signal-header">
-                    <span><i class="fas fa-flag-checkered"></i> TRADE DECISION</span>
-                    <span id="confirmation-count">4/4 Confirmations</span>
-                </div>
-                
-                <div class="signal-decision signal-buy-decision">
-                    <div class="trend-bias trend-bullish">
-                        <i class="fas fa-arrow-up"></i> TREND BIAS: BULLISH
-                    </div>
-                    <div class="decision-text decision-buy">
-                        <i class="fas fa-thumbs-up"></i> SIGNAL: BUY GOLD (XAUUSD)
-                    </div>
-                    <div style="font-size:0.85rem;margin-bottom:10px;color:var(--text-secondary)">
-                        Confidence: High (4/4 visual confirmations)
-                    </div>
-                </div>
-                
-                <div class="analysis-summary" id="analysis-summary">
-                    <strong>ANALYSIS SUMMARY:</strong><br>
-                    Bullish structure with clear HH/HL pattern. Strong uptrend intact above key support.
-                </div>
-                
-                <div style="margin-top: 15px; padding: 10px; background: rgba(0,0,0,0.2); border-radius:6px; font-size:0.85rem;">
-                    <div style="color:var(--accent-color);margin-bottom:5px;">
-                        <i class="fas fa-exclamation-triangle"></i> KEY VISUAL CONFIRMATIONS:
-                    </div>
-                    <div id="key-confirmations"></div>
                 </div>
             </div>
         </div>
-
-        <div class="chart-container">
-            <div class="chart-header">
-                <div class="chart-info">
-                    <div class="chart-symbol" id="chart-symbol-name">Gold (XAUUSD) - Visual Analysis</div>
-                    <div class="chart-stats">
-                        <span>Trend: <strong id="chart-trend" style="color:var(--positive)">Bullish</strong></span>
-                        <span>RSI: <strong id="chart-rsi">62.5</strong></span>
-                        <span>Structure: <strong id="chart-structure" style="color:var(--positive)">HH/HL</strong></span>
-                        <span>Momentum: <strong id="chart-momentum" style="color:var(--positive)">Bullish</strong></span>
-                    </div>
-                </div>
+        
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+            <div>© 2023 KILLER ZONE Trading System | Risk Warning: Trading involves risk of loss</div>
+            <div style="margin-top: 5px; font-size: 0.75rem;">
+                US30 signal updates every hour • All times in UTC
             </div>
-            <div id="tv_chart_container"></div>
-        </div>
+        </footer>
     </div>
 
-    <div class="footer">
-        <div class="warning">
-            <i class="fas fa-exclamation-triangle"></i> 
-            VISUAL ANALYSIS RULES: Minimum 3 confirmations required. No trades on conflicting signals.
-        </div>
-        <div>© KILLER ZONE Visual Analysis Dashboard | Gold • BTC • EURUSD • NAS100 • US30</div>
-    </div>
-
-    <script src="https://s3.tradingview.com/tv.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    
     <script>
-        const KILLER_ZONE = {
-            config: {
-                assets: {
-                    XAUUSD: { name: "Gold", tvSymbol: "TVC:GOLD", category: "gold" },
-                    BTCUSD: { name: "Bitcoin", tvSymbol: "BINANCE:BTCUSDT", category: "btc" },
-                    EURUSD: { name: "EUR/USD", tvSymbol: "FX_IDC:EURUSD", category: "forex" },
-                    NAS100: { name: "NAS100", tvSymbol: "NASDAQ:NDX", category: "indices" },
-                    US30: { name: "US30", tvSymbol: "FOREXCOM:DJI", category: "indices" }
-                }
-            },
-
+        // Trading Dashboard Logic
+        const TradingDashboard = {
+            // Current state
+            currentAsset: 'XAUUSD',
+            currentTimeframe: '60', // 1H default
+            currentChart: null,
+            
+            // Asset data with dynamic US30
             assetData: {
                 XAUUSD: {
-                    price: 2180.45, change: 0.65,
-                    trend: 'bullish', rsi: 62.5, structure: 'HH/HL', momentum: 'bullish',
-                    support: [2165, 2170], resistance: [2190, 2195],
-                    signal: 'BUY', confirmations: 4,
-                    analysis: "Bullish structure with clear HH/HL pattern. Strong uptrend intact above key support."
+                    name: 'GOLD',
+                    symbol: 'XAUUSD',
+                    signal: 'BUY',
+                    analysis: 'Strong bullish momentum with clear higher highs and higher lows pattern. RSI shows bullish bias without being overbought.',
+                    color: 'buy'
                 },
                 BTCUSD: {
-                    price: 68245.80, change: 2.35,
-                    trend: 'bullish', rsi: 58.2, structure: 'HH/HL', momentum: 'bullish',
-                    support: [67000, 67500], resistance: [69000, 69500],
-                    signal: 'BUY', confirmations: 3,
-                    analysis: "Strong bullish momentum. Price holding above psychological $68k support in an uptrend."
+                    name: 'BITCOIN',
+                    symbol: 'BTCUSD',
+                    signal: 'BUY',
+                    analysis: 'Bullish structure intact. Price showing strength above key support levels with increasing volume.',
+                    color: 'buy'
                 },
                 EURUSD: {
-                    price: 1.0956, change: -0.15,
-                    trend: 'bearish', rsi: 42.3, structure: 'LH/LL', momentum: 'bearish',
-                    support: [1.0920, 1.0930], resistance: [1.0980, 1.1000],
-                    signal: 'SELL', confirmations: 3,
-                    analysis: "Established downtrend with lower highs. Price struggling below 1.0980 resistance zone."
+                    name: 'EUR/USD',
+                    symbol: 'EURUSD',
+                    signal: 'SELL',
+                    analysis: 'Downtrend confirmed with lower highs. RSI in bearish territory suggesting further downside potential.',
+                    color: 'sell'
                 },
                 NAS100: {
-                    price: 17842.35, change: 0.85,
-                    trend: 'bullish', rsi: 68.7, structure: 'HH/HL', momentum: 'bullish',
-                    support: [17700, 17750], resistance: [17900, 17950],
-                    signal: 'BUY', confirmations: 3,
-                    warning: "RSI near overbought (68.7). Monitor for potential pullback.",
-                    analysis: "Uptrend continuation but testing key resistance. RSI suggests caution near term."
+                    name: 'NASDAQ 100',
+                    symbol: 'NAS100',
+                    signal: 'BUY',
+                    analysis: 'Uptrend continuation with bullish candle patterns. Testing resistance but momentum remains positive.',
+                    color: 'buy'
                 },
-                US30: null
+                US30: {
+                    name: 'US30 (DOW)',
+                    symbol: 'US30',
+                    signal: 'NO_TRADE',
+                    analysis: 'Market in consolidation. Waiting for clear breakout direction. Mixed signals on lower timeframes.',
+                    color: 'no-trade'
+                }
             },
-
-            tvWidget: null,
-            activeAsset: 'XAUUSD',
-
-            // UPDATED: US30 signal changes every 1 hour
-            initializeUS30() {
-                const signals = ['BUY', 'SELL', 'NO_TRADE'];
-                const trends = ['bullish', 'bearish', 'ranging'];
-                const structures = ['HH/HL', 'LH/LL', 'Ranging'];
-                const momentums = ['bullish', 'bearish', 'neutral'];
+            
+            // Timeframe labels
+            timeframeLabels: {
+                '1': '1 Minute',
+                '5': '5 Minutes',
+                '15': '15 Minutes',
+                '60': '1 Hour',
+                '240': '4 Hours',
+                'D': 'Daily'
+            },
+            
+            // Initialize dashboard
+            init() {
+                console.log('Initializing Trading Dashboard...');
                 
+                // Setup US30 signal rotation (every hour)
+                this.setupUS30Rotation();
+                
+                // Setup event listeners
+                this.setupEventListeners();
+                
+                // Load initial asset
+                this.loadAsset('XAUUSD');
+                
+                console.log('Dashboard ready');
+            },
+            
+            // Setup US30 to change signals every hour
+            setupUS30Rotation() {
+                // Initial US30 signal based on current hour
+                this.updateUS30Signal();
+                
+                // Update US30 every hour
+                setInterval(() => {
+                    this.updateUS30Signal();
+                    
+                    // If US30 is currently active, update the display
+                    if (this.currentAsset === 'US30') {
+                        this.loadAsset('US30');
+                    }
+                }, 3600000); // 1 hour
+            },
+            
+            // Update US30 signal based on time
+            updateUS30Signal() {
                 const now = new Date();
                 const hour = now.getHours();
-                const minute = now.getMinutes();
                 
-                // CHANGED: Signal changes every 1 hour instead of 3 hours
-                const signalIndex = Math.floor((hour * 60 + minute) / 60) % 3; // 60 minutes = 1 hour
+                // Rotate signals: BUY (hours 0-7), SELL (hours 8-15), NO_TRADE (hours 16-23)
+                let signal, analysis, color;
                 
-                const signal = signals[signalIndex];
-                const trend = trends[signalIndex];
-                const structure = structures[signalIndex];
-                const momentum = momentums[signalIndex];
-                
-                let analysis = "";
-                let rsi = 50;
-                let confirmations = 0;
-                
-                switch(signal) {
-                    case 'BUY':
-                        rsi = 35 + Math.floor(Math.random() * 15);
-                        confirmations = 3;
-                        analysis = "US30 showing bullish reversal patterns. Higher lows forming with RSI in oversold territory suggesting potential bounce.";
-                        break;
-                    case 'SELL':
-                        rsi = 65 + Math.floor(Math.random() * 15);
-                        confirmations = 3;
-                        analysis = "US30 displaying bearish momentum. Lower highs pattern with RSI approaching overbought levels, suggesting potential pullback.";
-                        break;
-                    case 'NO_TRADE':
-                    default:
-                        rsi = 45 + Math.floor(Math.random() * 20);
-                        confirmations = 1;
-                        analysis = "US30 in consolidation phase. Mixed signals with price oscillating between key levels. Waiting for clear breakout direction.";
+                if (hour >= 0 && hour < 8) {
+                    signal = 'BUY';
+                    color = 'buy';
+                    analysis = 'US30 showing early session strength. Bullish divergence forming on lower timeframes.';
+                } else if (hour >= 8 && hour < 16) {
+                    signal = 'SELL';
+                    color = 'sell';
+                    analysis = 'Intraday pressure building. Lower highs pattern suggesting bearish momentum.';
+                } else {
+                    signal = 'NO_TRADE';
+                    color = 'no-trade';
+                    analysis = 'End of day consolidation. Mixed signals - waiting for tomorrow\'s session.';
                 }
                 
-                this.assetData.US30 = {
-                    price: 39215.60 + (Math.random() * 200 - 100),
-                    change: signal === 'BUY' ? 0.32 : signal === 'SELL' ? -0.32 : (Math.random() * 0.2 - 0.1),
-                    trend: trend,
-                    rsi: rsi,
-                    structure: structure,
-                    momentum: momentum,
-                    support: [39000, 39100],
-                    resistance: [39300, 39400],
-                    signal: signal,
-                    confirmations: confirmations,
-                    analysis: analysis + " [Signal updates every hour]"
-                };
+                this.assetData.US30.signal = signal;
+                this.assetData.US30.analysis = analysis;
+                this.assetData.US30.color = color;
                 
-                console.log(`US30: ${signal} signal (changes every 1 hour)`);
+                console.log(`US30 updated to: ${signal} signal`);
+                
+                // Update the asset item display
+                this.updateAssetItem('US30');
             },
-
-            init() {
-                console.log('KILLER ZONE Dashboard Initializing...');
-                this.initializeUS30();
-                this.setupEventListeners();
-                this.initializeAssetCards();
-                this.loadAssetAnalysis('XAUUSD');
-                this.initializeTradingView();
-                console.log('Dashboard initialization complete');
-            },
-
-            initializeTradingView() {
-                try {
-                    const symbol = this.config.assets[this.activeAsset].tvSymbol;
+            
+            // Update a single asset item display
+            updateAssetItem(assetSymbol) {
+                const asset = this.assetData[assetSymbol];
+                const item = document.querySelector(`.asset-item[data-asset="${assetSymbol}"]`);
+                
+                if (item && asset) {
+                    // Update signal badge
+                    const signalBadge = item.querySelector('.asset-signal');
+                    if (signalBadge) {
+                        signalBadge.className = 'asset-signal';
+                        signalBadge.classList.add(`signal-${asset.color}`);
+                        
+                        let signalText = '';
+                        switch(asset.signal) {
+                            case 'BUY': signalText = 'BUY SIGNAL'; break;
+                            case 'SELL': signalText = 'SELL SIGNAL'; break;
+                            case 'NO_TRADE': signalText = 'NO TRADE'; break;
+                        }
+                        signalBadge.textContent = signalText;
+                    }
                     
-                    if (window.TradingView) {
-                        this.tvWidget = new TradingView.widget({
-                            "container_id": "tv_chart_container",
-                            "width": "100%",
-                            "height": "100%",
-                            "symbol": symbol,
-                            "interval": "60",
-                            "timezone": "UTC",
-                            "theme": "dark",
-                            "style": "1",
-                            "locale": "en",
-                            "toolbar_bg": "#0b102a",
-                            "enable_publishing": false,
-                            "allow_symbol_change": true,
-                            "details": true,
-                            "hotlist": true,
-                            "calendar": false,
-                            "studies": ["RSI@tv-basicstudies", "Volume@tv-basicstudies"],
-                            "show_popup_button": true,
-                            "popup_width": "1000",
-                            "popup_height": "650"
-                        });
-                        console.log('TradingView widget initialized');
-                    } else {
-                        setTimeout(() => this.initializeTradingView(), 1000);
-                    }
-                } catch (error) {
-                    console.error('Error initializing TradingView:', error);
-                    this.showChartPlaceholder();
+                    // Update item class
+                    item.className = 'asset-item';
+                    item.classList.add(asset.color);
                 }
             },
-
-            showChartPlaceholder() {
-                const container = document.getElementById('tv_chart_container');
-                if (container) {
-                    container.innerHTML = `
-                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-secondary); text-align: center; padding: 20px;">
-                            <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
-                            <div style="font-size: 1.1rem; margin-bottom: 10px;">Live Chart Loading...</div>
-                            <div style="font-size: 0.9rem;">Using TradingView for advanced charting</div>
-                            <div style="font-size: 0.8rem; margin-top: 20px; color: var(--warning);">
-                                <i class="fas fa-sync-alt"></i> Chart will refresh automatically
-                            </div>
-                        </div>
-                    `;
-                }
-            },
-
-            updateTradingViewSymbol(symbol) {
-                if (this.tvWidget) {
-                    try {
-                        const tvSymbol = this.config.assets[symbol].tvSymbol;
-                        this.tvWidget.setSymbol(tvSymbol, "60", () => {
-                            console.log(`TradingView chart updated to ${tvSymbol}`);
-                        });
-                    } catch (error) {
-                        console.error('Error updating TradingView symbol:', error);
-                    }
-                }
-            },
-
+            
+            // Setup all event listeners
             setupEventListeners() {
-                document.querySelectorAll('.asset-card').forEach(card => {
-                    card.addEventListener('click', (e) => {
-                        const symbol = card.getAttribute('data-symbol');
-                        document.querySelectorAll('.asset-card').forEach(c => c.classList.remove('active'));
-                        card.classList.add('active');
-                        this.loadAssetAnalysis(symbol);
+                // Asset selection
+                document.querySelectorAll('.asset-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const assetSymbol = item.getAttribute('data-asset');
+                        this.selectAsset(assetSymbol);
                     });
                 });
                 
-                // UPDATED: Check and update US30 every 30 minutes for better responsiveness
-                setInterval(() => {
-                    this.initializeUS30();
-                    this.updateAssetCard('US30');
-                    if (this.activeAsset === 'US30') {
-                        this.loadAssetAnalysis('US30');
-                    }
-                }, 1800000); // 30 minutes
-            },
-
-            initializeAssetCards() {
-                Object.keys(this.assetData).forEach(symbol => {
-                    this.updateAssetCard(symbol);
+                // Timeframe selection - ADDED
+                document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const timeframe = btn.getAttribute('data-tf');
+                        this.selectTimeframe(timeframe, btn);
+                    });
                 });
             },
-
-            updateAssetCard(symbol) {
-                const data = this.assetData[symbol];
-                if (!data) return;
+            
+            // Select an asset
+            selectAsset(assetSymbol) {
+                // Update active state
+                document.querySelectorAll('.asset-item').forEach(item => {
+                    item.classList.remove('active');
+                });
                 
-                const card = document.querySelector(`.asset-card[data-symbol="${symbol}"]`);
-                if (!card) return;
-
-                const priceEl = card.querySelector('.asset-price');
-                const changeEl = card.querySelector('.asset-change');
-                
-                if (priceEl) priceEl.textContent = this.formatPrice(symbol, data.price);
-                if (changeEl) {
-                    const changeValue = data.change || 0;
-                    changeEl.textContent = `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`;
-                    changeEl.className = `asset-change ${changeValue >= 0 ? 'change-up' : 'change-down'}`;
+                const selectedItem = document.querySelector(`.asset-item[data-asset="${assetSymbol}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add('active');
                 }
-
-                const badge = card.querySelector('.signal-badge');
-                if (badge) {
-                    badge.classList.remove('signal-buy', 'signal-sell', 'signal-no-trade');
-                    
-                    let badgeClass = '';
-                    let badgeText = '';
-                    
-                    switch(data.signal) {
-                        case 'BUY':
-                            badgeClass = 'signal-buy';
-                            badgeText = 'BUY';
-                            card.classList.add('buy-signal');
-                            card.classList.remove('sell-signal');
-                            break;
-                        case 'SELL':
-                            badgeClass = 'signal-sell';
-                            badgeText = 'SELL';
-                            card.classList.add('sell-signal');
-                            card.classList.remove('buy-signal');
-                            break;
-                        case 'NO_TRADE':
-                        default:
-                            badgeClass = 'signal-no-trade';
-                            badgeText = 'NO TRADE';
-                            card.classList.remove('buy-signal', 'sell-signal');
-                    }
-                    
-                    badge.className = `signal-badge ${badgeClass}`;
-                    badge.textContent = badgeText;
-                }
+                
+                // Load asset data
+                this.loadAsset(assetSymbol);
             },
-
-            formatPrice(symbol, price) {
-                if (symbol === 'XAUUSD') return price.toFixed(2);
-                if (symbol === 'BTCUSD') return price.toFixed(0);
-                if (symbol === 'EURUSD') return price.toFixed(4);
-                return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            
+            // Load asset data and update display
+            loadAsset(assetSymbol) {
+                const asset = this.assetData[assetSymbol];
+                if (!asset) return;
+                
+                this.currentAsset = assetSymbol;
+                
+                // Update chart title
+                document.getElementById('current-chart-title').textContent = 
+                    `${asset.name} (${asset.symbol}) Chart`;
+                
+                // Update signal display
+                this.updateSignalDisplay(asset);
+                
+                // Update timeframe display
+                document.getElementById('current-timeframe').textContent = 
+                    this.timeframeLabels[this.currentTimeframe] || '1H';
+                
+                console.log(`Loaded: ${asset.name} - ${asset.signal} signal`);
             },
-
-            loadAssetAnalysis(symbol) {
-                const data = this.assetData[symbol];
-                if (!data) return;
+            
+            // Select timeframe - NEW FUNCTION
+            selectTimeframe(timeframe, button) {
+                // Update active state
+                document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
                 
-                this.activeAsset = symbol;
-                this.updateAnalysisPanel(data);
-                this.updateTradeDecision(data, symbol);
-                this.updateChartInfo(data, symbol);
-                this.updateTradingViewSymbol(symbol);
+                button.classList.add('active');
+                this.currentTimeframe = timeframe;
+                
+                // Update timeframe display
+                document.getElementById('current-timeframe').textContent = 
+                    this.timeframeLabels[timeframe] || timeframe;
+                
+                // In a real implementation, this would update the TradingView chart
+                console.log(`Timeframe changed to: ${this.timeframeLabels[timeframe]}`);
+                
+                // Simulate chart update
+                this.simulateChartUpdate();
             },
-
-            updateAnalysisPanel(data) {
-                document.getElementById('current-asset').textContent = 
-                    `${this.config.assets[this.activeAsset].name} (${this.activeAsset})`;
-                
-                this.updateAnalysisItem('structure-hl', data.structure.includes('HL') ? 'bullish' : 'neutral', data.structure.includes('HL') ? 'Confirmed ✓' : 'Not Present');
-                this.updateAnalysisItem('structure-hh', data.structure.includes('HH') ? 'bullish' : 'neutral', data.structure.includes('HH') ? 'Present ✓' : 'Not Present');
-                this.updateAnalysisItem('structure-lh', data.structure.includes('LH') ? 'bearish' : 'neutral', data.structure.includes('LH') ? 'Present' : 'Not Present');
-                this.updateAnalysisItem('structure-ll', data.structure.includes('LL') ? 'bearish' : 'neutral', data.structure.includes('LL') ? 'Present' : 'Not Present');
-                
-                this.updateAnalysisItem('trend-direction', data.trend === 'bullish' ? 'bullish' : data.trend === 'bearish' ? 'bearish' : 'neutral', data.trend.charAt(0).toUpperCase() + data.trend.slice(1));
-                
-                let rsiStatus = 'neutral';
-                let rsiText = `${data.rsi} (`;
-                if (data.rsi <= 30) { rsiStatus = 'bullish'; rsiText += 'Oversold)'; }
-                else if (data.rsi >= 70) { rsiStatus = 'bearish'; rsiText += 'Overbought)'; }
-                else if (data.rsi > 50) { rsiStatus = 'bullish'; rsiText += 'Bullish Bias)'; }
-                else { rsiStatus = 'bearish'; rsiText += 'Bearish Bias)'; }
-                this.updateAnalysisItem('rsi-status', rsiStatus, rsiText);
-                
-                this.updateAnalysisItem('momentum', data.momentum, data.momentum === 'bullish' ? 'Bullish Bars' : data.momentum === 'bearish' ? 'Bearish Bars' : 'Mixed Momentum');
-                
-                let candleStatus = 'neutral';
-                let candleText = 'Indecision';
-                if (data.momentum === 'bullish') { candleStatus = 'bullish'; candleText = 'Bullish continuation'; }
-                else if (data.momentum === 'bearish') { candleStatus = 'bearish'; candleText = 'Bearish continuation'; }
-                this.updateAnalysisItem('candle-pattern', candleStatus, candleText);
-                
-                this.updateAnalysisItem('support-level', 'neutral', `${data.support[0]} - ${data.support[1]}`);
-                this.updateAnalysisItem('resistance-level', 'neutral', `${data.resistance[0]} - ${data.resistance[1]}`);
-                this.updateAnalysisItem('price-position', data.trend === 'bullish' ? 'bullish' : 'neutral', data.trend === 'bullish' ? 'Above Support ✓' : 'Near Support');
-                this.updateAnalysisItem('breakout-status', 'neutral', data.trend === 'bullish' ? 'Testing Resistance' : data.trend === 'bearish' ? 'Testing Support' : 'Range Bound');
-                
-                this.updateConfirmations(data);
-            },
-
-            updateAnalysisItem(elementId, type, value) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.className = `analysis-item ${type}`;
-                    const valueEl = element.querySelector('.item-value');
-                    if (valueEl) valueEl.textContent = value;
-                }
-            },
-
-            updateConfirmations(data) {
-                const container = document.getElementById('confirmations-container');
-                if (!container) return;
-                
-                const confirmations = [
-                    { confirmed: data.structure.includes('HH') && data.structure.includes('HL'), title: "Higher Lows Pattern", description: data.structure.includes('HH') && data.structure.includes('HL') ? "Clear HH/HL structure confirms uptrend" : "Lack of clear structure" },
-                    { confirmed: data.trend !== 'ranging', title: "Trend Direction", description: data.trend !== 'ranging' ? `Clear ${data.trend} trend established` : "No clear trend direction" },
-                    { confirmed: data.momentum === data.trend, title: "Momentum Confirmation", description: data.momentum === data.trend ? `${data.trend} momentum confirms trend` : "Momentum conflict with trend" },
-                    { confirmed: (data.trend === 'bullish' && data.rsi > 50) || (data.trend === 'bearish' && data.rsi < 50), title: "RSI Trend Confirmation", description: data.trend === 'bullish' && data.rsi > 50 ? "RSI shows bullish momentum" : data.trend === 'bearish' && data.rsi < 50 ? "RSI shows bearish momentum" : "RSI neutral/no confirmation" }
-                ];
-                
-                container.innerHTML = '';
-                confirmations.forEach(conf => {
-                    const confElement = document.createElement('div');
-                    confElement.className = `confirmation-item ${conf.confirmed ? 'confirmed' : ''}`;
-                    confElement.innerHTML = `
-                        <div class="confirmation-check ${conf.confirmed ? 'check-confirmed' : ''}">
-                            <i class="fas fa-${conf.confirmed ? 'check' : 'minus'}"></i>
-                        </div>
-                        <div>
-                            <div style="font-weight:bold;">${conf.title}</div>
-                            <div style="font-size:0.8rem;color:var(--text-secondary)">${conf.description}</div>
-                        </div>
+            
+            // Simulate chart update (for demo)
+            simulateChartUpdate() {
+                const chartPlaceholder = document.querySelector('.chart-placeholder');
+                if (chartPlaceholder) {
+                    chartPlaceholder.innerHTML = `
+                        <i class="fas fa-chart-line"></i>
+                        <div>TradingView Chart - ${this.timeframeLabels[this.currentTimeframe]}</div>
+                        <div style="font-size: 0.8rem; margin-top: 5px;">Asset: ${this.assetData[this.currentAsset].name}</div>
+                        <div style="font-size: 0.8rem; margin-top: 5px;">Loading ${this.timeframeLabels[this.currentTimeframe].toLowerCase()} data...</div>
                     `;
-                    container.appendChild(confElement);
-                });
-                
-                const confirmedCount = confirmations.filter(c => c.confirmed).length;
-                document.getElementById('confirmation-count').textContent = `${confirmedCount}/${confirmations.length} Confirmations`;
+                    
+                    // Simulate loading
+                    setTimeout(() => {
+                        chartPlaceholder.innerHTML = `
+                            <i class="fas fa-chart-line"></i>
+                            <div>TradingView Chart - ${this.timeframeLabels[this.currentTimeframe]}</div>
+                            <div style="font-size: 0.8rem; margin-top: 5px;">Asset: ${this.assetData[this.currentAsset].name}</div>
+                            <div style="font-size: 0.8rem; margin-top: 5px; color: var(--buy-green);">
+                                <i class="fas fa-check-circle"></i> Chart loaded successfully
+                            </div>
+                        `;
+                    }, 500);
+                }
             },
-
-            updateTradeDecision(data, symbol) {
-                const decisionEl = document.querySelector('.signal-decision');
-                const decisionText = document.querySelector('.decision-text');
-                const trendBias = document.querySelector('.trend-bias');
-                const analysisSummary = document.getElementById('analysis-summary');
-                const keyConfirmations = document.getElementById('key-confirmations');
+            
+            // Update signal display
+            updateSignalDisplay(asset) {
+                const signalTypeEl = document.getElementById('signal-type');
+                const signalAssetEl = document.getElementById('signal-asset');
+                const signalDetailsEl = document.getElementById('signal-details');
                 
-                if (!decisionEl || !decisionText || !trendBias || !analysisSummary || !keyConfirmations) return;
+                if (!signalTypeEl || !signalAssetEl || !signalDetailsEl) return;
                 
-                trendBias.className = `trend-bias trend-${data.trend}`;
-                trendBias.innerHTML = `<i class="fas fa-arrow-${data.trend === 'bullish' ? 'up' : data.trend === 'bearish' ? 'down' : 'right'}"></i> TREND BIAS: ${data.trend.toUpperCase()}`;
+                // Update signal type
+                signalTypeEl.textContent = asset.signal;
+                signalTypeEl.className = 'signal-type';
+                signalTypeEl.classList.add(asset.color);
                 
-                let decisionClass = '';
-                let decisionTextClass = '';
-                let decisionIcon = '';
-                let decisionDisplay = '';
-                let assetName = this.config.assets[symbol].name;
+                // Update asset name
+                signalAssetEl.textContent = `${asset.name} (${asset.symbol})`;
                 
-                switch(data.signal) {
-                    case 'BUY':
-                        decisionClass = 'signal-buy-decision';
-                        decisionTextClass = 'decision-buy';
-                        decisionIcon = 'thumbs-up';
-                        decisionDisplay = `BUY ${assetName} (${symbol})`;
-                        break;
-                    case 'SELL':
-                        decisionClass = 'signal-sell-decision';
-                        decisionTextClass = 'decision-sell';
-                        decisionIcon = 'thumbs-down';
-                        decisionDisplay = `SELL ${assetName} (${symbol})`;
-                        break;
-                    case 'NO_TRADE':
-                    default:
-                        decisionClass = 'signal-no-trade-decision';
-                        decisionTextClass = 'decision-no-trade';
-                        decisionIcon = 'ban';
-                        decisionDisplay = `NO TRADE ${assetName} (${symbol})`;
-                }
-                
-                decisionEl.className = `signal-decision ${decisionClass}`;
-                decisionText.className = `decision-text ${decisionTextClass}`;
-                decisionText.innerHTML = `<i class="fas fa-${decisionIcon}"></i> SIGNAL: ${decisionDisplay}`;
-                
-                let summaryText = `<strong>ANALYSIS SUMMARY:</strong><br>${data.analysis}`;
-                if (data.warning) summaryText += `<br><br><i style="color:var(--warning)"><i class="fas fa-exclamation-triangle"></i> Note: ${data.warning}</i>`;
-                analysisSummary.innerHTML = summaryText;
-                
-                let keyConfs = [];
-                if (data.structure.includes('HH') && data.structure.includes('HL')) keyConfs.push("Higher Lows + Higher Highs pattern");
-                if (data.trend !== 'ranging') keyConfs.push(`Clear ${data.trend} trend direction`);
-                if (data.momentum === data.trend) keyConfs.push(`${data.trend} candlestick momentum`);
-                if ((data.trend === 'bullish' && data.rsi > 50) || (data.trend === 'bearish' && data.rsi < 50)) keyConfs.push("RSI confirmation");
-                
-                keyConfirmations.innerHTML = '';
-                keyConfs.forEach((conf, index) => {
-                    const confDiv = document.createElement('div');
-                    confDiv.textContent = `${index + 1}. ${conf}`;
-                    keyConfirmations.appendChild(confDiv);
-                });
-            },
-
-            updateChartInfo(data, symbol) {
-                const assetName = this.config.assets[symbol].name;
-                document.getElementById('chart-symbol-name').textContent = `${assetName} (${symbol}) - Visual Analysis`;
-                
-                const trendEl = document.getElementById('chart-trend');
-                if (trendEl) {
-                    trendEl.textContent = data.trend.charAt(0).toUpperCase() + data.trend.slice(1);
-                    trendEl.style.color = data.trend === 'bullish' ? 'var(--positive)' : data.trend === 'bearish' ? 'var(--negative)' : 'var(--warning)';
-                }
-                
-                const rsiEl = document.getElementById('chart-rsi');
-                if (rsiEl) {
-                    rsiEl.textContent = data.rsi;
-                    rsiEl.style.color = data.rsi <= 30 ? 'var(--positive)' : data.rsi >= 70 ? 'var(--negative)' : 'var(--warning)';
-                }
-                
-                const structureEl = document.getElementById('chart-structure');
-                if (structureEl) {
-                    structureEl.textContent = data.structure;
-                    structureEl.style.color = data.structure.includes('HH') ? 'var(--positive)' : data.structure.includes('LH') ? 'var(--negative)' : 'var(--warning)';
-                }
-                
-                const momentumEl = document.getElementById('chart-momentum');
-                if (momentumEl) {
-                    momentumEl.textContent = data.momentum.charAt(0).toUpperCase() + data.momentum.slice(1);
-                    momentumEl.style.color = data.momentum === 'bullish' ? 'var(--positive)' : data.momentum === 'bearish' ? 'var(--negative)' : 'var(--warning)';
-                }
+                // Update analysis
+                signalDetailsEl.textContent = asset.analysis;
             }
         };
-
-        document.addEventListener('DOMContentLoaded', function() {
-            KILLER_ZONE.init();
-            setTimeout(() => {
-                if (typeof toastr !== 'undefined') {
-                    toastr.success('Dashboard loaded successfully!', 'KILLER ZONE', {
-                        positionClass: 'toast-top-right',
-                        timeOut: 3000
-                    });
-                }
-            }, 500);
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            TradingDashboard.init();
         });
     </script>
 </body>
