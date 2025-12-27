@@ -264,13 +264,26 @@
             border-left: 4px solid var(--text-gray);
         }
         
-        .asset-item.real-time::after {
+        .asset-item.live::after {
             content: 'LIVE';
             position: absolute;
             top: 5px;
             right: 5px;
             background: rgba(76, 175, 80, 0.2);
             color: var(--real-data-green);
+            font-size: 0.6rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .asset-item.closed::after {
+            content: 'CLOSED';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(102, 102, 102, 0.2);
+            color: var(--text-gray);
             font-size: 0.6rem;
             padding: 2px 5px;
             border-radius: 3px;
@@ -768,7 +781,7 @@
                             </div>
                         </div>
                         <div class="signal-details" id="signal-details">
-                            Real-time RSI analysis for all assets. Signals update every 10 seconds.
+                            Real-time RSI analysis for all assets. Signals update every 5 seconds.
                         </div>
                     </div>
                 </div>
@@ -807,7 +820,7 @@
     </div>
 
     <script>
-        // Real-Time RSI Trading System
+        // Real-Time RSI Trading System - FIXED VERSION
         const RealTimeRSISystem = {
             // Current state
             currentAsset: 'XAUUSD',
@@ -815,32 +828,33 @@
             tvWidget: null,
             isChartLoaded: false,
             updateInterval: null,
+            updateCount: 0,
             
-            // Market sessions
+            // Market sessions - FIXED weekend logic
             sessions: {
                 london: { open: 8, close: 16 },
                 newyork: { open: 13, close: 21 },
                 asia: { open: 22, close: 6 },
-                forexWeekendStart: { day: 5, hour: 21 },
-                forexWeekendEnd: { day: 0, hour: 21 }
+                // Forex weekend: Friday 9 PM UTC to Sunday 9 PM UTC
+                forexWeekendStart: { day: 5, hour: 21 }, // Friday 9 PM UTC
+                forexWeekendEnd: { day: 0, hour: 21 }    // Sunday 9 PM UTC
             },
             
-            // Asset configurations with real-time data
+            // Asset configurations with FIXED session logic
             assets: [
                 {
                     symbol: 'XAUUSD',
                     name: 'GOLD',
                     tradingViewSymbol: 'FX_IDC:XAUUSD',
-                    baseRSI: 52.5,
+                    baseRSI: 45.0, // Start in buy zone for testing
                     rsiVolatility: 2.0,
                     trendBias: 0.1,
-                    marketType: 'forex',
+                    marketType: 'forex', // 24/5 market
                     session: 'london',
                     isTradeable: true,
-                    // Real-time properties
-                    currentRSI: 52.5,
-                    signal: 'NEUTRAL',
-                    confidence: 50,
+                    currentRSI: 28.5, // Start in BUY zone
+                    signal: 'BUY',
+                    confidence: 70,
                     lastUpdate: null,
                     updateCount: 0
                 },
@@ -851,12 +865,12 @@
                     baseRSI: 48.5,
                     rsiVolatility: 4.0,
                     trendBias: 0.2,
-                    marketType: 'crypto',
+                    marketType: 'crypto', // 24/7 market
                     session: 'global',
                     isTradeable: true,
-                    currentRSI: 48.5,
-                    signal: 'NEUTRAL',
-                    confidence: 50,
+                    currentRSI: 72.5, // Start in SELL zone
+                    signal: 'SELL',
+                    confidence: 75,
                     lastUpdate: null,
                     updateCount: 0
                 },
@@ -867,10 +881,10 @@
                     baseRSI: 49.5,
                     rsiVolatility: 1.5,
                     trendBias: -0.05,
-                    marketType: 'forex',
+                    marketType: 'forex', // 24/5 market
                     session: 'london',
                     isTradeable: true,
-                    currentRSI: 49.5,
+                    currentRSI: 52.5, // Start in NEUTRAL
                     signal: 'NEUTRAL',
                     confidence: 50,
                     lastUpdate: null,
@@ -883,12 +897,12 @@
                     baseRSI: 58.5,
                     rsiVolatility: 3.0,
                     trendBias: -0.15,
-                    marketType: 'index',
+                    marketType: 'index', // Limited hours
                     session: 'newyork',
                     isTradeable: true,
-                    currentRSI: 58.5,
+                    currentRSI: 65.0, // Start near SELL zone
                     signal: 'NEUTRAL',
-                    confidence: 50,
+                    confidence: 60,
                     lastUpdate: null,
                     updateCount: 0
                 },
@@ -899,28 +913,12 @@
                     baseRSI: 56.5,
                     rsiVolatility: 2.5,
                     trendBias: 0.08,
-                    marketType: 'index',
+                    marketType: 'index', // Limited hours
                     session: 'newyork',
                     isTradeable: true,
-                    currentRSI: 56.5,
+                    currentRSI: 32.5, // Start near BUY zone
                     signal: 'NEUTRAL',
-                    confidence: 50,
-                    lastUpdate: null,
-                    updateCount: 0
-                },
-                {
-                    symbol: 'GBPUSD',
-                    name: 'GBP/USD',
-                    tradingViewSymbol: 'FX:GBPUSD',
-                    baseRSI: 51.5,
-                    rsiVolatility: 1.8,
-                    trendBias: 0.05,
-                    marketType: 'forex',
-                    session: 'london',
-                    isTradeable: true,
-                    currentRSI: 51.5,
-                    signal: 'NEUTRAL',
-                    confidence: 50,
+                    confidence: 55,
                     lastUpdate: null,
                     updateCount: 0
                 }
@@ -929,12 +927,10 @@
             // Initialize system
             async init() {
                 console.log('Initializing Real-Time RSI System...');
+                console.log('Current time:', new Date().toUTCString());
                 
                 // Initialize market sessions
                 this.updateMarketSessions();
-                
-                // Initialize asset states with realistic RSI
-                this.initializeAssetStates();
                 
                 // Setup event listeners
                 this.setupEventListeners();
@@ -951,33 +947,31 @@
                 console.log('Real-Time RSI System ready');
             },
             
-            // Initialize asset states
-            initializeAssetStates() {
-                this.assets.forEach(asset => {
-                    // Start with realistic RSI values
-                    const initialRSI = this.getRealisticInitialRSI(asset.symbol);
-                    asset.currentRSI = initialRSI;
-                    asset.signal = this.calculateSignal(initialRSI);
-                    asset.confidence = this.calculateConfidence(initialRSI);
-                    asset.lastUpdate = Date.now();
-                    asset.updateCount = 0;
-                });
+            // Check if Forex market is open (24/5)
+            isForexMarketOpen() {
+                const now = new Date();
+                const utcDay = now.getUTCDay(); // 0 = Sunday, 5 = Friday
+                const utcHour = now.getUTCHours();
+                
+                // Forex weekend: Friday 9 PM UTC to Sunday 9 PM UTC
+                const isFridayEvening = (utcDay === 5 && utcHour >= 21);
+                const isSaturday = (utcDay === 6);
+                const isSundayBefore9PM = (utcDay === 0 && utcHour < 21);
+                
+                return !(isFridayEvening || isSaturday || isSundayBefore9PM);
             },
             
-            // Get realistic initial RSI
-            getRealisticInitialRSI(symbol) {
-                const baseValues = {
-                    'XAUUSD': 52.5,
-                    'BTCUSD': 48.5,
-                    'EURUSD': 49.5,
-                    'NAS100': 58.5,
-                    'US30': 56.5,
-                    'GBPUSD': 51.5
-                };
+            // Check if Index market is open (NY session hours)
+            isIndexMarketOpen() {
+                const now = new Date();
+                const utcHour = now.getUTCHours();
+                const utcDay = now.getUTCDay();
                 
-                const base = baseValues[symbol] || 50;
-                const variation = (Math.random() * 10) - 5;
-                return parseFloat((base + variation).toFixed(1));
+                // Index markets: Monday-Friday, 13:00-21:00 UTC
+                const isWeekday = (utcDay >= 1 && utcDay <= 5); // Monday to Friday
+                const isTradingHours = (utcHour >= 13 && utcHour < 21);
+                
+                return isWeekday && isTradingHours;
             },
             
             // Update market sessions
@@ -986,9 +980,7 @@
                 const utcHour = now.getUTCHours();
                 const utcDay = now.getUTCDay();
                 
-                const isForexWeekend = (utcDay === 5 && utcHour >= 21) || 
-                                      (utcDay === 6) || 
-                                      (utcDay === 0 && utcHour < 21);
+                console.log('Current UTC:', utcDay, utcHour);
                 
                 // Update session dots
                 const londonDot = document.getElementById('london-session');
@@ -1007,32 +999,39 @@
                 const marketStatusText = document.getElementById('market-status-text');
                 const marketStatus = document.getElementById('market-status');
                 
-                if (isForexWeekend) {
-                    marketStatusText.textContent = 'FOREX CLOSED (Weekend)';
+                const isForexOpen = this.isForexMarketOpen();
+                const isIndexOpen = this.isIndexMarketOpen();
+                
+                if (!isForexOpen && !isIndexOpen) {
+                    marketStatusText.textContent = 'ALL MARKETS CLOSED';
                     marketStatusText.className = 'market-closed';
+                } else if (!isForexOpen) {
+                    marketStatusText.textContent = 'FOREX CLOSED (Index Open)';
+                    marketStatusText.className = 'market-closed';
+                } else if (!isIndexOpen) {
+                    marketStatusText.textContent = 'INDEX CLOSED (Forex Open)';
+                    marketStatusText.className = 'market-open';
                 } else {
-                    marketStatusText.textContent = 'MARKETS ACTIVE';
+                    marketStatusText.textContent = 'ALL MARKETS OPEN';
                     marketStatusText.className = 'market-open';
                 }
                 
                 // Update asset tradeability
-                this.updateAssetTradeability(isForexWeekend);
+                this.updateAssetTradeability(isForexOpen, isIndexOpen);
             },
             
-            // Update asset tradeability
-            updateAssetTradeability(isForexWeekend) {
-                const now = new Date();
-                const utcHour = now.getUTCHours();
-                
+            // Update asset tradeability - FIXED
+            updateAssetTradeability(isForexOpen, isIndexOpen) {
                 this.assets.forEach(asset => {
                     if (asset.marketType === 'forex') {
-                        asset.isTradeable = !isForexWeekend;
+                        asset.isTradeable = isForexOpen;
                     } else if (asset.marketType === 'index') {
-                        const isTradingHours = utcHour >= 13 && utcHour < 21;
-                        asset.isTradeable = isTradingHours;
-                    } else {
-                        asset.isTradeable = true;
+                        asset.isTradeable = isIndexOpen;
+                    } else if (asset.marketType === 'crypto') {
+                        asset.isTradeable = true; // Crypto always open
                     }
+                    
+                    console.log(`${asset.symbol}: ${asset.isTradeable ? 'TRADEABLE' : 'CLOSED'} (${asset.marketType})`);
                 });
             },
             
@@ -1040,17 +1039,27 @@
             startRealTimeUpdates() {
                 // Update immediately
                 this.updateAllAssets();
+                this.updateAllDisplays();
                 
                 // Set up interval for continuous updates
                 this.updateInterval = setInterval(() => {
+                    this.updateCount++;
+                    console.log(`Update #${this.updateCount} - ${new Date().toLocaleTimeString()}`);
+                    
                     this.updateAllAssets();
                     this.updateAllDisplays();
                     
                     // Update market sessions every minute
-                    if (Date.now() % 60000 < 1000) { // Every minute
+                    if (this.updateCount % 6 === 0) { // Every 30 seconds
                         this.updateMarketSessions();
                     }
-                }, 10000); // Update every 10 seconds
+                    
+                    // Update next update time display
+                    this.updateNextUpdateTime();
+                    
+                }, 5000); // Update every 5 seconds
+                
+                console.log('Real-time updates started: every 5 seconds');
             },
             
             // Update all assets with real-time data
@@ -1058,51 +1067,50 @@
                 const now = new Date();
                 
                 this.assets.forEach(asset => {
-                    if (!asset.isTradeable) return;
+                    // Skip if market is closed
+                    if (!asset.isTradeable) {
+                        console.log(`${asset.symbol}: Skipped (Market Closed)`);
+                        return;
+                    }
                     
                     // Update RSI with realistic movement
                     this.updateAssetRSI(asset);
                     
                     // Update signal based on new RSI
-                    asset.signal = this.calculateSignal(asset.currentRSI);
-                    asset.confidence = this.calculateConfidence(asset.currentRSI);
+                    const newSignal = this.calculateSignal(asset.currentRSI);
+                    const newConfidence = this.calculateConfidence(asset.currentRSI);
+                    
+                    // Only update if changed (to reduce noise)
+                    if (newSignal !== asset.signal || Math.abs(newConfidence - asset.confidence) > 5) {
+                        asset.signal = newSignal;
+                        asset.confidence = newConfidence;
+                        console.log(`${asset.symbol}: ${asset.currentRSI.toFixed(1)} - ${asset.signal} (${asset.confidence}%)`);
+                    }
+                    
                     asset.lastUpdate = now;
                     asset.updateCount++;
-                    
-                    // Log update for debugging
-                    if (asset.updateCount % 10 === 0) { // Log every 10 updates
-                        console.log(`${asset.symbol}: RSI ${asset.currentRSI.toFixed(1)} - ${asset.signal} (${asset.confidence}%)`);
-                    }
                 });
-                
-                // Update next update time display
-                this.updateNextUpdateTime();
             },
             
             // Update individual asset RSI
             updateAssetRSI(asset) {
+                // More realistic movement - not too fast
                 const volatility = asset.rsiVolatility;
-                const movement = (Math.random() * volatility * 2) - volatility + asset.trendBias;
-                
-                // Add some randomness to simulate real market
-                const randomFactor = (Math.random() - 0.5) * volatility * 0.5;
-                const totalMovement = movement + randomFactor;
+                const movement = (Math.random() * volatility * 0.5) - (volatility * 0.25) + asset.trendBias;
                 
                 // Update RSI
-                const oldRSI = asset.currentRSI;
-                asset.currentRSI += totalMovement;
+                asset.currentRSI += movement;
+                
+                // Keep within bounds and add some randomness
+                if (asset.currentRSI > 85) asset.currentRSI = 85 - Math.random() * 5;
+                if (asset.currentRSI < 15) asset.currentRSI = 15 + Math.random() * 5;
+                
+                // Ensure it stays within 0-100
                 asset.currentRSI = Math.max(0, Math.min(100, asset.currentRSI));
                 asset.currentRSI = parseFloat(asset.currentRSI.toFixed(1));
-                
-                // Ensure realistic movement (not too fast)
-                if (Math.abs(asset.currentRSI - oldRSI) > volatility * 1.5) {
-                    // If movement too large, adjust back
-                    asset.currentRSI = oldRSI + (Math.sign(totalMovement) * volatility * 0.8);
-                    asset.currentRSI = parseFloat(asset.currentRSI.toFixed(1));
-                }
             },
             
-            // Calculate signal from RSI
+            // Calculate signal from RSI - SIMPLE
             calculateSignal(rsi) {
                 if (rsi <= 30) return 'BUY';
                 if (rsi >= 70) return 'SELL';
@@ -1122,7 +1130,7 @@
             // Update next update time display
             updateNextUpdateTime() {
                 const now = new Date();
-                const nextUpdate = new Date(now.getTime() + 10000); // 10 seconds from now
+                const nextUpdate = new Date(now.getTime() + 5000); // 5 seconds from now
                 
                 const hours = nextUpdate.getHours().toString().padStart(2, '0');
                 const minutes = nextUpdate.getMinutes().toString().padStart(2, '0');
@@ -1131,8 +1139,10 @@
                 document.getElementById('next-update-time').textContent = `${hours}:${minutes}:${seconds}`;
                 
                 // Update last update time
-                document.getElementById('last-update-time').textContent = 
-                    `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+                const lastHours = now.getHours().toString().padStart(2, '0');
+                const lastMinutes = now.getMinutes().toString().padStart(2, '0');
+                const lastSeconds = now.getSeconds().toString().padStart(2, '0');
+                document.getElementById('last-update-time').textContent = `${lastHours}:${lastMinutes}:${lastSeconds}`;
             },
             
             // Load TradingView Chart
@@ -1230,7 +1240,7 @@
                 }
             },
             
-            // Update asset list
+            // Update asset list - FIXED to show CLOSED for Forex on weekend
             updateAssetList() {
                 const assetList = document.getElementById('asset-list');
                 assetList.innerHTML = '';
@@ -1239,14 +1249,18 @@
                     const isActive = asset.symbol === this.currentAsset;
                     const signal = asset.signal || 'NEUTRAL';
                     const signalClass = signal.toLowerCase();
+                    const statusClass = asset.isTradeable ? 'live' : 'closed';
                     
                     const item = document.createElement('div');
-                    item.className = `asset-item ${signalClass} ${isActive ? 'active' : ''} real-time`;
+                    item.className = `asset-item ${signalClass} ${isActive ? 'active' : ''} ${statusClass}`;
                     item.setAttribute('data-asset', asset.symbol);
                     
                     // Format last update time
-                    const lastUpdate = asset.lastUpdate ? new Date(asset.lastUpdate) : new Date();
-                    const updateTime = `${lastUpdate.getHours().toString().padStart(2, '0')}:${lastUpdate.getMinutes().toString().padStart(2, '0')}:${lastUpdate.getSeconds().toString().padStart(2, '0')}`;
+                    let updateTime = '--:--';
+                    if (asset.lastUpdate) {
+                        const lastUpdate = new Date(asset.lastUpdate);
+                        updateTime = `${lastUpdate.getHours().toString().padStart(2, '0')}:${lastUpdate.getMinutes().toString().padStart(2, '0')}:${lastUpdate.getSeconds().toString().padStart(2, '0')}`;
+                    }
                     
                     item.innerHTML = `
                         <div class="asset-name">
@@ -1256,7 +1270,7 @@
                             </span>
                         </div>
                         
-                        <div class="asset-signal signal-${signalClass}">${signal} SIGNAL</div>
+                        <div class="asset-signal signal-${signalClass}">${signal} ${asset.isTradeable ? 'SIGNAL' : '(CLOSED)'}</div>
                         
                         <div class="asset-meta">
                             <span class="signal-accuracy">${asset.confidence}% Confidence</span>
@@ -1264,9 +1278,11 @@
                         </div>
                     `;
                     
-                    item.addEventListener('click', () => {
-                        this.selectAsset(asset.symbol);
-                    });
+                    if (asset.isTradeable) {
+                        item.addEventListener('click', () => {
+                            this.selectAsset(asset.symbol);
+                        });
+                    }
                     
                     assetList.appendChild(item);
                 });
@@ -1284,13 +1300,15 @@
                 document.getElementById('signal-type').textContent = `${signal} SIGNAL`;
                 document.getElementById('signal-type').className = `signal-type ${signalClass}`;
                 document.getElementById('signal-asset').textContent = 
-                    `${asset.name} (${asset.symbol}) - Real-Time Analysis`;
+                    `${asset.name} (${asset.symbol}) - ${asset.isTradeable ? 'Real-Time Analysis' : 'MARKET CLOSED'}`;
                 document.getElementById('signal-rsi').textContent = asset.currentRSI.toFixed(2);
                 document.getElementById('signal-confidence').textContent = `${asset.confidence}%`;
                 
                 // Update signal details
                 let details = '';
-                if (signal === 'BUY') {
+                if (!asset.isTradeable) {
+                    details = `Market closed. ${asset.marketType === 'forex' ? 'Forex markets open Monday-Friday 24/5' : 'Index markets open Monday-Friday during NY session'}.`;
+                } else if (signal === 'BUY') {
                     details = `RSI at ${asset.currentRSI.toFixed(1)} (≤30) indicates oversold conditions. Strong buy signal with ${asset.confidence}% confidence.`;
                 } else if (signal === 'SELL') {
                     details = `RSI at ${asset.currentRSI.toFixed(1)} (≥70) indicates overbought conditions. Strong sell signal with ${asset.confidence}% confidence.`;
@@ -1379,27 +1397,16 @@
                     notification.style.animation = 'slideOut 0.3s ease';
                     setTimeout(() => notification.remove(), 300);
                 }, 3000);
-                
-                // Add animation styles if not exists
-                if (!document.getElementById('notification-styles')) {
-                    const style = document.createElement('style');
-                    style.id = 'notification-styles';
-                    style.textContent = `
-                        @keyframes slideIn {
-                            from { transform: translateX(100%); opacity: 0; }
-                            to { transform: translateX(0); opacity: 1; }
-                        }
-                        @keyframes slideOut {
-                            from { transform: translateX(0); opacity: 1; }
-                            to { transform: translateX(100%); opacity: 0; }
-                        }
-                    `;
-                    document.head.appendChild(style);
-                }
             },
             
             // Select asset
             async selectAsset(assetSymbol) {
+                const asset = this.assets.find(a => a.symbol === assetSymbol);
+                if (!asset || !asset.isTradeable) {
+                    this.showNotification(`${assetSymbol} market is closed`, 'info');
+                    return;
+                }
+                
                 this.currentAsset = assetSymbol;
                 
                 this.updateCurrentAssetDisplay();
