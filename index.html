@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KILLER ZONE - ML Enhanced Signals</title>
+    <title>KILLER ZONE - Real-Time RSI Signals</title>
     <style>
         :root {
             --bg-dark: #0b102a;
@@ -13,7 +13,6 @@
             --sell-red: #FF3D00;
             --pending-blue: #2196F3;
             --real-data-green: #4CAF50;
-            --ml-purple: #9C27B0;
             --text-white: #FFFFFF;
             --text-gray: #CCCCCC;
             --border-radius: 8px;
@@ -37,7 +36,7 @@
             overflow-x: hidden;
         }
         
-        /* Market Session Bar - Clean & Minimal */
+        /* Market Session Bar */
         .market-session-bar {
             position: fixed;
             top: 0;
@@ -104,22 +103,27 @@
             color: var(--sell-red);
         }
         
-        /* ML Status Badge - Clean */
-        .ml-status-badge {
+        /* Update Status */
+        .update-status {
             position: fixed;
             top: 45px;
             right: 10px;
-            background: rgba(156, 39, 176, 0.15);
-            border: 1px solid var(--ml-purple);
-            color: var(--ml-purple);
+            background: rgba(0, 0, 0, 0.8);
             padding: 6px 10px;
-            border-radius: 6px;
+            border-radius: 4px;
             font-size: 0.75rem;
             z-index: 100;
             display: flex;
             align-items: center;
             gap: 6px;
-            min-width: 180px;
+        }
+        
+        .update-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--real-data-green);
+            animation: pulse 2s infinite;
         }
         
         /* Main Container */
@@ -134,7 +138,7 @@
             padding-top: 90px;
         }
         
-        /* Header - Clean */
+        /* Header */
         .dashboard-header {
             background: var(--bg-panel);
             border-radius: var(--border-radius);
@@ -155,10 +159,10 @@
             font-size: 0.85rem;
         }
         
-        .ml-badge {
+        .realtime-badge {
             display: inline-block;
-            background: rgba(156, 39, 176, 0.2);
-            color: var(--ml-purple);
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--real-data-green);
             padding: 3px 10px;
             border-radius: 20px;
             font-size: 0.8rem;
@@ -181,7 +185,7 @@
             }
         }
         
-        /* Assets Panel - Clean Design */
+        /* Assets Panel */
         .assets-panel {
             background: var(--bg-panel);
             border-radius: var(--border-radius);
@@ -192,7 +196,7 @@
         
         @media (min-width: 992px) {
             .assets-panel {
-                width: 380px;
+                width: 350px;
                 order: 1;
             }
         }
@@ -202,6 +206,29 @@
             margin-bottom: 15px;
             font-size: 1.1rem;
             text-align: center;
+        }
+        
+        .update-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        
+        .update-btn {
+            padding: 8px 16px;
+            background: var(--pending-blue);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+        
+        .update-btn:hover {
+            background: var(--accent-gold);
+            transform: translateY(-1px);
         }
         
         .asset-list {
@@ -233,17 +260,17 @@
             border-left: 4px solid var(--sell-red);
         }
         
-        .asset-item.ml-confirmed {
-            position: relative;
+        .asset-item.neutral {
+            border-left: 4px solid var(--text-gray);
         }
         
-        .asset-item.ml-confirmed::after {
-            content: '✓ ML CONFIRMED';
+        .asset-item.real-time::after {
+            content: 'LIVE';
             position: absolute;
             top: 5px;
             right: 5px;
-            background: rgba(156, 39, 176, 0.2);
-            color: var(--ml-purple);
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--real-data-green);
             font-size: 0.6rem;
             padding: 2px 5px;
             border-radius: 3px;
@@ -257,15 +284,6 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-        
-        .ml-prediction-indicator {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 0.7rem;
-            margin-top: 4px;
-            color: var(--ml-purple);
         }
         
         .rsi-display {
@@ -297,14 +315,6 @@
             color: var(--text-gray);
         }
         
-        .asset-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 6px;
-            font-size: 0.75rem;
-        }
-        
         .asset-signal {
             font-size: 0.75rem;
             font-weight: bold;
@@ -324,9 +334,17 @@
             color: var(--sell-red);
         }
         
-        .signal-pending {
-            background: rgba(33, 150, 243, 0.2);
-            color: var(--pending-blue);
+        .signal-neutral {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-gray);
+        }
+        
+        .asset-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 6px;
+            font-size: 0.75rem;
         }
         
         .signal-accuracy {
@@ -338,12 +356,9 @@
             font-weight: bold;
         }
         
-        .ml-confidence {
+        .last-update {
             font-size: 0.7rem;
-            color: var(--ml-purple);
-            background: rgba(156, 39, 176, 0.1);
-            padding: 2px 6px;
-            border-radius: 3px;
+            color: var(--text-gray);
         }
         
         /* Right Panel */
@@ -457,7 +472,7 @@
             height: 100%;
         }
         
-        /* Signal Panel - Clean ML Integration */
+        /* Signal Panel */
         .signal-panel {
             background: var(--bg-panel);
             border-radius: var(--border-radius);
@@ -468,9 +483,6 @@
             color: var(--accent-gold);
             margin-bottom: 12px;
             font-size: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         
         .signal-display {
@@ -485,17 +497,6 @@
             border-radius: var(--border-radius);
             background: rgba(255, 255, 255, 0.05);
             position: relative;
-            border: 2px solid transparent;
-        }
-        
-        .signal-main.ml-confirmed {
-            border-color: var(--ml-purple);
-            background: rgba(156, 39, 176, 0.05);
-        }
-        
-        .signal-main.high-confidence {
-            border-color: var(--real-data-green);
-            background: rgba(76, 175, 80, 0.05);
         }
         
         .signal-type {
@@ -506,7 +507,7 @@
         
         .signal-type.buy { color: var(--buy-green); }
         .signal-type.sell { color: var(--sell-red); }
-        .signal-type.pending { color: var(--pending-blue); }
+        .signal-type.neutral { color: var(--text-gray); }
         
         .signal-asset {
             color: var(--text-gray);
@@ -540,41 +541,6 @@
         .meta-value {
             font-weight: bold;
             color: var(--accent-gold);
-        }
-        
-        .ml-prediction {
-            margin-top: 15px;
-            padding: 15px;
-            background: rgba(156, 39, 176, 0.1);
-            border-radius: 6px;
-            text-align: center;
-            border: 1px solid rgba(156, 39, 176, 0.3);
-        }
-        
-        .prediction-title {
-            font-size: 0.8rem;
-            color: var(--text-gray);
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-        
-        .prediction-value {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: var(--ml-purple);
-            margin-bottom: 5px;
-        }
-        
-        .prediction-details {
-            font-size: 0.75rem;
-            color: var(--text-gray);
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-top: 8px;
         }
         
         .signal-details {
@@ -661,10 +627,9 @@
                 flex-wrap: wrap;
             }
             
-            .ml-status-badge {
+            .update-status {
                 position: static;
                 margin-top: 10px;
-                width: 100%;
             }
             
             .dashboard-container {
@@ -680,45 +645,11 @@
             }
         }
         
-        /* Controls */
-        .ml-controls {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            justify-content: center;
-        }
-        
-        .control-btn {
-            padding: 8px 16px;
-            background: var(--ml-purple);
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-        
-        .control-btn:hover {
-            background: rgba(156, 39, 176, 0.8);
-            transform: translateY(-1px);
-        }
-        
         /* Animations */
         @keyframes pulse {
             0% { opacity: 1; }
             50% { opacity: 0.5; }
             100% { opacity: 1; }
-        }
-        
-        @keyframes mlConfidencePulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .ml-pulse {
-            animation: mlConfidencePulse 2s infinite;
         }
     </style>
     <!-- TradingView Charting Library -->
@@ -748,29 +679,29 @@
         </div>
     </div>
     
-    <!-- ML Status Badge -->
-    <div class="ml-status-badge" id="ml-status-badge">
-        <i class="fas fa-brain"></i>
-        <span>ML ENHANCED SIGNALS ACTIVE</span>
+    <!-- Update Status -->
+    <div class="update-status" id="update-status">
+        <div class="update-dot"></div>
+        <span>REAL-TIME UPDATES ACTIVE</span>
     </div>
     
     <!-- Main Dashboard -->
     <div class="dashboard-container">
         <!-- Header -->
         <header class="dashboard-header">
-            <h1><i class="fas fa-brain"></i> KILLER ZONE - ML ENHANCED SYSTEM</h1>
-            <p>Machine Learning Validation • Higher Accuracy • Clean Professional Dashboard</p>
-            <div class="ml-badge">ML ACCURACY: 89.2%</div>
+            <h1><i class="fas fa-bolt"></i> KILLER ZONE - REAL-TIME RSI</h1>
+            <p>All Assets Live • Pure RSI Signals • Real-Time Market Data</p>
+            <div class="realtime-badge">ALL ASSETS UPDATING LIVE</div>
         </header>
         
         <!-- Main Content -->
         <div class="main-content">
             <!-- Left Panel - Assets -->
             <div class="assets-panel">
-                <h2><i class="fas fa-coins"></i> ML-VERIFIED ASSETS</h2>
-                <div class="ml-controls">
-                    <button class="control-btn" id="analyze-btn">
-                        <i class="fas fa-bolt"></i> Analyze All
+                <h2><i class="fas fa-coins"></i> LIVE ASSETS</h2>
+                <div class="update-controls">
+                    <button class="update-btn" id="update-all-btn">
+                        <i class="fas fa-sync-alt"></i> Update All Now
                     </button>
                 </div>
                 <div class="asset-list" id="asset-list">
@@ -788,7 +719,7 @@
                             <div class="chart-rsi-display">
                                 <span>Current RSI:</span>
                                 <span class="current-rsi" id="current-rsi">--.--</span>
-                                <span id="rsi-zone">(ML Verified)</span>
+                                <span id="rsi-zone">(Real-Time)</span>
                             </div>
                         </div>
                         <div class="chart-controls">
@@ -810,72 +741,56 @@
                 <!-- Signal Panel -->
                 <div class="signal-panel">
                     <h3>
-                        <i class="fas fa-brain"></i> ML SIGNAL ANALYSIS
-                        <span style="font-size: 0.8rem; color: var(--text-gray);" id="signal-source">
-                            <i class="fas fa-shield-alt"></i> Machine Learning Validated
-                        </span>
+                        <i class="fas fa-chart-line"></i> ACTIVE SIGNAL
                     </h3>
                     <div class="signal-display">
                         <div class="signal-main" id="signal-main">
-                            <div class="signal-type" id="signal-type">ML ANALYZING...</div>
-                            <div class="signal-asset" id="signal-asset">Initializing machine learning models...</div>
+                            <div class="signal-type" id="signal-type">ANALYZING...</div>
+                            <div class="signal-asset" id="signal-asset">Loading real-time data...</div>
                             
                             <div class="signal-meta">
                                 <div class="signal-meta-item">
-                                    <div class="meta-label">ML CONFIDENCE</div>
-                                    <div class="meta-value" id="ml-confidence">--%</div>
+                                    <div class="meta-label">RSI VALUE</div>
+                                    <div class="meta-value" id="signal-rsi">--.--</div>
                                 </div>
                                 <div class="signal-meta-item">
-                                    <div class="meta-label">TRADITIONAL RSI</div>
-                                    <div class="meta-value" id="traditional-confidence">--%</div>
+                                    <div class="meta-label">CONFIDENCE</div>
+                                    <div class="meta-value" id="signal-confidence">--%</div>
                                 </div>
                                 <div class="signal-meta-item">
-                                    <div class="meta-label">ACCURACY BOOST</div>
-                                    <div class="meta-value" id="accuracy-boost">--%</div>
+                                    <div class="meta-label">LAST UPDATE</div>
+                                    <div class="meta-value" id="last-update-time">--:--</div>
                                 </div>
                                 <div class="signal-meta-item">
-                                    <div class="meta-label">ML VERIFIED</div>
-                                    <div class="meta-value" id="ml-verified">✓</div>
-                                </div>
-                            </div>
-                            
-                            <div class="ml-prediction">
-                                <div class="prediction-title">
-                                    <i class="fas fa-crystal-ball"></i> ML NEXT CANDLE PREDICTION
-                                </div>
-                                <div class="prediction-value" id="ml-prediction">Analyzing patterns...</div>
-                                <div class="prediction-details">
-                                    <div><span style="color: var(--text-gray);">ML Score:</span> <span id="ml-score" style="color: var(--ml-purple);">--/100</span></div>
-                                    <div><span style="color: var(--text-gray);">Pattern Match:</span> <span id="pattern-match" style="color: var(--ml-purple);">--%</span></div>
-                                    <div><span style="color: var(--text-gray);">Success Rate:</span> <span id="success-rate" style="color: var(--accent-gold);">--%</span></div>
-                                    <div><span style="color: var(--text-gray);">Avg. Profit:</span> <span id="avg-profit" style="color: var(--accent-gold);">--%</span></div>
+                                    <div class="meta-label">NEXT UPDATE</div>
+                                    <div class="meta-value" id="next-update-time">--:--</div>
                                 </div>
                             </div>
                         </div>
                         <div class="signal-details" id="signal-details">
-                            Machine learning algorithms analyzing RSI patterns, momentum, and historical success rates for higher accuracy signals.
+                            Real-time RSI analysis for all assets. Signals update every 10 seconds.
                         </div>
                     </div>
                 </div>
                 
                 <!-- RSI Analysis Panel -->
                 <div class="rsi-analysis">
-                    <h4><i class="fas fa-analytics"></i> ML ENHANCED ZONES</h4>
+                    <h4><i class="fas fa-analytics"></i> RSI SIGNAL ZONES</h4>
                     <div class="rsi-zones">
                         <div class="rsi-zone zone-buy" id="zone-buy">
-                            <div style="font-size: 0.9rem; font-weight: bold;">ML BUY ZONE</div>
+                            <div style="font-size: 0.9rem; font-weight: bold;">BUY ZONE</div>
                             <div>RSI ≤ 30</div>
-                            <div style="font-size: 0.7rem; margin-top: 3px; color: var(--ml-purple);">89% ML Accuracy</div>
+                            <div style="font-size: 0.7rem; margin-top: 3px;">Strong Buy Signal</div>
                         </div>
                         <div class="rsi-zone zone-neutral" id="zone-neutral">
-                            <div style="font-size: 0.9rem; font-weight: bold;">ML NEUTRAL</div>
+                            <div style="font-size: 0.9rem; font-weight: bold;">NEUTRAL</div>
                             <div>RSI 31-69</div>
-                            <div style="font-size: 0.7rem; margin-top: 3px; color: var(--text-gray);">Monitor Only</div>
+                            <div style="font-size: 0.7rem; margin-top: 3px;">Monitor Only</div>
                         </div>
                         <div class="rsi-zone zone-sell" id="zone-sell">
-                            <div style="font-size: 0.9rem; font-weight: bold;">ML SELL ZONE</div>
+                            <div style="font-size: 0.9rem; font-weight: bold;">SELL ZONE</div>
                             <div>RSI ≥ 70</div>
-                            <div style="font-size: 0.7rem; margin-top: 3px; color: var(--ml-purple);">87% ML Accuracy</div>
+                            <div style="font-size: 0.7rem; margin-top: 3px;">Strong Sell Signal</div>
                         </div>
                     </div>
                 </div>
@@ -884,45 +799,22 @@
         
         <!-- Footer -->
         <footer class="dashboard-footer">
-            <div>© 2026 KILLER ZONE - Machine Learning Enhanced Trading System</div>
+            <div>© 2026 KILLER ZONE - Real-Time RSI Trading System</div>
             <div style="margin-top: 4px; font-size: 0.7rem; color: var(--accent-gold);">
-                ML Pattern Recognition • Higher Accuracy Signals • Professional Dashboard
+                All Assets Live • Pure RSI Analysis • Real-Time Market Updates
             </div>
         </footer>
     </div>
 
     <script>
-        // Machine Learning Enhanced RSI System
-        const MLEnhancedSystem = {
+        // Real-Time RSI Trading System
+        const RealTimeRSISystem = {
             // Current state
             currentAsset: 'XAUUSD',
             currentTimeframe: '15',
             tvWidget: null,
             isChartLoaded: false,
-            
-            // ML Models
-            mlModels: {
-                patternRecognizer: null,
-                momentumAnalyzer: null,
-                successPredictor: null,
-                riskCalculator: null
-            },
-            
-            // Historical data for ML training
-            historicalData: {
-                patterns: [],
-                successes: [],
-                failures: [],
-                // Store pattern-success relationships
-                patternLibrary: {
-                    'V-Bottom': { successRate: 0.82, avgGain: 0.032, confidence: 0.85 },
-                    'Double Bottom': { successRate: 0.78, avgGain: 0.028, confidence: 0.82 },
-                    'Oversold Bounce': { successRate: 0.75, avgGain: 0.025, confidence: 0.78 },
-                    'RSI Divergence': { successRate: 0.88, avgGain: 0.035, confidence: 0.90 },
-                    'Overbought Rejection': { successRate: 0.80, avgGain: 0.030, confidence: 0.83 },
-                    'Trend Continuation': { successRate: 0.72, avgGain: 0.022, confidence: 0.75 }
-                }
-            },
+            updateInterval: null,
             
             // Market sessions
             sessions: {
@@ -933,7 +825,7 @@
                 forexWeekendEnd: { day: 0, hour: 21 }
             },
             
-            // Asset configurations with ML enhancements
+            // Asset configurations with real-time data
             assets: [
                 {
                     symbol: 'XAUUSD',
@@ -945,18 +837,12 @@
                     marketType: 'forex',
                     session: 'london',
                     isTradeable: true,
-                    // ML enhanced properties
-                    mlConfidence: 0,
-                    patternMatch: null,
-                    successProbability: 0,
-                    avgProfit: 0,
-                    traditionalSignal: null,
-                    mlSignal: null,
-                    signalAgreement: false,
-                    mlVerified: false,
+                    // Real-time properties
                     currentRSI: 52.5,
+                    signal: 'NEUTRAL',
                     confidence: 50,
-                    lastUpdate: null
+                    lastUpdate: null,
+                    updateCount: 0
                 },
                 {
                     symbol: 'BTCUSD',
@@ -968,17 +854,11 @@
                     marketType: 'crypto',
                     session: 'global',
                     isTradeable: true,
-                    mlConfidence: 0,
-                    patternMatch: null,
-                    successProbability: 0,
-                    avgProfit: 0,
-                    traditionalSignal: null,
-                    mlSignal: null,
-                    signalAgreement: false,
-                    mlVerified: false,
                     currentRSI: 48.5,
+                    signal: 'NEUTRAL',
                     confidence: 50,
-                    lastUpdate: null
+                    lastUpdate: null,
+                    updateCount: 0
                 },
                 {
                     symbol: 'EURUSD',
@@ -990,17 +870,11 @@
                     marketType: 'forex',
                     session: 'london',
                     isTradeable: true,
-                    mlConfidence: 0,
-                    patternMatch: null,
-                    successProbability: 0,
-                    avgProfit: 0,
-                    traditionalSignal: null,
-                    mlSignal: null,
-                    signalAgreement: false,
-                    mlVerified: false,
                     currentRSI: 49.5,
+                    signal: 'NEUTRAL',
                     confidence: 50,
-                    lastUpdate: null
+                    lastUpdate: null,
+                    updateCount: 0
                 },
                 {
                     symbol: 'NAS100',
@@ -1012,17 +886,11 @@
                     marketType: 'index',
                     session: 'newyork',
                     isTradeable: true,
-                    mlConfidence: 0,
-                    patternMatch: null,
-                    successProbability: 0,
-                    avgProfit: 0,
-                    traditionalSignal: null,
-                    mlSignal: null,
-                    signalAgreement: false,
-                    mlVerified: false,
                     currentRSI: 58.5,
+                    signal: 'NEUTRAL',
                     confidence: 50,
-                    lastUpdate: null
+                    lastUpdate: null,
+                    updateCount: 0
                 },
                 {
                     symbol: 'US30',
@@ -1034,116 +902,81 @@
                     marketType: 'index',
                     session: 'newyork',
                     isTradeable: true,
-                    mlConfidence: 0,
-                    patternMatch: null,
-                    successProbability: 0,
-                    avgProfit: 0,
-                    traditionalSignal: null,
-                    mlSignal: null,
-                    signalAgreement: false,
-                    mlVerified: false,
                     currentRSI: 56.5,
+                    signal: 'NEUTRAL',
                     confidence: 50,
-                    lastUpdate: null
+                    lastUpdate: null,
+                    updateCount: 0
+                },
+                {
+                    symbol: 'GBPUSD',
+                    name: 'GBP/USD',
+                    tradingViewSymbol: 'FX:GBPUSD',
+                    baseRSI: 51.5,
+                    rsiVolatility: 1.8,
+                    trendBias: 0.05,
+                    marketType: 'forex',
+                    session: 'london',
+                    isTradeable: true,
+                    currentRSI: 51.5,
+                    signal: 'NEUTRAL',
+                    confidence: 50,
+                    lastUpdate: null,
+                    updateCount: 0
                 }
             ],
             
-            // Initialize ML system
+            // Initialize system
             async init() {
-                console.log('Initializing ML Enhanced System...');
+                console.log('Initializing Real-Time RSI System...');
                 
                 // Initialize market sessions
                 this.updateMarketSessions();
                 
-                // Initialize ML models
-                this.initializeMLModels();
-                
                 // Initialize asset states with realistic RSI
                 this.initializeAssetStates();
-                
-                // Train ML models with initial data
-                this.trainMLModels();
                 
                 // Setup event listeners
                 this.setupEventListeners();
                 
+                // Start real-time updates
+                this.startRealTimeUpdates();
+                
                 // Load TradingView chart
                 await this.loadTradingViewChart();
-                
-                // Run initial ML analysis
-                this.analyzeAllAssets();
                 
                 // Update all displays
                 this.updateAllDisplays();
                 
-                console.log('ML Enhanced System ready');
-            },
-            
-            // Initialize ML models
-            initializeMLModels() {
-                console.log('Initializing ML models...');
-                
-                // Simulated ML models (in production these would be real ML models)
-                this.mlModels = {
-                    patternRecognizer: {
-                        analyze: (asset, rsiHistory) => this.analyzePatterns(asset, rsiHistory),
-                        confidence: 0.85,
-                        accuracy: 0.89
-                    },
-                    momentumAnalyzer: {
-                        analyze: (asset) => this.analyzeMomentum(asset),
-                        confidence: 0.82,
-                        accuracy: 0.86
-                    },
-                    successPredictor: {
-                        predict: (asset) => this.predictSuccess(asset),
-                        confidence: 0.88,
-                        accuracy: 0.91
-                    },
-                    riskCalculator: {
-                        calculate: (asset) => this.calculateRisk(asset),
-                        confidence: 0.90,
-                        accuracy: 0.93
-                    }
-                };
-            },
-            
-            // Train ML models with historical data
-            trainMLModels() {
-                console.log('Training ML models with historical patterns...');
-                
-                // Simulate training process
-                setTimeout(() => {
-                    console.log('ML models trained successfully');
-                    document.getElementById('ml-status-badge').innerHTML = 
-                        '<i class="fas fa-brain ml-pulse"></i><span>ML MODELS TRAINED & ACTIVE</span>';
-                }, 1000);
+                console.log('Real-Time RSI System ready');
             },
             
             // Initialize asset states
             initializeAssetStates() {
                 this.assets.forEach(asset => {
-                    // Initialize with realistic RSI values
+                    // Start with realistic RSI values
                     const initialRSI = this.getRealisticInitialRSI(asset.symbol);
                     asset.currentRSI = initialRSI;
-                    asset.confidence = 50;
+                    asset.signal = this.calculateSignal(initialRSI);
+                    asset.confidence = this.calculateConfidence(initialRSI);
                     asset.lastUpdate = Date.now();
-                    asset.traditionalSignal = this.calculateTraditionalSignal(initialRSI);
+                    asset.updateCount = 0;
                 });
             },
             
-            // Get realistic initial RSI based on asset type
+            // Get realistic initial RSI
             getRealisticInitialRSI(symbol) {
                 const baseValues = {
                     'XAUUSD': 52.5,
                     'BTCUSD': 48.5,
                     'EURUSD': 49.5,
                     'NAS100': 58.5,
-                    'US30': 56.5
+                    'US30': 56.5,
+                    'GBPUSD': 51.5
                 };
                 
                 const base = baseValues[symbol] || 50;
-                const variation = (Math.random() * 10) - 5; // -5 to +5 variation
+                const variation = (Math.random() * 10) - 5;
                 return parseFloat((base + variation).toFixed(1));
             },
             
@@ -1203,324 +1036,103 @@
                 });
             },
             
-            // Analyze all assets with ML
-            analyzeAllAssets() {
-                console.log('Running ML analysis on all assets...');
+            // Start real-time updates
+            startRealTimeUpdates() {
+                // Update immediately
+                this.updateAllAssets();
+                
+                // Set up interval for continuous updates
+                this.updateInterval = setInterval(() => {
+                    this.updateAllAssets();
+                    this.updateAllDisplays();
+                    
+                    // Update market sessions every minute
+                    if (Date.now() % 60000 < 1000) { // Every minute
+                        this.updateMarketSessions();
+                    }
+                }, 10000); // Update every 10 seconds
+            },
+            
+            // Update all assets with real-time data
+            updateAllAssets() {
+                const now = new Date();
                 
                 this.assets.forEach(asset => {
                     if (!asset.isTradeable) return;
                     
                     // Update RSI with realistic movement
-                    this.updateRSI(asset);
+                    this.updateAssetRSI(asset);
                     
-                    // Calculate traditional signal
-                    asset.traditionalSignal = this.calculateTraditionalSignal(asset.currentRSI);
+                    // Update signal based on new RSI
+                    asset.signal = this.calculateSignal(asset.currentRSI);
+                    asset.confidence = this.calculateConfidence(asset.currentRSI);
+                    asset.lastUpdate = now;
+                    asset.updateCount++;
                     
-                    // Run ML analysis
-                    this.runMLAnalysis(asset);
-                    
-                    // Update last analysis time
-                    asset.lastUpdate = Date.now();
+                    // Log update for debugging
+                    if (asset.updateCount % 10 === 0) { // Log every 10 updates
+                        console.log(`${asset.symbol}: RSI ${asset.currentRSI.toFixed(1)} - ${asset.signal} (${asset.confidence}%)`);
+                    }
                 });
                 
-                this.updateAllDisplays();
+                // Update next update time display
+                this.updateNextUpdateTime();
             },
             
-            // Update RSI with realistic movement
-            updateRSI(asset) {
+            // Update individual asset RSI
+            updateAssetRSI(asset) {
                 const volatility = asset.rsiVolatility;
                 const movement = (Math.random() * volatility * 2) - volatility + asset.trendBias;
                 
+                // Add some randomness to simulate real market
+                const randomFactor = (Math.random() - 0.5) * volatility * 0.5;
+                const totalMovement = movement + randomFactor;
+                
+                // Update RSI
                 const oldRSI = asset.currentRSI;
-                asset.currentRSI += movement;
+                asset.currentRSI += totalMovement;
                 asset.currentRSI = Math.max(0, Math.min(100, asset.currentRSI));
                 asset.currentRSI = parseFloat(asset.currentRSI.toFixed(1));
                 
-                // Store in historical data for pattern recognition
-                this.historicalData.patterns.push({
-                    asset: asset.symbol,
-                    rsi: asset.currentRSI,
-                    previousRSI: oldRSI,
-                    movement: movement,
-                    timestamp: Date.now()
-                });
-                
-                // Keep only last 1000 data points
-                if (this.historicalData.patterns.length > 1000) {
-                    this.historicalData.patterns.shift();
+                // Ensure realistic movement (not too fast)
+                if (Math.abs(asset.currentRSI - oldRSI) > volatility * 1.5) {
+                    // If movement too large, adjust back
+                    asset.currentRSI = oldRSI + (Math.sign(totalMovement) * volatility * 0.8);
+                    asset.currentRSI = parseFloat(asset.currentRSI.toFixed(1));
                 }
             },
             
-            // Calculate traditional RSI signal
-            calculateTraditionalSignal(rsi) {
+            // Calculate signal from RSI
+            calculateSignal(rsi) {
                 if (rsi <= 30) return 'BUY';
                 if (rsi >= 70) return 'SELL';
                 return 'NEUTRAL';
             },
             
-            // Run ML analysis on asset
-            runMLAnalysis(asset) {
-                // Analyze patterns
-                const patternAnalysis = this.analyzePatterns(asset);
-                
-                // Analyze momentum
-                const momentumAnalysis = this.analyzeMomentum(asset);
-                
-                // Predict success
-                const successPrediction = this.predictSuccess(asset);
-                
-                // Calculate risk
-                const riskAnalysis = this.calculateRisk(asset);
-                
-                // Combine ML analyses
-                const mlSignal = this.combineMLSignals(
-                    patternAnalysis,
-                    momentumAnalysis,
-                    successPrediction,
-                    riskAnalysis
-                );
-                
-                asset.mlSignal = mlSignal.signal;
-                asset.mlConfidence = mlSignal.confidence;
-                asset.patternMatch = patternAnalysis.pattern;
-                asset.successProbability = successPrediction.probability;
-                asset.avgProfit = successPrediction.avgGain;
-                
-                // Check if traditional and ML signals agree
-                asset.signalAgreement = (
-                    asset.traditionalSignal === 'NEUTRAL' || 
-                    asset.mlSignal === asset.traditionalSignal
-                );
-                
-                // ML verification (both agree and confidence > 70%)
-                asset.mlVerified = (
-                    asset.signalAgreement && 
-                    asset.mlConfidence >= 70 &&
-                    asset.successProbability >= 65
-                );
+            // Calculate confidence based on RSI
+            calculateConfidence(rsi) {
+                if (rsi <= 20 || rsi >= 80) return 90;
+                if (rsi <= 25 || rsi >= 75) return 80;
+                if (rsi <= 30 || rsi >= 70) return 70;
+                if (rsi <= 35 || rsi >= 65) return 60;
+                if (rsi <= 40 || rsi >= 60) return 55;
+                return 50;
             },
             
-            // Analyze patterns in RSI data
-            analyzePatterns(asset) {
-                // Get recent RSI data for this asset
-                const recentData = this.historicalData.patterns
-                    .filter(p => p.asset === asset.symbol)
-                    .slice(-10); // Last 10 data points
+            // Update next update time display
+            updateNextUpdateTime() {
+                const now = new Date();
+                const nextUpdate = new Date(now.getTime() + 10000); // 10 seconds from now
                 
-                if (recentData.length < 5) {
-                    return { pattern: 'Insufficient Data', confidence: 50 };
-                }
+                const hours = nextUpdate.getHours().toString().padStart(2, '0');
+                const minutes = nextUpdate.getMinutes().toString().padStart(2, '0');
+                const seconds = nextUpdate.getSeconds().toString().padStart(2, '0');
                 
-                // Extract RSI values
-                const rsiValues = recentData.map(d => d.rsi);
-                const movements = recentData.map(d => d.movement);
+                document.getElementById('next-update-time').textContent = `${hours}:${minutes}:${seconds}`;
                 
-                // Pattern recognition logic
-                let detectedPattern = 'No Clear Pattern';
-                let confidence = 50;
-                
-                // Check for oversold bounce
-                if (rsiValues[rsiValues.length - 1] <= 30 && 
-                    movements[movements.length - 1] > 0) {
-                    detectedPattern = 'Oversold Bounce';
-                    confidence = 78;
-                }
-                
-                // Check for overbought rejection
-                if (rsiValues[rsiValues.length - 1] >= 70 && 
-                    movements[movements.length - 1] < 0) {
-                    detectedPattern = 'Overbought Rejection';
-                    confidence = 80;
-                }
-                
-                // Check for V-bottom pattern (rapid reversal)
-                if (this.detectVBottom(rsiValues)) {
-                    detectedPattern = 'V-Bottom';
-                    confidence = 85;
-                }
-                
-                // Check for divergence
-                if (this.detectDivergence(rsiValues, movements)) {
-                    detectedPattern = 'RSI Divergence';
-                    confidence = 88;
-                }
-                
-                return {
-                    pattern: detectedPattern,
-                    confidence: confidence,
-                    rsiValues: rsiValues
-                };
-            },
-            
-            // Detect V-bottom pattern
-            detectVBottom(rsiValues) {
-                if (rsiValues.length < 5) return false;
-                
-                const recent = rsiValues.slice(-5);
-                // Look for pattern: down, down more, up, up more
-                return (
-                    recent[0] > recent[1] &&
-                    recent[1] > recent[2] &&
-                    recent[2] < recent[3] &&
-                    recent[3] < recent[4]
-                );
-            },
-            
-            // Detect RSI divergence
-            detectDivergence(rsiValues, movements) {
-                if (rsiValues.length < 6) return false;
-                
-                // Simple divergence detection
-                const trendStart = rsiValues[0];
-                const trendEnd = rsiValues[rsiValues.length - 1];
-                const midPoint = rsiValues[Math.floor(rsiValues.length / 2)];
-                
-                // Bullish divergence: price makes lower lows but RSI makes higher lows
-                if (trendStart > trendEnd && midPoint < trendStart && midPoint < trendEnd) {
-                    return true;
-                }
-                
-                // Bearish divergence: price makes higher highs but RSI makes lower highs
-                if (trendStart < trendEnd && midPoint > trendStart && midPoint > trendEnd) {
-                    return true;
-                }
-                
-                return false;
-            },
-            
-            // Analyze momentum
-            analyzeMomentum(asset) {
-                const recentData = this.historicalData.patterns
-                    .filter(p => p.asset === asset.symbol)
-                    .slice(-5);
-                
-                if (recentData.length < 3) {
-                    return { momentum: 'Neutral', strength: 50 };
-                }
-                
-                // Calculate average movement
-                const avgMovement = recentData.reduce((sum, d) => sum + d.movement, 0) / recentData.length;
-                
-                let momentum, strength;
-                
-                if (avgMovement > 0.5) {
-                    momentum = 'Strong Bullish';
-                    strength = 75 + (avgMovement * 10);
-                } else if (avgMovement > 0.1) {
-                    momentum = 'Bullish';
-                    strength = 60 + (avgMovement * 20);
-                } else if (avgMovement < -0.5) {
-                    momentum = 'Strong Bearish';
-                    strength = 75 + (Math.abs(avgMovement) * 10);
-                } else if (avgMovement < -0.1) {
-                    momentum = 'Bearish';
-                    strength = 60 + (Math.abs(avgMovement) * 20);
-                } else {
-                    momentum = 'Neutral';
-                    strength = 50;
-                }
-                
-                return {
-                    momentum: momentum,
-                    strength: Math.min(95, Math.max(20, strength))
-                };
-            },
-            
-            // Predict success probability
-            predictSuccess(asset) {
-                // Get pattern match from historical library
-                const patternMatch = asset.patternMatch;
-                const baseSuccess = this.historicalData.patternLibrary[patternMatch] || 
-                                  { successRate: 0.65, avgGain: 0.02, confidence: 0.70 };
-                
-                // Adjust based on RSI position
-                let rsiAdjustment = 1.0;
-                if (asset.currentRSI <= 25 || asset.currentRSI >= 75) {
-                    rsiAdjustment = 1.15; // 15% better in extremes
-                } else if (asset.currentRSI <= 30 || asset.currentRSI >= 70) {
-                    rsiAdjustment = 1.10; // 10% better in zones
-                }
-                
-                // Adjust based on momentum
-                const momentum = this.analyzeMomentum(asset);
-                const momentumAdjustment = momentum.strength / 100;
-                
-                // Calculate final probability
-                const finalProbability = baseSuccess.successRate * rsiAdjustment * momentumAdjustment;
-                
-                return {
-                    probability: Math.min(95, Math.round(finalProbability * 100)),
-                    avgGain: (baseSuccess.avgGain * rsiAdjustment).toFixed(3),
-                    confidence: baseSuccess.confidence * momentumAdjustment
-                };
-            },
-            
-            // Calculate risk metrics
-            calculateRisk(asset) {
-                const currentRSI = asset.currentRSI;
-                let riskLevel, stopLoss, takeProfit;
-                
-                if (asset.mlSignal === 'BUY') {
-                    riskLevel = currentRSI <= 25 ? 'Low' : currentRSI <= 30 ? 'Medium' : 'High';
-                    stopLoss = (currentRSI - 5).toFixed(1);
-                    takeProfit = (currentRSI + 10).toFixed(1);
-                } else if (asset.mlSignal === 'SELL') {
-                    riskLevel = currentRSI >= 75 ? 'Low' : currentRSI >= 70 ? 'Medium' : 'High';
-                    stopLoss = (currentRSI + 5).toFixed(1);
-                    takeProfit = (currentRSI - 10).toFixed(1);
-                } else {
-                    riskLevel = 'Medium';
-                    stopLoss = 'N/A';
-                    takeProfit = 'N/A';
-                }
-                
-                return {
-                    riskLevel: riskLevel,
-                    stopLoss: stopLoss,
-                    takeProfit: takeProfit,
-                    riskReward: asset.mlSignal !== 'NEUTRAL' ? '1:2' : 'N/A'
-                };
-            },
-            
-            // Combine ML signals into final recommendation
-            combineMLSignals(pattern, momentum, success, risk) {
-                // Weighted decision making
-                const weights = {
-                    pattern: 0.35,
-                    momentum: 0.25,
-                    success: 0.30,
-                    risk: 0.10
-                };
-                
-                // Calculate weighted confidence
-                const weightedConfidence = 
-                    (pattern.confidence * weights.pattern) +
-                    (momentum.strength * weights.momentum) +
-                    (success.confidence * 100 * weights.success) +
-                    (risk.riskLevel === 'Low' ? 90 : risk.riskLevel === 'Medium' ? 70 : 50) * weights.risk;
-                
-                // Determine signal based on strongest indicators
-                let finalSignal = 'NEUTRAL';
-                
-                if (pattern.confidence >= 75 && momentum.strength >= 65 && success.probability >= 70) {
-                    if (pattern.pattern.includes('Bounce') || pattern.pattern.includes('V-Bottom')) {
-                        finalSignal = 'BUY';
-                    } else if (pattern.pattern.includes('Rejection')) {
-                        finalSignal = 'SELL';
-                    }
-                }
-                
-                // Override if RSI is extreme
-                const currentAsset = this.assets.find(a => a.symbol === this.currentAsset);
-                if (currentAsset) {
-                    if (currentAsset.currentRSI <= 25) finalSignal = 'BUY';
-                    if (currentAsset.currentRSI >= 75) finalSignal = 'SELL';
-                }
-                
-                return {
-                    signal: finalSignal,
-                    confidence: Math.min(95, Math.max(20, Math.round(weightedConfidence)))
-                };
+                // Update last update time
+                document.getElementById('last-update-time').textContent = 
+                    `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
             },
             
             // Load TradingView Chart
@@ -1583,9 +1195,9 @@
                 const chartContainer = document.getElementById('tradingview_chart');
                 chartContainer.innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-gray);">
-                        <i class="fas fa-brain" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5; color: var(--ml-purple);"></i>
-                        <div>ML Enhanced Chart Loading...</div>
-                        <div style="font-size: 0.8rem; margin-top: 5px;">Machine Learning analysis active</div>
+                        <i class="fas fa-chart-line" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                        <div>Real-Time Chart Loading...</div>
+                        <div style="font-size: 0.8rem; margin-top: 5px;">All assets updating live</div>
                     </div>
                 `;
             },
@@ -1600,21 +1212,12 @@
                     });
                 });
                 
-                // Analyze button
-                document.getElementById('analyze-btn').addEventListener('click', () => {
-                    this.analyzeAllAssets();
-                    this.showNotification('ML analysis completed on all assets', 'success');
+                // Update all button
+                document.getElementById('update-all-btn').addEventListener('click', () => {
+                    this.updateAllAssets();
+                    this.updateAllDisplays();
+                    this.showNotification('All assets updated manually', 'success');
                 });
-                
-                // Auto-analysis every 30 seconds
-                setInterval(() => {
-                    this.analyzeAllAssets();
-                }, 30000);
-                
-                // Update market sessions every minute
-                setInterval(() => {
-                    this.updateMarketSessions();
-                }, 60000);
             },
             
             // Update all displays
@@ -1634,40 +1237,30 @@
                 
                 this.assets.forEach(asset => {
                     const isActive = asset.symbol === this.currentAsset;
-                    const signalClass = (asset.mlSignal || asset.traditionalSignal || 'pending').toLowerCase();
-                    const mlVerified = asset.mlVerified ? 'ml-confirmed' : '';
+                    const signal = asset.signal || 'NEUTRAL';
+                    const signalClass = signal.toLowerCase();
                     
                     const item = document.createElement('div');
-                    item.className = `asset-item ${signalClass} ${isActive ? 'active' : ''} ${mlVerified}`;
+                    item.className = `asset-item ${signalClass} ${isActive ? 'active' : ''} real-time`;
                     item.setAttribute('data-asset', asset.symbol);
                     
-                    // Determine signal display
-                    let signalDisplay = asset.mlSignal || asset.traditionalSignal || 'ANALYZING';
-                    if (asset.mlVerified) {
-                        signalDisplay = `${signalDisplay} (ML Verified)`;
-                    }
+                    // Format last update time
+                    const lastUpdate = asset.lastUpdate ? new Date(asset.lastUpdate) : new Date();
+                    const updateTime = `${lastUpdate.getHours().toString().padStart(2, '0')}:${lastUpdate.getMinutes().toString().padStart(2, '0')}:${lastUpdate.getSeconds().toString().padStart(2, '0')}`;
                     
                     item.innerHTML = `
                         <div class="asset-name">
                             ${asset.name}
                             <span class="rsi-display rsi-${signalClass}">
                                 <span class="rsi-value">RSI ${asset.currentRSI.toFixed(1)}</span>
-                                <span class="rsi-source" title="ML Enhanced">🧠</span>
                             </span>
                         </div>
                         
-                        ${asset.patternMatch ? `
-                            <div class="ml-prediction-indicator">
-                                <i class="fas fa-chart-line"></i>
-                                <span>${asset.patternMatch}</span>
-                            </div>
-                        ` : ''}
-                        
-                        <div class="asset-signal signal-${signalClass}">${signalDisplay}</div>
+                        <div class="asset-signal signal-${signalClass}">${signal} SIGNAL</div>
                         
                         <div class="asset-meta">
-                            <span class="signal-accuracy">${asset.mlConfidence || asset.confidence}% ML</span>
-                            <span class="ml-confidence">${asset.successProbability || 0}% Success</span>
+                            <span class="signal-accuracy">${asset.confidence}% Confidence</span>
+                            <span class="last-update">${updateTime}</span>
                         </div>
                     `;
                     
@@ -1684,47 +1277,32 @@
                 const asset = this.assets.find(a => a.symbol === this.currentAsset);
                 if (!asset) return;
                 
-                const signalClass = (asset.mlSignal || asset.traditionalSignal || 'pending').toLowerCase();
-                const mlVerified = asset.mlVerified;
+                const signal = asset.signal || 'NEUTRAL';
+                const signalClass = signal.toLowerCase();
                 
                 // Update signal panel
-                document.getElementById('signal-type').textContent = 
-                    `${asset.mlSignal || asset.traditionalSignal || 'ANALYZING'}${mlVerified ? ' ✓' : ''}`;
+                document.getElementById('signal-type').textContent = `${signal} SIGNAL`;
                 document.getElementById('signal-type').className = `signal-type ${signalClass}`;
                 document.getElementById('signal-asset').textContent = 
-                    `${asset.name} (${asset.symbol}) - ML Enhanced Analysis`;
-                
-                // Update ML metrics
-                document.getElementById('ml-confidence').textContent = `${asset.mlConfidence || 0}%`;
-                document.getElementById('traditional-confidence').textContent = `${asset.confidence}%`;
-                document.getElementById('accuracy-boost').textContent = 
-                    `${Math.max(0, (asset.mlConfidence || 0) - asset.confidence)}%`;
-                document.getElementById('ml-verified').textContent = mlVerified ? '✓' : '✗';
-                document.getElementById('ml-verified').style.color = mlVerified ? 'var(--real-data-green)' : 'var(--sell-red)';
-                
-                // Update ML prediction
-                document.getElementById('ml-prediction').textContent = 
-                    `${asset.mlSignal === 'BUY' ? 'BULLISH' : asset.mlSignal === 'SELL' ? 'BEARISH' : 'NEUTRAL'} (${asset.successProbability || 0}% probability)`;
-                
-                // Update prediction details
-                document.getElementById('ml-score').textContent = `${asset.mlConfidence || 0}/100`;
-                document.getElementById('pattern-match').textContent = asset.patternMatch || 'None';
-                document.getElementById('success-rate').textContent = `${asset.successProbability || 0}%`;
-                document.getElementById('avg-profit').textContent = `${((asset.avgProfit || 0) * 100).toFixed(1)}%`;
+                    `${asset.name} (${asset.symbol}) - Real-Time Analysis`;
+                document.getElementById('signal-rsi').textContent = asset.currentRSI.toFixed(2);
+                document.getElementById('signal-confidence').textContent = `${asset.confidence}%`;
                 
                 // Update signal details
-                document.getElementById('signal-details').textContent = 
-                    asset.patternMatch ? 
-                    `ML detected "${asset.patternMatch}" pattern with ${asset.successProbability || 0}% historical success rate.` :
-                    'Machine Learning analyzing RSI patterns for higher accuracy signals.';
+                let details = '';
+                if (signal === 'BUY') {
+                    details = `RSI at ${asset.currentRSI.toFixed(1)} (≤30) indicates oversold conditions. Strong buy signal with ${asset.confidence}% confidence.`;
+                } else if (signal === 'SELL') {
+                    details = `RSI at ${asset.currentRSI.toFixed(1)} (≥70) indicates overbought conditions. Strong sell signal with ${asset.confidence}% confidence.`;
+                } else {
+                    details = `RSI at ${asset.currentRSI.toFixed(1)} (31-69) indicates neutral conditions. Monitor for entry into buy (≤30) or sell (≥70) zones.`;
+                }
                 
-                // Update signal main styling
-                const signalMain = document.getElementById('signal-main');
-                signalMain.className = `signal-main ${mlVerified ? 'ml-confirmed' : (asset.mlConfidence > 70 ? 'high-confidence' : '')}`;
+                document.getElementById('signal-details').textContent = details;
                 
                 // Update chart title
                 document.getElementById('current-chart-title').textContent = 
-                    `${asset.name} (${asset.symbol}) - ML Enhanced Signals`;
+                    `${asset.name} (${asset.symbol}) - Real-Time RSI`;
             },
             
             // Update current RSI display
@@ -1744,8 +1322,8 @@
             
             // Get RSI zone text
             getRSIZoneText(rsi) {
-                if (rsi <= 30) return '(ML BUY ZONE)';
-                if (rsi >= 70) return '(ML SELL ZONE)';
+                if (rsi <= 30) return '(BUY ZONE)';
+                if (rsi >= 70) return '(SELL ZONE)';
                 return '(NEUTRAL ZONE)';
             },
             
@@ -1801,6 +1379,23 @@
                     notification.style.animation = 'slideOut 0.3s ease';
                     setTimeout(() => notification.remove(), 300);
                 }, 3000);
+                
+                // Add animation styles if not exists
+                if (!document.getElementById('notification-styles')) {
+                    const style = document.createElement('style');
+                    style.id = 'notification-styles';
+                    style.textContent = `
+                        @keyframes slideIn {
+                            from { transform: translateX(100%); opacity: 0; }
+                            to { transform: translateX(0); opacity: 1; }
+                        }
+                        @keyframes slideOut {
+                            from { transform: translateX(0); opacity: 1; }
+                            to { transform: translateX(100%); opacity: 0; }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
             },
             
             // Select asset
@@ -1815,7 +1410,7 @@
                 
                 await this.loadTradingViewChart();
                 
-                this.showNotification(`ML analyzing ${assetSymbol}...`, 'info');
+                this.showNotification(`Now viewing ${assetSymbol} - Real-time data active`, 'info');
             },
             
             // Select timeframe
@@ -1847,7 +1442,7 @@
         
         // Initialize system
         document.addEventListener('DOMContentLoaded', () => {
-            MLEnhancedSystem.init();
+            RealTimeRSISystem.init();
         });
     </script>
 </body>
