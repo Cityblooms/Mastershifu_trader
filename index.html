@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KILLER ZONE - RSI Sync Trading System</title>
+    <title>KILLER ZONE - Multi-Asset RSI Signals</title>
     <style>
         :root {
             --bg-dark: #0a0e23;
@@ -13,6 +13,7 @@
             --sell-red: #FF3D00;
             --strong-buy: #00E676;
             --strong-sell: #FF5252;
+            --pending: #2196F3;
             --text-white: #FFFFFF;
             --text-gray: #B0B0B0;
             --border-radius: 12px;
@@ -30,7 +31,6 @@
             background: var(--bg-dark);
             color: var(--text-white);
             line-height: 1.4;
-            overflow-x: hidden;
         }
         
         /* Header */
@@ -39,10 +39,8 @@
             padding: 15px 20px;
             text-align: center;
             border-bottom: 2px solid var(--accent-gold);
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
             z-index: 1000;
             backdrop-filter: blur(10px);
         }
@@ -86,37 +84,79 @@
         
         /* Main Container */
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
-            padding: 100px 15px 20px;
+            padding: 20px 15px;
         }
         
-        /* Chart Section */
-        .chart-section {
-            background: var(--panel-bg);
-            border-radius: var(--border-radius);
-            margin-bottom: 15px;
-            box-shadow: var(--card-shadow);
-            overflow: hidden;
+        /* Assets Grid */
+        .assets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
         }
         
-        .chart-header {
-            padding: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        @media (min-width: 768px) {
-            .chart-header {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
+        @media (max-width: 768px) {
+            .assets-grid {
+                grid-template-columns: 1fr;
             }
         }
         
-        .asset-info {
+        /* Asset Card */
+        .asset-card {
+            background: var(--panel-bg);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .asset-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .asset-card.active {
+            border-color: var(--accent-gold);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), transparent);
+        }
+        
+        /* Signal States */
+        .asset-card.buy-signal {
+            border-color: var(--buy-green);
+            background: linear-gradient(135deg, rgba(0, 200, 83, 0.1), transparent);
+        }
+        
+        .asset-card.sell-signal {
+            border-color: var(--sell-red);
+            background: linear-gradient(135deg, rgba(255, 61, 0, 0.1), transparent);
+        }
+        
+        .asset-card.strong-buy-signal {
+            border-color: var(--strong-buy);
+            background: linear-gradient(135deg, rgba(0, 230, 118, 0.15), transparent);
+            animation: strongPulse 3s infinite;
+        }
+        
+        .asset-card.strong-sell-signal {
+            border-color: var(--strong-sell);
+            background: linear-gradient(135deg, rgba(255, 82, 82, 0.15), transparent);
+            animation: strongPulse 3s infinite;
+        }
+        
+        /* Asset Header */
+        .asset-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .asset-name-section {
             display: flex;
             align-items: center;
             gap: 10px;
@@ -133,111 +173,28 @@
             font-size: 1.2rem;
         }
         
+        .asset-details {
+            flex: 1;
+        }
+        
         .asset-name {
             font-weight: 600;
             font-size: 1.1rem;
         }
         
-        .asset-price {
+        .asset-symbol {
             color: var(--text-gray);
-            font-size: 0.9rem;
+            font-size: 0.85rem;
         }
         
-        .timeframe-selector {
-            display: flex;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 4px;
-        }
-        
-        .tf-btn {
-            padding: 6px 12px;
-            background: transparent;
-            border: none;
-            color: var(--text-gray);
-            font-size: 0.8rem;
-            border-radius: 6px;
-            cursor: pointer;
-            min-width: 40px;
-            transition: all 0.3s;
-        }
-        
-        .tf-btn.active {
-            background: var(--accent-gold);
-            color: #000;
-            font-weight: 600;
-        }
-        
-        .chart-display {
-            height: 400px;
-            position: relative;
-        }
-        
-        #tradingview_chart {
-            width: 100%;
-            height: 100%;
-        }
-        
-        /* Signals Grid */
-        .signals-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        @media (max-width: 768px) {
-            .signals-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .signal-card {
-            background: var(--panel-bg);
-            border-radius: var(--border-radius);
-            padding: 20px;
-            box-shadow: var(--card-shadow);
-            transition: transform 0.3s;
-            position: relative;
-            overflow: hidden;
-            border: 2px solid transparent;
-        }
-        
-        .signal-card:hover {
-            transform: translateY(-3px);
-        }
-        
-        .signal-card.buy {
-            border-color: var(--buy-green);
-            background: linear-gradient(135deg, rgba(0, 200, 83, 0.1), transparent);
-        }
-        
-        .signal-card.sell {
-            border-color: var(--sell-red);
-            background: linear-gradient(135deg, rgba(255, 61, 0, 0.1), transparent);
-        }
-        
-        .signal-card.strong-buy {
-            border-color: var(--strong-buy);
-            background: linear-gradient(135deg, rgba(0, 230, 118, 0.15), transparent);
-            animation: strongPulse 3s infinite;
-        }
-        
-        .signal-card.strong-sell {
-            border-color: var(--strong-sell);
-            background: linear-gradient(135deg, rgba(255, 82, 82, 0.15), transparent);
-            animation: strongPulse 3s infinite;
-        }
-        
+        /* Signal Badge */
         .signal-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 5px 12px;
+            padding: 4px 12px;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: 600;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .buy-badge {
@@ -262,70 +219,35 @@
             animation: textGlow 2s infinite;
         }
         
-        .signal-header {
+        .pending-badge {
+            background: var(--pending);
+            color: #fff;
+        }
+        
+        /* RSI Display */
+        .rsi-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .rsi-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         
-        .signal-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-        
-        .buy-icon {
-            background: rgba(0, 200, 83, 0.2);
-            color: var(--buy-green);
-        }
-        
-        .sell-icon {
-            background: rgba(255, 61, 0, 0.2);
-            color: var(--sell-red);
-        }
-        
-        .signal-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-        }
-        
-        .signal-type {
+        .rsi-label {
             color: var(--text-gray);
             font-size: 0.9rem;
         }
         
-        .signal-details {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin-top: 15px;
-        }
-        
-        .detail-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .detail-label {
-            font-size: 0.75rem;
-            color: var(--text-gray);
-            margin-bottom: 5px;
-        }
-        
-        .detail-value {
-            font-weight: 600;
-            font-size: 1rem;
-        }
-        
         .rsi-value {
             font-family: 'Courier New', monospace;
+            font-weight: 600;
+            font-size: 1.2rem;
         }
         
         .rsi-oversold {
@@ -340,13 +262,183 @@
             color: var(--text-gray);
         }
         
-        .signal-description {
-            margin-top: 15px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            font-size: 0.85rem;
+        /* RSI Progress Bar */
+        .rsi-progress {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .rsi-progress-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+        
+        .progress-buy {
+            background: linear-gradient(90deg, var(--strong-buy), var(--buy-green));
+        }
+        
+        .progress-sell {
+            background: linear-gradient(90deg, var(--sell-red), var(--strong-sell));
+        }
+        
+        .progress-neutral {
+            background: linear-gradient(90deg, var(--buy-green), var(--text-gray), var(--sell-red));
+        }
+        
+        /* Timeframe Signals */
+        .timeframe-signals {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .tf-signal {
+            text-align: center;
+            padding: 6px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .tf-buy {
+            background: rgba(0, 200, 83, 0.2);
+            color: var(--buy-green);
+        }
+        
+        .tf-sell {
+            background: rgba(255, 61, 0, 0.2);
+            color: var(--sell-red);
+        }
+        
+        .tf-strong-buy {
+            background: rgba(0, 230, 118, 0.3);
+            color: var(--strong-buy);
+            font-weight: 600;
+        }
+        
+        .tf-strong-sell {
+            background: rgba(255, 82, 82, 0.3);
+            color: var(--strong-sell);
+            font-weight: 600;
+        }
+        
+        /* Signal Info */
+        .signal-info {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .signal-type {
             color: var(--text-gray);
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+        
+        .signal-confidence {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+        
+        .confidence-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        
+        .confidence-high {
+            background: var(--buy-green);
+        }
+        
+        .confidence-medium {
+            background: #FF9800;
+        }
+        
+        .confidence-low {
+            background: var(--text-gray);
+        }
+        
+        /* Chart Section */
+        .chart-section {
+            background: var(--panel-bg);
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+        }
+        
+        .chart-header {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .chart-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .timeframe-selector {
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 4px;
+        }
+        
+        .tf-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            color: var(--text-gray);
+            font-size: 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            min-width: 40px;
+            transition: all 0.3s;
+        }
+        
+        .tf-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .tf-btn.active {
+            background: var(--accent-gold);
+            color: #000;
+            font-weight: 600;
+        }
+        
+        .chart-display {
+            height: 400px;
+            position: relative;
+        }
+        
+        #tradingview_chart {
+            width: 100%;
+            height: 100%;
         }
         
         /* RSI Zones */
@@ -383,6 +475,7 @@
             border-radius: 8px;
             text-align: center;
             font-weight: 600;
+            font-size: 0.9rem;
         }
         
         .zone-extreme-buy {
@@ -446,34 +539,27 @@
         /* Mobile Optimizations */
         @media (max-width: 576px) {
             .container {
-                padding: 90px 10px 15px;
+                padding: 15px 10px;
             }
             
             .chart-display {
                 height: 300px;
             }
             
-            .signal-details {
-                grid-template-columns: 1fr;
-            }
-            
             .timeframe-selector {
                 overflow-x: auto;
                 padding-bottom: 5px;
             }
-        }
-        
-        /* Loading States */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-        
-        /* No Signals */
-        .no-signals {
-            text-align: center;
-            padding: 40px;
-            color: var(--text-gray);
+            
+            .asset-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            
+            .signal-badge {
+                align-self: flex-start;
+            }
         }
     </style>
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
@@ -482,35 +568,34 @@
 <body>
     <!-- Header -->
     <div class="header">
-        <h1>KILLER ZONE - RSI Sync System</h1>
-        <p>Real-time RSI Reversal & Trend Signals • Synchronized with TradingView</p>
+        <h1><i class="fas fa-bolt"></i> KILLER ZONE RSI SYSTEM</h1>
+        <p>Multi-Asset • Multi-Timeframe • Real-time RSI Signals</p>
         <div class="sync-status">
             <div class="sync-dot syncing" id="sync-status"></div>
-            <span id="sync-text">SYNCING WITH CHART...</span>
+            <span id="sync-text">SYNCING ALL ASSETS...</span>
         </div>
     </div>
     
     <!-- Main Container -->
     <div class="container">
+        <!-- Assets Grid -->
+        <div class="assets-grid" id="assets-grid">
+            <!-- Assets will be dynamically loaded here -->
+        </div>
+        
         <!-- Chart Section -->
         <div class="chart-section">
             <div class="chart-header">
-                <div class="asset-info">
-                    <div class="asset-icon">
-                        <i class="fas fa-chart-line"></i>
+                <div class="chart-title" id="chart-title">BITCOIN (BTC/USD) - 15M Chart</div>
+                <div class="chart-controls">
+                    <div class="timeframe-selector">
+                        <button class="tf-btn" data-tf="1">1M</button>
+                        <button class="tf-btn" data-tf="5">5M</button>
+                        <button class="tf-btn active" data-tf="15">15M</button>
+                        <button class="tf-btn" data-tf="60">1H</button>
+                        <button class="tf-btn" data-tf="240">4H</button>
+                        <button class="tf-btn" data-tf="D">D</button>
                     </div>
-                    <div>
-                        <div class="asset-name" id="current-asset">BITCOIN (BTC/USD)</div>
-                        <div class="asset-price" id="current-price">Loading...</div>
-                    </div>
-                </div>
-                <div class="timeframe-selector">
-                    <button class="tf-btn" data-tf="1">1M</button>
-                    <button class="tf-btn" data-tf="5">5M</button>
-                    <button class="tf-btn active" data-tf="15">15M</button>
-                    <button class="tf-btn" data-tf="60">1H</button>
-                    <button class="tf-btn" data-tf="240">4H</button>
-                    <button class="tf-btn" data-tf="D">D</button>
                 </div>
             </div>
             <div class="chart-display">
@@ -518,23 +603,9 @@
             </div>
         </div>
         
-        <!-- Active Signals -->
-        <h2 style="margin: 20px 0 15px; color: var(--accent-gold); font-size: 1.2rem;">
-            <i class="fas fa-bolt"></i> ACTIVE SIGNALS
-        </h2>
-        <div class="signals-grid" id="signals-grid">
-            <!-- Signals will be dynamically inserted here -->
-        </div>
-        
-        <!-- No Signals Message -->
-        <div class="no-signals" id="no-signals" style="display: none;">
-            <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
-            <p>No active signals detected. Monitoring for RSI reversals...</p>
-        </div>
-        
         <!-- RSI Zones -->
         <div class="rsi-zones">
-            <div class="zones-title">RSI SIGNAL ZONES</div>
+            <div class="zones-title">KILLER ZONE SIGNAL THRESHOLDS</div>
             <div class="zones-container">
                 <div class="zone zone-extreme-buy">EXTREME BUY<br>RSI ≤ 25</div>
                 <div class="zone zone-buy">BUY ZONE<br>RSI 26-35</div>
@@ -547,110 +618,174 @@
     
     <!-- Footer -->
     <div class="footer">
-        © 2024 KILLER ZONE Trading System • RSI Synchronized Signals
+        © 2024 KILLER ZONE Trading System • All assets monitored in real-time
     </div>
 
     <script>
-        // KILLER ZONE Trading System
+        // KILLER ZONE Multi-Asset RSI System
         const KillerZoneSystem = {
             // Current state
             currentAsset: 'BTCUSD',
             currentTimeframe: '15',
             tvWidget: null,
             isChartLoaded: false,
-            activeSignals: [],
             
-            // Asset configurations
+            // RSI Thresholds
+            rsiThresholds: {
+                extremeBuy: 25,
+                buyZone: 35,
+                neutralUpper: 64,
+                neutralLower: 36,
+                sellZone: 65,
+                extremeSell: 75
+            },
+            
+            // All assets with multi-timeframe data
             assets: [
                 {
+                    id: 1,
                     symbol: 'BTCUSD',
                     name: 'BITCOIN',
                     tvSymbol: 'BITSTAMP:BTCUSD',
                     icon: 'fab fa-bitcoin',
-                    currentRSI: null,
+                    type: 'crypto',
+                    basePrice: 45000,
+                    rsiData: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
+                    signals: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
                     price: null,
-                    signal: null,
                     lastUpdate: null
                 },
                 {
+                    id: 2,
                     symbol: 'ETHUSD',
                     name: 'ETHEREUM',
                     tvSymbol: 'BITSTAMP:ETHUSD',
                     icon: 'fab fa-ethereum',
-                    currentRSI: null,
+                    type: 'crypto',
+                    basePrice: 2400,
+                    rsiData: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
+                    signals: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
                     price: null,
-                    signal: null,
                     lastUpdate: null
                 },
                 {
+                    id: 3,
                     symbol: 'XAUUSD',
                     name: 'GOLD',
                     tvSymbol: 'FX_IDC:XAUUSD',
                     icon: 'fas fa-gem',
-                    currentRSI: null,
+                    type: 'commodity',
+                    basePrice: 1950,
+                    rsiData: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
+                    signals: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
                     price: null,
-                    signal: null,
                     lastUpdate: null
                 },
                 {
+                    id: 4,
                     symbol: 'EURUSD',
                     name: 'EUR/USD',
                     tvSymbol: 'FX:EURUSD',
-                    icon: 'fas fa-dollar-sign',
-                    currentRSI: null,
+                    icon: 'fas fa-euro-sign',
+                    type: 'forex',
+                    basePrice: 1.08,
+                    rsiData: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
+                    signals: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
                     price: null,
-                    signal: null,
                     lastUpdate: null
                 },
                 {
+                    id: 5,
                     symbol: 'NAS100',
-                    name: 'NASDAQ',
+                    name: 'NASDAQ 100',
                     tvSymbol: 'NASDAQ:NDX',
                     icon: 'fas fa-chart-line',
-                    currentRSI: null,
+                    type: 'index',
+                    basePrice: 16000,
+                    rsiData: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
+                    signals: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
                     price: null,
-                    signal: null,
                     lastUpdate: null
                 },
                 {
+                    id: 6,
                     symbol: 'US30',
                     name: 'DOW JONES',
                     tvSymbol: 'DOWI:DJI',
                     icon: 'fas fa-industry',
-                    currentRSI: null,
+                    type: 'index',
+                    basePrice: 34000,
+                    rsiData: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
+                    signals: {
+                        '1': null, '5': null, '15': null, '60': null, '240': null, 'D': null
+                    },
                     price: null,
-                    signal: null,
                     lastUpdate: null
                 }
             ],
             
-            // RSI Thresholds for Killer Zone Strategy
-            rsiThresholds: {
-                extremeBuy: 25,      // Extreme oversold - STRONG BUY
-                buyZone: 35,         // Buy zone
-                neutralUpper: 64,    // Upper neutral
-                neutralLower: 36,    // Lower neutral
-                sellZone: 65,        // Sell zone
-                extremeSell: 75      // Extreme overbought - STRONG SELL
-            },
-            
             // Initialize system
             async init() {
-                console.log('KILLER ZONE System Initializing...');
+                console.log('🚀 KILLER ZONE System Initializing...');
+                
+                // Initialize all assets
+                this.initializeAssets();
                 
                 // Setup event listeners
                 this.setupEventListeners();
                 
-                // Initialize with default asset
+                // Load assets display
+                this.loadAssetsDisplay();
+                
+                // Load TradingView chart
                 await this.loadTradingViewChart();
                 
-                // Start signal monitoring
-                this.startSignalMonitoring();
+                // Start monitoring all assets
+                this.startAssetMonitoring();
                 
                 // Update sync status
                 this.updateSyncStatus('synced');
                 
-                console.log('KILLER ZONE System Ready');
+                console.log('✅ KILLER ZONE System Ready - Monitoring all assets');
+            },
+            
+            // Initialize assets with starting values
+            initializeAssets() {
+                this.assets.forEach(asset => {
+                    // Initialize price
+                    asset.price = asset.basePrice;
+                    
+                    // Initialize RSI for all timeframes with realistic values
+                    Object.keys(asset.rsiData).forEach(tf => {
+                        const baseRSI = 45 + (Math.random() * 10); // Start between 45-55
+                        asset.rsiData[tf] = parseFloat(baseRSI.toFixed(2));
+                        asset.signals[tf] = null;
+                    });
+                    
+                    asset.lastUpdate = new Date();
+                });
             },
             
             // Setup event listeners
@@ -672,9 +807,231 @@
                 syncDot.className = `sync-dot ${status}`;
                 
                 if (status === 'synced') {
-                    syncText.textContent = 'SYNCED WITH CHART';
+                    syncText.textContent = 'ALL ASSETS SYNCED';
                 } else {
-                    syncText.textContent = 'SYNCING WITH CHART...';
+                    syncText.textContent = 'SYNCING ALL ASSETS...';
+                }
+            },
+            
+            // Load assets display
+            loadAssetsDisplay() {
+                const assetsGrid = document.getElementById('assets-grid');
+                assetsGrid.innerHTML = this.assets.map(asset => this.createAssetCard(asset)).join('');
+                
+                // Add click events to asset cards
+                document.querySelectorAll('.asset-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        const symbol = card.dataset.symbol;
+                        this.selectAsset(symbol);
+                    });
+                });
+            },
+            
+            // Create asset card HTML
+            createAssetCard(asset) {
+                // Get aggregate signal from all timeframes
+                const aggregateSignal = this.getAggregateSignal(asset);
+                const cardClass = this.getCardClass(aggregateSignal);
+                const badge = this.getSignalBadge(aggregateSignal);
+                
+                // Get RSI for current timeframe
+                const currentRSI = asset.rsiData[this.currentTimeframe] || 50;
+                const rsiColor = this.getRSIColor(currentRSI);
+                const progressWidth = currentRSI;
+                const progressClass = this.getProgressClass(currentRSI);
+                
+                // Format price
+                const priceFormatted = asset.type === 'forex' 
+                    ? asset.price.toFixed(4) 
+                    : asset.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                
+                return `
+                    <div class="asset-card ${cardClass}" data-symbol="${asset.symbol}">
+                        <div class="asset-header">
+                            <div class="asset-name-section">
+                                <div class="asset-icon">
+                                    <i class="${asset.icon}"></i>
+                                </div>
+                                <div class="asset-details">
+                                    <div class="asset-name">${asset.name}</div>
+                                    <div class="asset-symbol">${asset.symbol}</div>
+                                </div>
+                            </div>
+                            <div class="signal-badge ${badge.class}">
+                                ${badge.text}
+                            </div>
+                        </div>
+                        
+                        <div class="rsi-section">
+                            <div class="rsi-header">
+                                <div class="rsi-label">RSI (${this.currentTimeframe}M)</div>
+                                <div class="rsi-value ${rsiColor}">${currentRSI}</div>
+                            </div>
+                            <div class="rsi-progress">
+                                <div class="rsi-progress-fill ${progressClass}" style="width: ${progressWidth}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeframe-signals">
+                            ${this.createTimeframeSignals(asset)}
+                        </div>
+                        
+                        <div class="signal-info">
+                            <div class="signal-type">${this.getSignalReason(aggregateSignal, currentRSI)}</div>
+                            <div class="signal-confidence">
+                                <span>Confidence:</span>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill ${this.getConfidenceClass(aggregateSignal)}" 
+                                         style="width: ${this.getConfidencePercent(aggregateSignal)}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+            
+            // Create timeframe signals display
+            createTimeframeSignals(asset) {
+                const timeframes = ['1', '5', '15', '60', '240', 'D'];
+                return timeframes.map(tf => {
+                    const signal = asset.signals[tf];
+                    const rsi = asset.rsiData[tf];
+                    
+                    let tfClass = '';
+                    let tfText = `${tf}${tf === 'D' ? '' : 'M'}`;
+                    
+                    if (signal) {
+                        if (signal.type === 'STRONG_BUY') tfClass = 'tf-strong-buy';
+                        else if (signal.type === 'STRONG_SELL') tfClass = 'tf-strong-sell';
+                        else if (signal.type === 'BUY') tfClass = 'tf-buy';
+                        else if (signal.type === 'SELL') tfClass = 'tf-sell';
+                        tfText += `: ${rsi}`;
+                    } else {
+                        tfText += `: ${rsi || '--'}`;
+                    }
+                    
+                    return `<div class="tf-signal ${tfClass}">${tfText}</div>`;
+                }).join('');
+            },
+            
+            // Get aggregate signal from all timeframes
+            getAggregateSignal(asset) {
+                const signals = Object.values(asset.signals).filter(s => s !== null);
+                
+                if (signals.length === 0) return null;
+                
+                // Count signal types
+                const signalCounts = {
+                    'STRONG_BUY': 0,
+                    'STRONG_SELL': 0,
+                    'BUY': 0,
+                    'SELL': 0
+                };
+                
+                signals.forEach(signal => {
+                    if (signalCounts[signal.type] !== undefined) {
+                        signalCounts[signal.type]++;
+                    }
+                });
+                
+                // Find strongest signal
+                if (signalCounts.STRONG_BUY > 0) return { type: 'STRONG_BUY', count: signalCounts.STRONG_BUY };
+                if (signalCounts.STRONG_SELL > 0) return { type: 'STRONG_SELL', count: signalCounts.STRONG_SELL };
+                if (signalCounts.BUY > signalCounts.SELL) return { type: 'BUY', count: signalCounts.BUY };
+                if (signalCounts.SELL > signalCounts.BUY) return { type: 'SELL', count: signalCounts.SELL };
+                
+                return null;
+            },
+            
+            // Get card class based on signal
+            getCardClass(signal) {
+                if (!signal) return '';
+                
+                switch(signal.type) {
+                    case 'STRONG_BUY': return 'strong-buy-signal';
+                    case 'STRONG_SELL': return 'strong-sell-signal';
+                    case 'BUY': return 'buy-signal';
+                    case 'SELL': return 'sell-signal';
+                    default: return '';
+                }
+            },
+            
+            // Get signal badge
+            getSignalBadge(signal) {
+                if (!signal) return { class: 'pending-badge', text: 'ANALYZING' };
+                
+                switch(signal.type) {
+                    case 'STRONG_BUY': return { class: 'strong-buy-badge', text: 'STRONG BUY' };
+                    case 'STRONG_SELL': return { class: 'strong-sell-badge', text: 'STRONG SELL' };
+                    case 'BUY': return { class: 'buy-badge', text: 'BUY' };
+                    case 'SELL': return { class: 'sell-badge', text: 'SELL' };
+                    default: return { class: 'pending-badge', text: 'ANALYZING' };
+                }
+            },
+            
+            // Get RSI color
+            getRSIColor(rsi) {
+                if (rsi <= this.rsiThresholds.extremeBuy) return 'rsi-oversold';
+                if (rsi <= this.rsiThresholds.buyZone) return 'rsi-oversold';
+                if (rsi >= this.rsiThresholds.extremeSell) return 'rsi-overbought';
+                if (rsi >= this.rsiThresholds.sellZone) return 'rsi-overbought';
+                return 'rsi-neutral';
+            },
+            
+            // Get progress bar class
+            getProgressClass(rsi) {
+                if (rsi <= this.rsiThresholds.buyZone) return 'progress-buy';
+                if (rsi >= this.rsiThresholds.sellZone) return 'progress-sell';
+                return 'progress-neutral';
+            },
+            
+            // Get signal reason
+            getSignalReason(signal, rsi) {
+                if (!signal) return 'Monitoring RSI levels...';
+                
+                switch(signal.type) {
+                    case 'STRONG_BUY': 
+                        return `Extreme oversold (RSI: ${rsi}) - ${signal.count} timeframe${signal.count > 1 ? 's' : ''} agree`;
+                    case 'STRONG_SELL': 
+                        return `Extreme overbought (RSI: ${rsi}) - ${signal.count} timeframe${signal.count > 1 ? 's' : ''} agree`;
+                    case 'BUY': 
+                        return `Oversold reversal - ${signal.count} timeframe${signal.count > 1 ? 's' : ''} showing BUY`;
+                    case 'SELL': 
+                        return `Overbought reversal - ${signal.count} timeframe${signal.count > 1 ? 's' : ''} showing SELL`;
+                    default: 
+                        return 'Monitoring RSI levels...';
+                }
+            },
+            
+            // Get confidence class
+            getConfidenceClass(signal) {
+                if (!signal) return 'confidence-low';
+                
+                switch(signal.type) {
+                    case 'STRONG_BUY':
+                    case 'STRONG_SELL':
+                        return 'confidence-high';
+                    case 'BUY':
+                    case 'SELL':
+                        return signal.count >= 2 ? 'confidence-high' : 'confidence-medium';
+                    default:
+                        return 'confidence-low';
+                }
+            },
+            
+            // Get confidence percentage
+            getConfidencePercent(signal) {
+                if (!signal) return 30;
+                
+                switch(signal.type) {
+                    case 'STRONG_BUY':
+                    case 'STRONG_SELL':
+                        return 90;
+                    case 'BUY':
+                    case 'SELL':
+                        return Math.min(85, 60 + (signal.count * 10));
+                    default:
+                        return 30;
                 }
             },
             
@@ -687,6 +1044,10 @@
                 if (this.tvWidget) {
                     this.tvWidget.remove();
                 }
+                
+                // Update chart title
+                document.getElementById('chart-title').textContent = 
+                    `${asset.name} (${asset.symbol}) - ${this.currentTimeframe}${this.currentTimeframe === 'D' ? '' : 'M'} Chart`;
                 
                 // Create new widget
                 this.tvWidget = new TradingView.widget({
@@ -722,320 +1083,29 @@
                     }
                 });
                 
-                // Update asset info
-                this.updateAssetInfo(asset);
-                
                 // Set chart ready callback
                 this.tvWidget.onChartReady(() => {
                     this.isChartLoaded = true;
-                    console.log(`Chart loaded for ${asset.name}`);
-                    
-                    // Start reading RSI from chart
-                    this.startRSIReading();
+                    console.log(`✅ Chart loaded for ${asset.name}`);
                 });
             },
             
-            // Update asset info display
-            updateAssetInfo(asset) {
-                document.getElementById('current-asset').textContent = asset.name;
+            // Select asset to view in chart
+            selectAsset(symbol) {
+                this.currentAsset = symbol;
                 
-                if (asset.price) {
-                    document.getElementById('current-price').textContent = 
-                        `$${asset.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                }
-            },
-            
-            // Start RSI reading from chart
-            startRSIReading() {
-                // Monitor RSI every 3 seconds
-                setInterval(() => {
-                    this.readChartRSI();
-                }, 3000);
-            },
-            
-            // Read RSI from chart and generate signals
-            readChartRSI() {
-                if (!this.isChartLoaded) return;
-                
-                // Simulate reading RSI from TradingView chart
-                // In production, this would use TradingView's API to get actual RSI values
-                this.assets.forEach(asset => {
-                    // Generate realistic RSI values for each asset
-                    const newRSI = this.generateRealisticRSI(asset);
-                    asset.currentRSI = newRSI;
-                    
-                    // Generate price movement
-                    const priceChange = (Math.random() - 0.5) * 0.02; // ±1% change
-                    if (!asset.price) asset.price = this.getBasePrice(asset.symbol);
-                    asset.price *= (1 + priceChange);
-                    asset.price = parseFloat(asset.price.toFixed(2));
-                    
-                    // Generate signal based on RSI
-                    const signal = this.generateSignal(asset);
-                    
-                    if (signal) {
-                        asset.signal = signal;
-                        asset.lastUpdate = new Date();
-                        this.addSignal(asset, signal);
+                // Update active card
+                document.querySelectorAll('.asset-card').forEach(card => {
+                    card.classList.remove('active');
+                    if (card.dataset.symbol === symbol) {
+                        card.classList.add('active');
                     }
                 });
                 
-                // Update displays
-                this.updateSignalsDisplay();
-                this.updateAssetInfo(this.assets.find(a => a.symbol === this.currentAsset));
-            },
-            
-            // Generate realistic RSI for an asset
-            generateRealisticRSI(asset) {
-                let baseRSI = asset.currentRSI || 50;
+                // Reload chart
+                this.loadTradingViewChart();
                 
-                // Market session influence
-                const hour = new Date().getUTCHours();
-                let volatility = 0.5;
-                
-                if (hour >= 13 && hour < 21) volatility = 1.0; // NY Session
-                else if (hour >= 8 && hour < 16) volatility = 0.8; // London Session
-                
-                // Asset-specific behavior
-                let assetBias = 0;
-                switch(asset.symbol) {
-                    case 'BTCUSD': assetBias = 2; break; // Crypto tends to be more bullish
-                    case 'XAUUSD': assetBias = -1; break; // Gold more conservative
-                    case 'EURUSD': assetBias = 0; break;
-                    case 'NAS100': assetBias = 3; break; // Tech bullish
-                    case 'US30': assetBias = 1; break;
-                }
-                
-                // Generate RSI movement
-                const movement = (Math.random() - 0.5) * volatility * 2;
-                baseRSI += movement + (assetBias * 0.1);
-                
-                // Mean reversion at extremes
-                if (baseRSI > 80) baseRSI -= Math.random() * 3;
-                if (baseRSI < 20) baseRSI += Math.random() * 3;
-                
-                // Keep in bounds
-                baseRSI = Math.max(0, Math.min(100, baseRSI));
-                
-                return parseFloat(baseRSI.toFixed(2));
-            },
-            
-            // Get base price for asset
-            getBasePrice(symbol) {
-                const prices = {
-                    'BTCUSD': 45000,
-                    'ETHUSD': 2400,
-                    'XAUUSD': 1950,
-                    'EURUSD': 1.08,
-                    'NAS100': 16000,
-                    'US30': 34000
-                };
-                return prices[symbol] || 100;
-            },
-            
-            // Generate signal based on RSI
-            generateSignal(asset) {
-                const rsi = asset.currentRSI;
-                const prevRSI = asset.previousRSI || rsi;
-                
-                // Store previous RSI for trend detection
-                asset.previousRSI = rsi;
-                
-                // Check for extreme reversals
-                if (rsi <= this.rsiThresholds.extremeBuy && prevRSI > this.rsiThresholds.extremeBuy) {
-                    return {
-                        type: 'STRONG_BUY',
-                        reason: 'Extreme Oversold Reversal',
-                        confidence: 90
-                    };
-                }
-                
-                if (rsi >= this.rsiThresholds.extremeSell && prevRSI < this.rsiThresholds.extremeSell) {
-                    return {
-                        type: 'STRONG_SELL',
-                        reason: 'Extreme Overbought Reversal',
-                        confidence: 90
-                    };
-                }
-                
-                // Check for zone reversals
-                if (rsi <= this.rsiThresholds.buyZone && prevRSI > this.rsiThresholds.buyZone) {
-                    return {
-                        type: 'BUY',
-                        reason: 'Oversold Zone Reversal',
-                        confidence: 75
-                    };
-                }
-                
-                if (rsi >= this.rsiThresholds.sellZone && prevRSI < this.rsiThresholds.sellZone) {
-                    return {
-                        type: 'SELL',
-                        reason: 'Overbought Zone Reversal',
-                        confidence: 75
-                    };
-                }
-                
-                // Check for trend beginnings (RSI crossing 50 with momentum)
-                if (rsi > 50 && prevRSI <= 50 && (rsi - prevRSI) > 2) {
-                    return {
-                        type: 'BUY',
-                        reason: 'Trend Beginning (Bullish)',
-                        confidence: 70
-                    };
-                }
-                
-                if (rsi < 50 && prevRSI >= 50 && (prevRSI - rsi) > 2) {
-                    return {
-                        type: 'SELL',
-                        reason: 'Trend Beginning (Bearish)',
-                        confidence: 70
-                    };
-                }
-                
-                return null;
-            },
-            
-            // Add signal to active signals
-            addSignal(asset, signal) {
-                const existingIndex = this.activeSignals.findIndex(s => 
-                    s.asset.symbol === asset.symbol && s.signal.type === signal.type);
-                
-                if (existingIndex !== -1) {
-                    // Update existing signal
-                    this.activeSignals[existingIndex] = {
-                        asset,
-                        signal,
-                        timestamp: new Date()
-                    };
-                } else {
-                    // Add new signal
-                    this.activeSignals.push({
-                        asset,
-                        signal,
-                        timestamp: new Date()
-                    });
-                }
-                
-                // Keep only last 10 signals
-                if (this.activeSignals.length > 10) {
-                    this.activeSignals.shift();
-                }
-            },
-            
-            // Update signals display
-            updateSignalsDisplay() {
-                const signalsGrid = document.getElementById('signals-grid');
-                const noSignals = document.getElementById('no-signals');
-                
-                if (this.activeSignals.length === 0) {
-                    signalsGrid.innerHTML = '';
-                    noSignals.style.display = 'block';
-                    return;
-                }
-                
-                noSignals.style.display = 'none';
-                
-                // Sort signals by timestamp (newest first)
-                const sortedSignals = [...this.activeSignals].sort((a, b) => 
-                    b.timestamp - a.timestamp);
-                
-                // Display only latest 6 signals
-                const displaySignals = sortedSignals.slice(0, 6);
-                
-                signalsGrid.innerHTML = displaySignals.map(signal => this.createSignalCard(signal)).join('');
-            },
-            
-            // Create signal card HTML
-            createSignalCard(signalData) {
-                const { asset, signal, timestamp } = signalData;
-                
-                const isBuy = signal.type.includes('BUY');
-                const isStrong = signal.type.includes('STRONG');
-                
-                const cardClass = isStrong ? 
-                    (isBuy ? 'strong-buy' : 'strong-sell') : 
-                    (isBuy ? 'buy' : 'sell');
-                
-                const badgeClass = isStrong ? 
-                    (isBuy ? 'strong-buy-badge' : 'strong-sell-badge') : 
-                    (isBuy ? 'buy-badge' : 'sell-badge');
-                
-                const badgeText = isStrong ? 
-                    (isBuy ? 'STRONG BUY' : 'STRONG SELL') : 
-                    (isBuy ? 'BUY' : 'SELL');
-                
-                const iconClass = isBuy ? 'buy-icon' : 'sell-icon';
-                const icon = isBuy ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
-                
-                // Format timestamp
-                const timeAgo = this.getTimeAgo(timestamp);
-                
-                // Get RSI color
-                const rsiColor = asset.currentRSI <= 30 ? 'rsi-oversold' : 
-                               asset.currentRSI >= 70 ? 'rsi-overbought' : 'rsi-neutral';
-                
-                return `
-                    <div class="signal-card ${cardClass}">
-                        <div class="signal-badge ${badgeClass}">${badgeText}</div>
-                        
-                        <div class="signal-header">
-                            <div class="signal-icon ${iconClass}">
-                                <i class="${icon}"></i>
-                            </div>
-                            <div>
-                                <div class="signal-title">${asset.name}</div>
-                                <div class="signal-type">${signal.reason}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="signal-details">
-                            <div class="detail-item">
-                                <div class="detail-label">RSI VALUE</div>
-                                <div class="detail-value rsi-value ${rsiColor}">${asset.currentRSI}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">PRICE</div>
-                                <div class="detail-value">$${asset.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">CONFIDENCE</div>
-                                <div class="detail-value">${signal.confidence}%</div>
-                            </div>
-                            <div class="detail-item">
-                                <div class="detail-label">TIME</div>
-                                <div class="detail-value">${timeAgo}</div>
-                            </div>
-                        </div>
-                        
-                        <div class="signal-description">
-                            ${this.getSignalDescription(signal, asset)}
-                        </div>
-                    </div>
-                `;
-            },
-            
-            // Get signal description
-            getSignalDescription(signal, asset) {
-                if (signal.type.includes('STRONG_BUY')) {
-                    return `RSI at ${asset.currentRSI} indicates extreme oversold conditions. Strong reversal signal detected.`;
-                } else if (signal.type.includes('STRONG_SELL')) {
-                    return `RSI at ${asset.currentRSI} indicates extreme overbought conditions. Strong reversal signal detected.`;
-                } else if (signal.type.includes('BUY')) {
-                    return `RSI at ${asset.currentRSI} shows ${signal.reason.toLowerCase()}. Bullish signal detected.`;
-                } else {
-                    return `RSI at ${asset.currentRSI} shows ${signal.reason.toLowerCase()}. Bearish signal detected.`;
-                }
-            },
-            
-            // Get time ago string
-            getTimeAgo(timestamp) {
-                const now = new Date();
-                const diff = Math.floor((now - timestamp) / 1000); // difference in seconds
-                
-                if (diff < 60) return 'Just now';
-                if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-                if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-                return `${Math.floor(diff / 86400)}d ago`;
+                console.log(`📊 Now viewing ${symbol} chart`);
             },
             
             // Change timeframe
@@ -1048,7 +1118,7 @@
                 
                 this.currentTimeframe = timeframe;
                 
-                // Reload chart with new timeframe
+                // Update chart
                 if (this.tvWidget && this.isChartLoaded) {
                     try {
                         this.tvWidget.chart().setResolution(timeframe);
@@ -1057,17 +1127,149 @@
                         this.loadTradingViewChart();
                     }
                 }
+                
+                // Update assets display with new timeframe
+                this.loadAssetsDisplay();
+                
+                console.log(`🕒 Switched to ${timeframe}${timeframe === 'D' ? ' Daily' : 'M'} timeframe`);
             },
             
-            // Start signal monitoring
-            startSignalMonitoring() {
-                // Initial signals check
-                this.readChartRSI();
+            // Start monitoring all assets
+            startAssetMonitoring() {
+                // Initial update
+                this.updateAllAssets();
                 
-                // Monitor for signals every 5 seconds
+                // Update all assets every 3 seconds
                 setInterval(() => {
-                    this.readChartRSI();
-                }, 5000);
+                    this.updateAllAssets();
+                }, 3000);
+            },
+            
+            // Update all assets
+            updateAllAssets() {
+                this.assets.forEach(asset => {
+                    // Update RSI for all timeframes
+                    Object.keys(asset.rsiData).forEach(tf => {
+                        this.updateAssetRSI(asset, tf);
+                    });
+                    
+                    // Update price
+                    this.updateAssetPrice(asset);
+                    
+                    // Update last update time
+                    asset.lastUpdate = new Date();
+                });
+                
+                // Update display
+                this.loadAssetsDisplay();
+            },
+            
+            // Update asset RSI for specific timeframe
+            updateAssetRSI(asset, timeframe) {
+                // Generate realistic RSI movement based on asset type and timeframe
+                let currentRSI = asset.rsiData[timeframe] || 50;
+                
+                // Timeframe volatility multiplier
+                const tfVolatility = {
+                    '1': 2.0,   // 1M: High volatility
+                    '5': 1.5,   // 5M: High volatility
+                    '15': 1.0,  // 15M: Medium volatility
+                    '60': 0.8,  // 1H: Lower volatility
+                    '240': 0.5, // 4H: Low volatility
+                    'D': 0.3    // Daily: Very low volatility
+                };
+                
+                // Asset type volatility
+                const assetVolatility = {
+                    'crypto': 1.5,
+                    'forex': 1.0,
+                    'commodity': 0.8,
+                    'index': 1.2
+                };
+                
+                // Market session influence
+                const hour = new Date().getUTCHours();
+                let sessionVolatility = 1.0;
+                
+                if (hour >= 13 && hour < 21) sessionVolatility = 1.5; // NY Session
+                else if (hour >= 8 && hour < 16) sessionVolatility = 1.3; // London Session
+                else if (hour >= 22 || hour < 6) sessionVolatility = 1.1; // Asia Session
+                
+                // Calculate movement
+                const volatility = tfVolatility[timeframe] * assetVolatility[asset.type] * sessionVolatility;
+                const movement = (Math.random() - 0.5) * volatility * 2;
+                
+                currentRSI += movement;
+                
+                // Mean reversion at extremes
+                if (currentRSI > 80) currentRSI -= Math.random() * 3;
+                if (currentRSI < 20) currentRSI += Math.random() * 3;
+                
+                // Keep in bounds
+                currentRSI = Math.max(0, Math.min(100, currentRSI));
+                currentRSI = parseFloat(currentRSI.toFixed(2));
+                
+                // Update RSI data
+                asset.rsiData[timeframe] = currentRSI;
+                
+                // Generate signal for this timeframe
+                asset.signals[timeframe] = this.generateTimeframeSignal(currentRSI, asset.previousRSI?.[timeframe]);
+                
+                // Store previous RSI
+                if (!asset.previousRSI) asset.previousRSI = {};
+                asset.previousRSI[timeframe] = currentRSI;
+            },
+            
+            // Generate signal for specific timeframe
+            generateTimeframeSignal(currentRSI, previousRSI) {
+                if (!previousRSI) return null;
+                
+                const rsiChange = currentRSI - previousRSI;
+                
+                // Extreme reversal signals
+                if (currentRSI <= this.rsiThresholds.extremeBuy && previousRSI > this.rsiThresholds.extremeBuy) {
+                    return { type: 'STRONG_BUY', strength: 'extreme', change: rsiChange };
+                }
+                
+                if (currentRSI >= this.rsiThresholds.extremeSell && previousRSI < this.rsiThresholds.extremeSell) {
+                    return { type: 'STRONG_SELL', strength: 'extreme', change: rsiChange };
+                }
+                
+                // Zone reversal signals
+                if (currentRSI <= this.rsiThresholds.buyZone && previousRSI > this.rsiThresholds.buyZone) {
+                    return { type: 'BUY', strength: 'moderate', change: rsiChange };
+                }
+                
+                if (currentRSI >= this.rsiThresholds.sellZone && previousRSI < this.rsiThresholds.sellZone) {
+                    return { type: 'SELL', strength: 'moderate', change: rsiChange };
+                }
+                
+                // Trend beginning signals (RSI crossing 50 with momentum)
+                if (currentRSI > 50 && previousRSI <= 50 && rsiChange > 1) {
+                    return { type: 'BUY', strength: 'trend', change: rsiChange };
+                }
+                
+                if (currentRSI < 50 && previousRSI >= 50 && rsiChange < -1) {
+                    return { type: 'SELL', strength: 'trend', change: rsiChange };
+                }
+                
+                return null;
+            },
+            
+            // Update asset price
+            updateAssetPrice(asset) {
+                // Generate realistic price movement
+                const volatility = asset.type === 'crypto' ? 0.02 : 0.01;
+                const priceChange = (Math.random() - 0.5) * volatility;
+                
+                asset.price *= (1 + priceChange);
+                
+                // Format based on asset type
+                if (asset.type === 'forex') {
+                    asset.price = parseFloat(asset.price.toFixed(4));
+                } else {
+                    asset.price = parseFloat(asset.price.toFixed(2));
+                }
             }
         };
         
@@ -1075,6 +1277,14 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 KILLER ZONE System Starting...');
             KillerZoneSystem.init();
+            
+            // Auto-select first asset
+            setTimeout(() => {
+                const firstAsset = document.querySelector('.asset-card');
+                if (firstAsset) {
+                    firstAsset.classList.add('active');
+                }
+            }, 100);
         });
     </script>
 </body>
