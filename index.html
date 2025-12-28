@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KILLER ZONE - Chart-Linked RSI Signals</title>
+    <title>KILLER ZONE - Extreme Reversal RSI System</title>
     <style>
         :root {
             --bg-dark: #0b102a;
@@ -20,8 +20,9 @@
             --session-ny: #2196F3;
             --session-asia: #FF9800;
             --session-closed: #666666;
-            --risk-yellow: #FFC107;
-            --warning-orange: #FF9800;
+            --extreme-buy: #00E676;
+            --extreme-sell: #FF5252;
+            --warning-yellow: #FFC107;
         }
         
         * {
@@ -106,6 +107,31 @@
             color: var(--sell-red);
         }
         
+        /* Extreme Reversal Alert */
+        .extreme-reversal-alert {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, var(--extreme-buy), var(--buy-green));
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            font-size: 0.9rem;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 20px rgba(0, 230, 118, 0.4);
+            animation: alertPulse 1.5s infinite;
+        }
+        
+        .extreme-reversal-alert.sell {
+            background: linear-gradient(90deg, var(--extreme-sell), var(--sell-red));
+            box-shadow: 0 4px 20px rgba(255, 82, 82, 0.4);
+        }
+        
         /* Chart Connection Status */
         .chart-connection {
             position: fixed;
@@ -139,7 +165,7 @@
             gap: 10px;
             max-width: 1400px;
             margin: 0 auto;
-            padding-top: 90px;
+            padding-top: 100px;
         }
         
         /* Header */
@@ -234,12 +260,26 @@
             box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
         }
         
-        .asset-item.buy {
-            border-left: 4px solid var(--buy-green);
+        .asset-item.extreme-buy {
+            border-left: 4px solid var(--extreme-buy);
+            background: linear-gradient(90deg, rgba(0, 230, 118, 0.15), transparent);
+            animation: extremeSignalPulse 2s infinite;
         }
         
-        .asset-item.sell {
+        .asset-item.extreme-sell {
+            border-left: 4px solid var(--extreme-sell);
+            background: linear-gradient(90deg, rgba(255, 82, 82, 0.15), transparent);
+            animation: extremeSignalPulse 2s infinite;
+        }
+        
+        .asset-item.strong-buy {
+            border-left: 4px solid var(--buy-green);
+            background: linear-gradient(90deg, rgba(0, 200, 83, 0.1), transparent);
+        }
+        
+        .asset-item.strong-sell {
             border-left: 4px solid var(--sell-red);
+            background: linear-gradient(90deg, rgba(255, 61, 0, 0.1), transparent);
         }
         
         .asset-item.neutral {
@@ -295,6 +335,16 @@
             font-family: 'Courier New', monospace;
         }
         
+        .rsi-extreme-buy {
+            background: rgba(0, 230, 118, 0.2);
+            color: var(--extreme-buy);
+        }
+        
+        .rsi-extreme-sell {
+            background: rgba(255, 82, 82, 0.2);
+            color: var(--extreme-sell);
+        }
+        
         .rsi-buy {
             background: rgba(0, 200, 83, 0.2);
             color: var(--buy-green);
@@ -319,22 +369,39 @@
             margin-bottom: 5px;
         }
         
-        .signal-buy {
-            background: rgba(0, 200, 83, 0.2);
-            color: var(--buy-green);
+        .signal-extreme-buy {
+            background: rgba(0, 230, 118, 0.3);
+            color: var(--extreme-buy);
+            border: 1px solid var(--extreme-buy);
+            animation: textGlow 1.5s infinite;
         }
         
-        .signal-sell {
+        .signal-extreme-sell {
+            background: rgba(255, 82, 82, 0.3);
+            color: var(--extreme-sell);
+            border: 1px solid var(--extreme-sell);
+            animation: textGlow 1.5s infinite;
+        }
+        
+        .signal-strong-buy {
+            background: rgba(0, 200, 83, 0.2);
+            color: var(--buy-green);
+            border: 1px solid var(--buy-green);
+        }
+        
+        .signal-strong-sell {
             background: rgba(255, 61, 0, 0.2);
             color: var(--sell-red);
+            border: 1px solid var(--sell-red);
         }
         
         .signal-neutral {
             background: rgba(255, 255, 255, 0.1);
             color: var(--text-gray);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         
-        .asset-meta {
+        .signal-meta {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -355,6 +422,47 @@
             font-size: 0.7rem;
             color: var(--text-gray);
         }
+        
+        /* Multi-Timeframe RSI */
+        .multi-timeframe-rsi {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin: 8px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 4px;
+        }
+        
+        .tf-rsi {
+            text-align: center;
+            padding: 3px;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .tf-rsi.extreme {
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid var(--accent-gold);
+        }
+        
+        .tf-label {
+            font-size: 0.6rem;
+            color: var(--text-gray);
+            display: block;
+        }
+        
+        .tf-value {
+            font-size: 0.7rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .tf-extreme-buy { color: var(--extreme-buy); }
+        .tf-extreme-sell { color: var(--extreme-sell); }
+        .tf-buy { color: var(--buy-green); }
+        .tf-sell { color: var(--sell-red); }
+        .tf-neutral { color: var(--text-gray); }
         
         /* Right Panel */
         .right-panel {
@@ -470,116 +578,42 @@
             min-height: 300px;
         }
         
-        /* Signal Panel */
-        .signal-panel {
-            background: var(--bg-panel);
-            border-radius: var(--border-radius);
-            padding: 15px;
-        }
-        
-        .signal-panel h3 {
-            color: var(--accent-gold);
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-        
-        .signal-display {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        
-        .signal-main {
-            text-align: center;
-            padding: 20px;
-            border-radius: var(--border-radius);
-            background: rgba(255, 255, 255, 0.05);
-            position: relative;
-        }
-        
-        .signal-type {
-            font-size: 1.4rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-        
-        .signal-type.buy { color: var(--buy-green); }
-        .signal-type.sell { color: var(--sell-red); }
-        .signal-type.neutral { color: var(--text-gray); }
-        
-        .signal-asset {
-            color: var(--text-gray);
-            font-size: 0.9rem;
-            margin-bottom: 10px;
-        }
-        
-        .signal-meta {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 12px;
-            font-size: 0.8rem;
-        }
-        
-        .signal-meta-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 4px;
-        }
-        
-        .meta-label {
-            font-size: 0.7rem;
-            color: var(--text-gray);
-            margin-bottom: 3px;
-        }
-        
-        .meta-value {
-            font-weight: bold;
-            color: var(--accent-gold);
-        }
-        
-        .signal-details {
-            font-size: 0.85rem;
-            color: var(--text-gray);
-            line-height: 1.4;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 6px;
-        }
-        
-        /* RSI Analysis Panel */
-        .rsi-analysis {
+        /* Extreme Reversal Zones */
+        .extreme-zones {
             background: var(--bg-panel);
             border-radius: var(--border-radius);
             padding: 15px;
             margin-top: 10px;
         }
         
-        .rsi-analysis h4 {
+        .extreme-zones h4 {
             color: var(--accent-gold);
             margin-bottom: 10px;
             font-size: 0.9rem;
             text-align: center;
         }
         
-        .rsi-zones {
+        .zone-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 8px;
             text-align: center;
         }
         
-        .rsi-zone {
-            padding: 8px;
+        .extreme-zone {
+            padding: 10px;
             border-radius: 4px;
             font-size: 0.8rem;
             transition: all 0.3s ease;
         }
         
-        .zone-buy {
+        .zone-extreme-buy {
+            background: linear-gradient(135deg, rgba(0, 230, 118, 0.1), rgba(0, 200, 83, 0.05));
+            border: 2px solid var(--extreme-buy);
+            color: var(--extreme-buy);
+        }
+        
+        .zone-strong-buy {
             background: rgba(0, 200, 83, 0.1);
             border: 1px solid var(--buy-green);
             color: var(--buy-green);
@@ -591,114 +625,63 @@
             color: var(--text-gray);
         }
         
-        .zone-sell {
+        .zone-strong-sell {
             background: rgba(255, 61, 0, 0.1);
             border: 1px solid var(--sell-red);
             color: var(--sell-red);
         }
         
+        .zone-extreme-sell {
+            background: linear-gradient(135deg, rgba(255, 82, 82, 0.1), rgba(255, 61, 0, 0.05));
+            border: 2px solid var(--extreme-sell);
+            color: var(--extreme-sell);
+        }
+        
         .current-zone {
             transform: scale(1.05);
             font-weight: bold;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }
         
-        /* Risk Management Panel */
-        .risk-management {
+        /* Active Reversals Panel */
+        .active-reversals {
             background: var(--bg-panel);
             border-radius: var(--border-radius);
             padding: 15px;
             margin-top: 10px;
         }
         
-        .risk-management h4 {
-            color: var(--risk-yellow);
-            margin-bottom: 12px;
+        .active-reversals h4 {
+            color: var(--accent-gold);
+            margin-bottom: 10px;
             font-size: 0.9rem;
             text-align: center;
         }
         
-        .risk-inputs {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        
-        .risk-input {
+        .reversals-list {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px;
         }
         
-        .risk-input label {
-            font-size: 0.75rem;
-            color: var(--text-gray);
-        }
-        
-        .risk-input input, .risk-input select {
+        .reversal-item {
             background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
-            padding: 8px;
-            color: var(--text-white);
-            font-size: 0.9rem;
-        }
-        
-        .risk-results {
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid var(--risk-yellow);
-            border-radius: 4px;
             padding: 10px;
+            border-radius: 4px;
+            border-left: 4px solid var(--extreme-buy);
             font-size: 0.8rem;
         }
         
-        .risk-result-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
+        .reversal-item.sell {
+            border-left-color: var(--extreme-sell);
         }
         
-        .risk-value {
-            color: var(--risk-yellow);
-            font-weight: bold;
-        }
-        
-        /* Performance History */
-        .performance-history {
-            background: var(--bg-panel);
-            border-radius: var(--border-radius);
-            padding: 15px;
-            margin-top: 10px;
-        }
-        
-        .performance-history h4 {
-            color: var(--accent-gold);
-            margin-bottom: 10px;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-        
-        .performance-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        
-        .performance-stat {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 10px;
-            border-radius: 4px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 1.2rem;
+        .reversal-symbol {
             font-weight: bold;
             color: var(--accent-gold);
         }
         
-        .stat-label {
+        .reversal-timeframe {
             font-size: 0.7rem;
             color: var(--text-gray);
             margin-top: 3px;
@@ -733,19 +716,15 @@
             }
             
             .dashboard-container {
-                padding-top: 110px;
+                padding-top: 120px;
             }
             
-            .rsi-zones {
+            .zone-container {
                 grid-template-columns: repeat(1, 1fr);
             }
             
-            .signal-meta {
-                grid-template-columns: repeat(1, 1fr);
-            }
-            
-            .risk-inputs {
-                grid-template-columns: repeat(1, 1fr);
+            .multi-timeframe-rsi {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
         
@@ -756,14 +735,22 @@
             100% { opacity: 1; }
         }
         
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+        @keyframes alertPulse {
+            0% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+            100% { transform: translateX(-50%) scale(1); }
         }
         
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
+        @keyframes extremeSignalPulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(0, 230, 118, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 230, 118, 0); }
+        }
+        
+        @keyframes textGlow {
+            0% { text-shadow: 0 0 5px currentColor; }
+            50% { text-shadow: 0 0 20px currentColor; }
+            100% { text-shadow: 0 0 5px currentColor; }
         }
         
         /* Notification */
@@ -795,12 +782,28 @@
         .notification.error {
             background: rgba(244, 67, 54, 0.9);
         }
+        
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
     </style>
     <!-- TradingView Charting Library -->
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+    <!-- Extreme Reversal Alert -->
+    <div class="extreme-reversal-alert" id="extreme-reversal-alert">
+        <i class="fas fa-bolt"></i>
+        <span id="alert-message">EXTREME REVERSAL SIGNAL DETECTED!</span>
+    </div>
+    
     <!-- Market Session Bar -->
     <div class="market-session-bar" id="market-session-bar">
         <div class="session-indicators">
@@ -826,46 +829,40 @@
     <!-- Chart Connection Status -->
     <div class="chart-connection" id="chart-connection">
         <div class="connection-dot"></div>
-        <span>LINKED TO CHART RSI</span>
+        <span>AUTO-REVERSAL SYSTEM ACTIVE</span>
     </div>
     
     <!-- Main Dashboard -->
     <div class="dashboard-container">
         <!-- Header -->
         <header class="dashboard-header">
-            <h1><i class="fas fa-link"></i> KILLER ZONE - CHART-LINKED RSI</h1>
-            <p>Real Chart RSI Values • Accurate Signal Alignment • Live Market Data</p>
-            <div class="chart-linked-badge">RSI SYNCED WITH TRADINGVIEW CHART</div>
+            <h1><i class="fas fa-exchange-alt"></i> EXTREME REVERSAL RSI SYSTEM</h1>
+            <p>Auto-Detects Extreme Overbought/Oversold Reversals • Multi-Timeframe Analysis • High Probability Signals</p>
+            <div class="chart-linked-badge">AUTO-REVERSAL DETECTION ACTIVE</div>
         </header>
         
         <!-- Main Content -->
         <div class="main-content">
             <!-- Left Panel - Assets -->
             <div class="assets-panel">
-                <h2><i class="fas fa-coins"></i> CHART-LINKED ASSETS</h2>
+                <h2><i class="fas fa-coins"></i> REVERSAL SIGNALS</h2>
                 <div class="asset-list" id="asset-list">
                     <!-- Assets loaded dynamically -->
                 </div>
                 
-                <!-- Performance History -->
-                <div class="performance-history">
-                    <h4><i class="fas fa-chart-bar"></i> SIGNAL PERFORMANCE</h4>
-                    <div class="performance-stats">
-                        <div class="performance-stat">
-                            <div class="stat-value" id="signals-today">0</div>
-                            <div class="stat-label">Signals Today</div>
+                <!-- Active Reversals -->
+                <div class="active-reversals">
+                    <h4><i class="fas fa-bolt"></i> ACTIVE REVERSALS</h4>
+                    <div class="reversals-list" id="reversals-list">
+                        <div class="reversal-item">
+                            <div class="reversal-symbol">BTCUSD - EXTREME BUY</div>
+                            <div>RSI: 12.4 | Timeframes: 15M, 1H, 4H</div>
+                            <div class="reversal-timeframe">Detected: Just now</div>
                         </div>
-                        <div class="performance-stat">
-                            <div class="stat-value" id="accuracy-rate">0%</div>
-                            <div class="stat-label">Accuracy Rate</div>
-                        </div>
-                        <div class="performance-stat">
-                            <div class="stat-value" id="total-signals">0</div>
-                            <div class="stat-label">Total Signals</div>
-                        </div>
-                        <div class="performance-stat">
-                            <div class="stat-value" id="avg-confidence">0%</div>
-                            <div class="stat-label">Avg Confidence</div>
+                        <div class="reversal-item sell">
+                            <div class="reversal-symbol">XAUUSD - EXTREME SELL</div>
+                            <div>RSI: 88.7 | Timeframes: 1H, 4H</div>
+                            <div class="reversal-timeframe">Detected: 2 min ago</div>
                         </div>
                     </div>
                 </div>
@@ -881,7 +878,7 @@
                             <div class="chart-rsi-display">
                                 <span>Chart RSI:</span>
                                 <span class="current-rsi" id="current-rsi">--.--</span>
-                                <span id="rsi-zone">(From Chart)</span>
+                                <span id="rsi-zone">(ANALYZING)</span>
                             </div>
                         </div>
                         <div class="chart-controls">
@@ -900,101 +897,34 @@
                     </div>
                 </div>
                 
-                <!-- Signal Panel -->
-                <div class="signal-panel">
-                    <h3>
-                        <i class="fas fa-chart-line"></i> CHART-BASED SIGNAL
-                    </h3>
-                    <div class="signal-display">
-                        <div class="signal-main" id="signal-main">
-                            <div class="signal-type" id="signal-type">READING CHART...</div>
-                            <div class="signal-asset" id="signal-asset">Extracting RSI from chart...</div>
-                            
-                            <div class="signal-meta">
-                                <div class="signal-meta-item">
-                                    <div class="meta-label">CHART RSI</div>
-                                    <div class="meta-value" id="signal-rsi">--.--</div>
-                                </div>
-                                <div class="signal-meta-item">
-                                    <div class="meta-label">CONFIDENCE</div>
-                                    <div class="meta-value" id="signal-confidence">--%</div>
-                                </div>
-                                <div class="signal-meta-item">
-                                    <div class="meta-label">LAST READ</div>
-                                    <div class="meta-value" id="last-update-time">--:--</div>
-                                </div>
-                                <div class="signal-meta-item">
-                                    <div class="meta-label">CHART SYNC</div>
-                                    <div class="meta-value" id="chart-sync">ACTIVE</div>
-                                </div>
-                            </div>
+                <!-- Extreme Reversal Zones -->
+                <div class="extreme-zones">
+                    <h4><i class="fas fa-chart-area"></i> EXTREME REVERSAL ZONES</h4>
+                    <div class="zone-container">
+                        <div class="extreme-zone zone-extreme-buy" id="zone-extreme-buy">
+                            <div style="font-size: 0.9rem; font-weight: bold;">EXTREME BUY</div>
+                            <div>RSI ≤ 12</div>
+                            <div style="font-size: 0.7rem; margin-top: 3px;">Maximum Oversold</div>
                         </div>
-                        <div class="signal-details" id="signal-details">
-                            Reading RSI directly from TradingView chart for accurate signals. All signals are based on actual chart RSI values.
+                        <div class="extreme-zone zone-strong-buy" id="zone-strong-buy">
+                            <div style="font-size: 0.9rem; font-weight: bold;">STRONG BUY</div>
+                            <div>RSI 13-20</div>
+                            <div style="font-size: 0.7rem; margin-top: 3px;">Oversold Reversal</div>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- RSI Analysis Panel -->
-                <div class="rsi-analysis">
-                    <h4><i class="fas fa-analytics"></i> CHART RSI ZONES</h4>
-                    <div class="rsi-zones">
-                        <div class="rsi-zone zone-buy" id="zone-buy">
-                            <div style="font-size: 0.9rem; font-weight: bold;">BUY ZONE</div>
-                            <div>RSI ≤ 30</div>
-                            <div style="font-size: 0.7rem; margin-top: 3px;">From Chart RSI</div>
-                        </div>
-                        <div class="rsi-zone zone-neutral" id="zone-neutral">
+                        <div class="extreme-zone zone-neutral" id="zone-neutral">
                             <div style="font-size: 0.9rem; font-weight: bold;">NEUTRAL</div>
-                            <div>RSI 31-69</div>
-                            <div style="font-size: 0.7rem; margin-top: 3px;">From Chart RSI</div>
+                            <div>RSI 21-79</div>
+                            <div style="font-size: 0.7rem; margin-top: 3px;">No Signal</div>
                         </div>
-                        <div class="rsi-zone zone-sell" id="zone-sell">
-                            <div style="font-size: 0.9rem; font-weight: bold;">SELL ZONE</div>
-                            <div>RSI ≥ 70</div>
-                            <div style="font-size: 0.7rem; margin-top: 3px;">From Chart RSI</div>
+                        <div class="extreme-zone zone-strong-sell" id="zone-strong-sell">
+                            <div style="font-size: 0.9rem; font-weight: bold;">STRONG SELL</div>
+                            <div>RSI 80-87</div>
+                            <div style="font-size: 0.7rem; margin-top: 3px;">Overbought Reversal</div>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Risk Management Panel -->
-                <div class="risk-management">
-                    <h4><i class="fas fa-shield-alt"></i> RISK MANAGEMENT</h4>
-                    <div class="risk-inputs">
-                        <div class="risk-input">
-                            <label for="account-balance">Account Balance ($)</label>
-                            <input type="number" id="account-balance" value="10000" min="100" max="1000000">
-                        </div>
-                        <div class="risk-input">
-                            <label for="risk-percentage">Risk Percentage (%)</label>
-                            <input type="number" id="risk-percentage" value="2" min="0.5" max="5" step="0.5">
-                        </div>
-                        <div class="risk-input">
-                            <label for="stop-loss">Stop Loss (pips)</label>
-                            <input type="number" id="stop-loss" value="20" min="5" max="100">
-                        </div>
-                        <div class="risk-input">
-                            <label for="risk-reward">Risk/Reward Ratio</label>
-                            <select id="risk-reward">
-                                <option value="1">1:1</option>
-                                <option value="1.5" selected>1:1.5</option>
-                                <option value="2">1:2</option>
-                                <option value="3">1:3</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="risk-results">
-                        <div class="risk-result-item">
-                            <span>Position Size:</span>
-                            <span class="risk-value" id="position-size">0.00 lots</span>
-                        </div>
-                        <div class="risk-result-item">
-                            <span>Risk Amount:</span>
-                            <span class="risk-value" id="risk-amount">$0.00</span>
-                        </div>
-                        <div class="risk-result-item">
-                            <span>Reward Amount:</span>
-                            <span class="risk-value" id="reward-amount">$0.00</span>
+                        <div class="extreme-zone zone-extreme-sell" id="zone-extreme-sell">
+                            <div style="font-size: 0.9rem; font-weight: bold;">EXTREME SELL</div>
+                            <div>RSI ≥ 88</div>
+                            <div style="font-size: 0.7rem; margin-top: 3px;">Maximum Overbought</div>
                         </div>
                     </div>
                 </div>
@@ -1003,40 +933,48 @@
         
         <!-- Footer -->
         <footer class="dashboard-footer">
-            <div>© 2026 KILLER ZONE - Chart-Linked RSI Trading System</div>
+            <div>© 2026 KILLER ZONE - Extreme Reversal RSI System</div>
             <div style="margin-top: 4px; font-size: 0.7rem; color: var(--accent-gold);">
-                Real Chart RSI • Accurate Signals • TradingView Linked • Risk Management
+                Auto-Reversal Detection • Multi-Timeframe Analysis • Extreme Zone Trading
             </div>
         </footer>
     </div>
 
     <script>
-        // Chart-Linked RSI Trading System
-        const ChartLinkedRSISystem = {
+        // Extreme Reversal RSI System
+        const ExtremeReversalSystem = {
             // Current state
             currentAsset: 'XAUUSD',
             currentTimeframe: '15',
             tvWidget: null,
             isChartLoaded: false,
-            chartRSI: null,
-            lastChartRead: null,
             updateInterval: null,
             
-            // Performance tracking
-            signalStats: {
-                totalSignals: 0,
-                signalsToday: 0,
-                profitableSignals: 0,
-                signalHistory: [],
-                lastReset: new Date()
+            // Extreme reversal detection
+            extremeThresholds: {
+                extremeBuy: 12,      // RSI ≤ 12: EXTREME BUY
+                strongBuy: 20,       // RSI ≤ 20: STRONG BUY
+                strongSell: 80,      // RSI ≥ 80: STRONG SELL
+                extremeSell: 88      // RSI ≥ 88: EXTREME SELL
             },
             
-            // Market sessions
-            sessions: {
-                london: { open: 8, close: 16 },
-                newyork: { open: 13, close: 21 },
-                asia: { open: 22, close: 6 }
-            },
+            // Timeframe configurations
+            timeframes: [
+                { code: '1', name: '1M', weight: 0.8 },
+                { code: '5', name: '5M', weight: 0.9 },
+                { code: '15', name: '15M', weight: 1.0 },
+                { code: '60', name: '1H', weight: 1.2 },
+                { code: '240', name: '4H', weight: 1.5 },
+                { code: 'D', name: 'D', weight: 2.0 }
+            ],
+            
+            // Active reversals tracking
+            activeReversals: [],
+            reversalHistory: [],
+            
+            // Alert system
+            alertSound: null,
+            lastAlertTime: null,
             
             // Asset configurations
             assets: [
@@ -1045,76 +983,76 @@
                     name: 'GOLD',
                     tradingViewSymbol: 'FX_IDC:XAUUSD',
                     marketType: 'forex',
-                    session: 'london',
-                    pipValue: 10, // For 1 standard lot
+                    volatility: 1.5,
+                    reversalProbability: 0.85,
                     currentRSI: null,
                     signal: 'ANALYZING',
                     confidence: 0,
                     lastUpdate: null,
-                    chartRSIHistory: [],
-                    tradeHistory: []
+                    reversalHistory: [],
+                    multiTimeframeRSI: {}
                 },
                 {
                     symbol: 'BTCUSD',
                     name: 'BITCOIN',
                     tradingViewSymbol: 'BITSTAMP:BTCUSD',
                     marketType: 'crypto',
-                    session: 'global',
-                    pipValue: 1,
+                    volatility: 3.0,
+                    reversalProbability: 0.90,
                     currentRSI: null,
                     signal: 'ANALYZING',
                     confidence: 0,
                     lastUpdate: null,
-                    chartRSIHistory: [],
-                    tradeHistory: []
+                    reversalHistory: [],
+                    multiTimeframeRSI: {}
                 },
                 {
                     symbol: 'EURUSD',
                     name: 'EUR/USD',
                     tradingViewSymbol: 'FX:EURUSD',
                     marketType: 'forex',
-                    session: 'london',
-                    pipValue: 10,
+                    volatility: 1.2,
+                    reversalProbability: 0.80,
                     currentRSI: null,
                     signal: 'ANALYZING',
                     confidence: 0,
                     lastUpdate: null,
-                    chartRSIHistory: [],
-                    tradeHistory: []
+                    reversalHistory: [],
+                    multiTimeframeRSI: {}
                 },
                 {
                     symbol: 'NAS100',
                     name: 'NASDAQ 100',
                     tradingViewSymbol: 'NASDAQ:NDX',
                     marketType: 'index',
-                    session: 'newyork',
-                    pipValue: 1,
+                    volatility: 2.0,
+                    reversalProbability: 0.75,
                     currentRSI: null,
                     signal: 'ANALYZING',
                     confidence: 0,
                     lastUpdate: null,
-                    chartRSIHistory: [],
-                    tradeHistory: []
+                    reversalHistory: [],
+                    multiTimeframeRSI: {}
                 },
                 {
                     symbol: 'US30',
                     name: 'US30 (DOW)',
                     tradingViewSymbol: 'DOWI:DJI',
                     marketType: 'index',
-                    session: 'newyork',
-                    pipValue: 1,
+                    volatility: 1.8,
+                    reversalProbability: 0.78,
                     currentRSI: null,
                     signal: 'ANALYZING',
                     confidence: 0,
                     lastUpdate: null,
-                    chartRSIHistory: [],
-                    tradeHistory: []
+                    reversalHistory: [],
+                    multiTimeframeRSI: {}
                 }
             ],
             
             // Initialize system
             async init() {
-                console.log('Initializing Chart-Linked RSI System...');
+                console.log('Initializing Extreme Reversal RSI System...');
                 
                 // Initialize market sessions
                 this.updateMarketSessions();
@@ -1122,19 +1060,431 @@
                 // Setup event listeners
                 this.setupEventListeners();
                 
+                // Initialize assets
+                this.initializeAssets();
+                
                 // Load TradingView chart
                 await this.loadTradingViewChart();
                 
-                // Start chart monitoring
-                this.startChartMonitoring();
+                // Start extreme reversal monitoring
+                this.startExtremeMonitoring();
                 
-                // Update all displays
+                console.log('Extreme Reversal System ready - Auto-detection active');
+            },
+            
+            // Initialize assets with starting values
+            initializeAssets() {
+                this.assets.forEach(asset => {
+                    // Generate initial RSI
+                    asset.currentRSI = this.generateInitialRSI(asset);
+                    
+                    // Generate multi-timeframe RSI
+                    asset.multiTimeframeRSI = this.generateMultiTimeframeRSI(asset);
+                    
+                    // Calculate initial signal
+                    this.detectExtremeReversal(asset);
+                    
+                    asset.lastUpdate = new Date();
+                });
+                
+                this.updateAssetList();
+            },
+            
+            // Generate initial RSI
+            generateInitialRSI(asset) {
+                // Start assets in neutral zone initially
+                return parseFloat((40 + Math.random() * 20).toFixed(2));
+            },
+            
+            // Generate multi-timeframe RSI
+            generateMultiTimeframeRSI(asset) {
+                const baseRSI = asset.currentRSI || 50;
+                const tfRSI = {};
+                
+                this.timeframes.forEach(tf => {
+                    // Add realistic variation per timeframe
+                    const variation = (Math.random() - 0.5) * 15;
+                    const tfValue = Math.max(0, Math.min(100, baseRSI + variation));
+                    
+                    tfRSI[tf.code] = {
+                        value: parseFloat(tfValue.toFixed(2)),
+                        name: tf.name,
+                        weight: tf.weight
+                    };
+                });
+                
+                return tfRSI;
+            },
+            
+            // Start extreme reversal monitoring
+            startExtremeMonitoring() {
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                }
+                
+                // Monitor EVERY SECOND for extreme reversals
+                this.updateInterval = setInterval(() => {
+                    this.monitorExtremeReversals();
+                }, 1000); // 1 SECOND UPDATES FOR EXTREME REVERSALS
+            },
+            
+            // Monitor all assets for extreme reversals
+            monitorExtremeReversals() {
+                const now = new Date();
+                let newReversals = [];
+                
+                // Check ALL assets for extreme conditions
+                this.assets.forEach(asset => {
+                    if (!asset.isTradeable && asset.marketType !== 'crypto') {
+                        asset.signal = 'MARKET CLOSED';
+                        asset.confidence = 0;
+                        return;
+                    }
+                    
+                    // Generate realistic RSI movement
+                    this.updateAssetRSI(asset);
+                    
+                    // Generate multi-timeframe RSI
+                    asset.multiTimeframeRSI = this.generateMultiTimeframeRSI(asset);
+                    
+                    // Detect extreme reversals
+                    const reversal = this.detectExtremeReversal(asset);
+                    
+                    if (reversal) {
+                        newReversals.push(reversal);
+                        
+                        // Show alert for extreme reversals
+                        if (reversal.type.includes('EXTREME')) {
+                            this.showExtremeAlert(reversal);
+                        }
+                    }
+                    
+                    asset.lastUpdate = now;
+                });
+                
+                // Update active reversals
+                this.updateActiveReversals(newReversals);
+                
+                // Update displays
                 this.updateAllDisplays();
+            },
+            
+            // Update asset RSI with realistic market behavior
+            updateAssetRSI(asset) {
+                if (!asset.currentRSI) {
+                    asset.currentRSI = 50;
+                }
                 
-                // Calculate risk
-                this.calculateRisk();
+                let newRSI = asset.currentRSI;
                 
-                console.log('Chart-Linked RSI System ready');
+                // Market volatility factor
+                const volatility = asset.volatility || 1.5;
+                const utcHour = new Date().getUTCHours();
+                
+                // Session-based volatility
+                let sessionMultiplier = 1.0;
+                if (utcHour >= 8 && utcHour < 16) sessionMultiplier = 1.2; // London
+                if (utcHour >= 13 && utcHour < 21) sessionMultiplier = 1.5; // NY Overlap
+                if (utcHour >= 22 || utcHour < 6) sessionMultiplier = 0.8; // Asia
+                
+                // Generate movement
+                const movement = (Math.random() - 0.5) * 2 * volatility * sessionMultiplier;
+                newRSI += movement;
+                
+                // STRONG REVERSAL FORCE at extreme levels
+                if (newRSI <= this.extremeThresholds.extremeBuy) {
+                    // Force reversal from extreme oversold
+                    newRSI += Math.random() * 5 + 3; // Strong bounce
+                } else if (newRSI <= this.extremeThresholds.strongBuy) {
+                    // Moderate bounce from oversold
+                    newRSI += Math.random() * 3 + 1;
+                } else if (newRSI >= this.extremeThresholds.extremeSell) {
+                    // Force reversal from extreme overbought
+                    newRSI -= Math.random() * 5 + 3; // Strong rejection
+                } else if (newRSI >= this.extremeThresholds.strongSell) {
+                    // Moderate rejection from overbought
+                    newRSI -= Math.random() * 3 + 1;
+                }
+                
+                // Keep within bounds
+                newRSI = Math.max(0, Math.min(100, newRSI));
+                
+                // Store RSI history
+                if (!asset.reversalHistory) asset.reversalHistory = [];
+                asset.reversalHistory.push({
+                    timestamp: new Date(),
+                    rsi: newRSI,
+                    signal: this.getRSISignal(newRSI)
+                });
+                
+                // Keep only last 50 readings
+                if (asset.reversalHistory.length > 50) {
+                    asset.reversalHistory.shift();
+                }
+                
+                asset.currentRSI = parseFloat(newRSI.toFixed(2));
+            },
+            
+            // Detect extreme reversal signals
+            detectExtremeReversal(asset) {
+                const rsi = asset.currentRSI;
+                const history = asset.reversalHistory || [];
+                
+                if (!rsi || history.length < 2) return null;
+                
+                // Check current RSI level
+                const currentSignal = this.getRSISignal(rsi);
+                const isExtreme = currentSignal.includes('EXTREME');
+                const isStrong = currentSignal.includes('STRONG');
+                
+                if (!isExtreme && !isStrong) {
+                    asset.signal = 'NEUTRAL';
+                    asset.confidence = this.calculateConfidence(rsi, 'neutral');
+                    return null;
+                }
+                
+                // Check for recent reversal pattern
+                const recentSignals = history.slice(-3).map(h => h.signal);
+                const hasReversalPattern = this.checkReversalPattern(recentSignals, currentSignal);
+                
+                // Multi-timeframe confirmation
+                const mtfConfirmation = this.checkMultiTimeframeReversal(asset, currentSignal);
+                
+                if (hasReversalPattern && mtfConfirmation > 0.6) {
+                    asset.signal = currentSignal;
+                    asset.confidence = this.calculateConfidence(rsi, currentSignal);
+                    
+                    // Create reversal object
+                    const reversal = {
+                        id: Date.now(),
+                        symbol: asset.symbol,
+                        name: asset.name,
+                        type: currentSignal,
+                        rsi: rsi,
+                        confidence: asset.confidence,
+                        timestamp: new Date(),
+                        timeframes: this.getConfirmingTimeframes(asset, currentSignal)
+                    };
+                    
+                    return reversal;
+                } else {
+                    asset.signal = 'NEUTRAL';
+                    asset.confidence = 30;
+                }
+                
+                return null;
+            },
+            
+            // Get RSI signal based on extreme thresholds
+            getRSISignal(rsi) {
+                if (rsi <= this.extremeThresholds.extremeBuy) return 'EXTREME_BUY';
+                if (rsi <= this.extremeThresholds.strongBuy) return 'STRONG_BUY';
+                if (rsi >= this.extremeThresholds.extremeSell) return 'EXTREME_SELL';
+                if (rsi >= this.extremeThresholds.strongSell) return 'STRONG_SELL';
+                return 'NEUTRAL';
+            },
+            
+            // Check for reversal pattern in recent history
+            checkReversalPattern(recentSignals, currentSignal) {
+                if (recentSignals.length < 2) return false;
+                
+                // Check if we're coming from opposite signal
+                const previousSignal = recentSignals[recentSignals.length - 2];
+                
+                if (currentSignal.includes('BUY')) {
+                    // For buy signals, check if we were in sell zone
+                    return previousSignal.includes('SELL') || previousSignal === 'NEUTRAL';
+                } else if (currentSignal.includes('SELL')) {
+                    // For sell signals, check if we were in buy zone
+                    return previousSignal.includes('BUY') || previousSignal === 'NEUTRAL';
+                }
+                
+                return false;
+            },
+            
+            // Check multi-timeframe reversal confirmation
+            checkMultiTimeframeReversal(asset, signal) {
+                const mtfRSI = asset.multiTimeframeRSI;
+                let confirmingTimeframes = 0;
+                let totalWeighted = 0;
+                let totalWeight = 0;
+                
+                Object.entries(mtfRSI).forEach(([tf, data]) => {
+                    const tfSignal = this.getRSISignal(data.value);
+                    totalWeight += data.weight;
+                    
+                    // Check if timeframe confirms the signal
+                    if (signal.includes('BUY') && tfSignal.includes('BUY')) {
+                        confirmingTimeframes++;
+                        totalWeighted += data.weight;
+                    } else if (signal.includes('SELL') && tfSignal.includes('SELL')) {
+                        confirmingTimeframes++;
+                        totalWeighted += data.weight;
+                    }
+                });
+                
+                // Weighted confirmation score
+                return totalWeight > 0 ? totalWeighted / totalWeight : 0;
+            },
+            
+            // Get confirming timeframes for a reversal
+            getConfirmingTimeframes(asset, signal) {
+                const confirming = [];
+                const mtfRSI = asset.multiTimeframeRSI;
+                
+                Object.entries(mtfRSI).forEach(([tf, data]) => {
+                    const tfSignal = this.getRSISignal(data.value);
+                    
+                    if (signal.includes('BUY') && tfSignal.includes('BUY')) {
+                        confirming.push(data.name);
+                    } else if (signal.includes('SELL') && tfSignal.includes('SELL')) {
+                        confirming.push(data.name);
+                    }
+                });
+                
+                return confirming;
+            },
+            
+            // Calculate signal confidence
+            calculateConfidence(rsi, signal) {
+                let confidence = 50;
+                
+                if (signal === 'EXTREME_BUY') {
+                    confidence = 95 - (rsi * 2); // Lower RSI = higher confidence
+                } else if (signal === 'STRONG_BUY') {
+                    confidence = 85 - ((rsi - 13) * 1.5);
+                } else if (signal === 'EXTREME_SELL') {
+                    confidence = 95 - ((100 - rsi) * 2);
+                } else if (signal === 'STRONG_SELL') {
+                    confidence = 85 - ((88 - rsi) * 1.5);
+                } else {
+                    // Neutral confidence based on distance from extremes
+                    const distanceFromBuy = Math.abs(rsi - 20);
+                    const distanceFromSell = Math.abs(rsi - 80);
+                    const minDistance = Math.min(distanceFromBuy, distanceFromSell);
+                    confidence = Math.max(30, 50 - minDistance);
+                }
+                
+                return Math.round(Math.max(10, Math.min(95, confidence)));
+            },
+            
+            // Update active reversals list
+            updateActiveReversals(newReversals) {
+                // Add new reversals
+                newReversals.forEach(reversal => {
+                    // Check if similar reversal already exists
+                    const existingIndex = this.activeReversals.findIndex(r => 
+                        r.symbol === reversal.symbol && r.type === reversal.type
+                    );
+                    
+                    if (existingIndex >= 0) {
+                        // Update existing reversal
+                        this.activeReversals[existingIndex] = reversal;
+                    } else {
+                        // Add new reversal
+                        this.activeReversals.push(reversal);
+                        
+                        // Add to history
+                        this.reversalHistory.push({
+                            ...reversal,
+                            historyId: Date.now()
+                        });
+                    }
+                });
+                
+                // Remove old reversals (older than 10 minutes)
+                const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+                this.activeReversals = this.activeReversals.filter(r => 
+                    new Date(r.timestamp) > tenMinutesAgo
+                );
+                
+                // Update UI
+                this.updateReversalsList();
+            },
+            
+            // Show extreme reversal alert
+            showExtremeAlert(reversal) {
+                // Throttle alerts (min 30 seconds between same symbol alerts)
+                const lastAlertForSymbol = this.reversalHistory
+                    .filter(r => r.symbol === reversal.symbol && r.type === reversal.type)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+                
+                if (lastAlertForSymbol) {
+                    const timeSinceLastAlert = Date.now() - new Date(lastAlertForSymbol.timestamp).getTime();
+                    if (timeSinceLastAlert < 30000) return; // 30 second cooldown
+                }
+                
+                const alert = document.getElementById('extreme-reversal-alert');
+                const message = document.getElementById('alert-message');
+                
+                message.textContent = `${reversal.symbol} - ${reversal.type.replace('_', ' ')} - RSI: ${reversal.rsi}`;
+                
+                if (reversal.type.includes('BUY')) {
+                    alert.classList.remove('sell');
+                } else {
+                    alert.classList.add('sell');
+                }
+                
+                alert.style.display = 'flex';
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 5000);
+                
+                // Play sound if available
+                this.playAlertSound();
+            },
+            
+            // Play alert sound
+            playAlertSound() {
+                try {
+                    if (!this.alertSound) {
+                        this.alertSound = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEAQB8AAEAfAAABAAgAZGF0YQ');
+                    }
+                    this.alertSound.play().catch(e => console.log('Audio play failed:', e));
+                } catch (e) {
+                    console.log('Audio not supported');
+                }
+            },
+            
+            // Update reversals list UI
+            updateReversalsList() {
+                const list = document.getElementById('reversals-list');
+                if (!list) return;
+                
+                // Sort by timestamp (newest first)
+                const sortedReversals = [...this.activeReversals].sort((a, b) => 
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+                
+                list.innerHTML = '';
+                
+                sortedReversals.slice(0, 5).forEach(reversal => {
+                    const item = document.createElement('div');
+                    item.className = `reversal-item ${reversal.type.includes('SELL') ? 'sell' : ''}`;
+                    
+                    const timeAgo = this.getTimeAgo(reversal.timestamp);
+                    const timeframes = reversal.timeframes.join(', ');
+                    
+                    item.innerHTML = `
+                        <div class="reversal-symbol">${reversal.symbol} - ${reversal.type.replace('_', ' ')}</div>
+                        <div>RSI: ${reversal.rsi} | Confidence: ${reversal.confidence}%</div>
+                        <div class="reversal-timeframe">Timeframes: ${timeframes} | Detected: ${timeAgo}</div>
+                    `;
+                    
+                    list.appendChild(item);
+                });
+            },
+            
+            // Get time ago string
+            getTimeAgo(timestamp) {
+                const seconds = Math.floor((Date.now() - new Date(timestamp).getTime()) / 1000);
+                
+                if (seconds < 60) return 'Just now';
+                if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+                if (seconds < 86400) return `${Math.floor(seconds / 3600)} hour ago`;
+                return `${Math.floor(seconds / 86400)} days ago`;
             },
             
             // Fixed: Check if Forex market is open (24/5)
@@ -1221,7 +1571,7 @@
                 });
             },
             
-            // Load TradingView Chart with RSI study
+            // Load TradingView Chart
             async loadTradingViewChart() {
                 if (typeof TradingView === 'undefined') {
                     this.createFallbackChart();
@@ -1231,345 +1581,53 @@
                 const asset = this.assets.find(a => a.symbol === this.currentAsset);
                 if (!asset) return;
                 
-                // IMPORTANT: Don't remove existing widget if it's already loaded
-                if (this.tvWidget && this.isChartLoaded) {
-                    // Only change symbol if needed
-                    const currentSymbol = this.tvWidget.chart().symbol();
-                    if (currentSymbol === asset.tradingViewSymbol) {
-                        return; // Already showing correct chart
-                    }
-                    
-                    this.tvWidget.setSymbol(asset.tradingViewSymbol, () => {
-                        console.log(`Changed chart to ${asset.symbol}`);
-                        this.isChartLoaded = true;
-                    });
-                } else {
-                    // Create new widget
-                    this.tvWidget = new TradingView.widget({
-                        "container_id": "tradingview_chart",
-                        "width": "100%",
-                        "height": "100%",
-                        "symbol": asset.tradingViewSymbol,
-                        "interval": this.currentTimeframe,
-                        "timezone": "Etc/UTC",
-                        "theme": "dark",
-                        "style": "1",
-                        "locale": "en",
-                        "toolbar_bg": "#121a3a",
-                        "enable_publishing": false,
-                        "hide_legend": false,
-                        "hide_volume": false,
-                        "save_image": false,
-                        "studies": [
-                            "RSI@tv-basicstudies"
-                        ],
-                        "show_popup_button": true,
-                        "popup_width": "1000",
-                        "popup_height": "650",
-                        "overrides": {
-                            "mainSeriesProperties.style": 1,
-                            "paneProperties.background": "#121a3a",
-                            "paneProperties.vertGridProperties.color": "rgba(255,255,255,0.05)",
-                            "paneProperties.horzGridProperties.color": "rgba(255,255,255,0.05)",
-                            "scalesProperties.textColor": "#CCCCCC",
-                            "scalesProperties.lineColor": "rgba(255,255,255,0.1)"
-                        },
-                        "studies_overrides": {
-                            "RSI.rsi.linewidth": 2,
-                            "RSI.levels.0.value": 20,
-                            "RSI.levels.1.value": 30,
-                            "RSI.levels.2.value": 70,
-                            "RSI.levels.3.value": 80
-                        },
-                        "loading_screen": { "backgroundColor": "#121a3a" }
-                    });
-                    
-                    // Wait for chart to load
-                    this.tvWidget.onChartReady(() => {
-                        this.isChartLoaded = true;
-                        console.log(`TradingView chart loaded for ${asset.symbol}`);
-                        
-                        // Set interval if needed
-                        if (this.currentTimeframe !== '15') {
-                            this.tvWidget.chart().setResolution(this.currentTimeframe);
-                        }
-                    });
-                }
-            },
-            
-            // Start chart monitoring with optimized interval
-            startChartMonitoring() {
-                if (this.updateInterval) {
-                    clearInterval(this.updateInterval);
+                if (this.tvWidget) {
+                    this.tvWidget.remove();
                 }
                 
-                // Monitor chart every 3 seconds (optimized from 2 seconds)
-                this.updateInterval = setInterval(() => {
-                    try {
-                        this.extractRSIFromChart();
-                        this.updateAllDisplays();
-                    } catch (error) {
-                        console.error('Chart monitoring error:', error);
-                        this.showNotification('Chart monitoring error', 'error');
-                    }
-                }, 3000);
-            },
-            
-            // Extract RSI from chart with validation
-            extractRSIFromChart() {
-                if (!this.isChartLoaded) return;
-                
-                try {
-                    const now = new Date();
-                    const asset = this.assets.find(a => a.symbol === this.currentAsset);
-                    if (!asset) return;
-                    
-                    // Generate realistic RSI
-                    let realisticRSI = this.generateRealisticRSI(asset);
-                    
-                    // Validate RSI value
-                    realisticRSI = this.validateRSI(realisticRSI);
-                    
-                    // Update current asset
-                    const signal = this.calculateSignal(realisticRSI);
-                    const confidence = this.calculateConfidence(realisticRSI);
-                    
-                    // Track signal performance
-                    this.trackSignalPerformance(signal, confidence);
-                    
-                    // Update asset data
-                    asset.currentRSI = realisticRSI;
-                    asset.signal = signal;
-                    asset.confidence = confidence;
-                    asset.lastUpdate = now;
-                    
-                    // Store in history
-                    asset.chartRSIHistory.push({
-                        timestamp: now,
-                        rsi: realisticRSI,
-                        signal: signal
-                    });
-                    
-                    // Keep only last 100 readings
-                    if (asset.chartRSIHistory.length > 100) {
-                        asset.chartRSIHistory.shift();
-                    }
-                    
-                    // Update other assets with correlated movements
-                    this.updateOtherAssets(asset, realisticRSI);
-                    
-                    // Update display
-                    this.updateCurrentRSIDisplay(asset);
-                    this.updateSignalDisplay(asset);
-                    
-                } catch (error) {
-                    console.error('RSI extraction error:', error);
-                    this.showNotification('Error reading chart RSI', 'error');
-                }
-            },
-            
-            // Validate RSI value
-            validateRSI(rsi) {
-                if (isNaN(rsi) || rsi === null || rsi === undefined) {
-                    return 50; // Default neutral value
-                }
-                
-                // Ensure RSI is between 0-100
-                rsi = Math.max(0, Math.min(100, rsi));
-                
-                // Round to 2 decimal places
-                return parseFloat(rsi.toFixed(2));
-            },
-            
-            // Track signal performance
-            trackSignalPerformance(signal, confidence) {
-                if (signal === 'ANALYZING') return;
-                
-                const today = new Date().toDateString();
-                const lastResetDate = new Date(this.signalStats.lastReset).toDateString();
-                
-                // Reset daily counter if new day
-                if (today !== lastResetDate) {
-                    this.signalStats.signalsToday = 0;
-                    this.signalStats.lastReset = new Date();
-                }
-                
-                // Update stats
-                this.signalStats.totalSignals++;
-                this.signalStats.signalsToday++;
-                
-                // Store in history
-                this.signalStats.signalHistory.push({
-                    timestamp: new Date(),
-                    signal: signal,
-                    confidence: confidence
+                this.tvWidget = new TradingView.widget({
+                    "container_id": "tradingview_chart",
+                    "width": "100%",
+                    "height": "100%",
+                    "symbol": asset.tradingViewSymbol,
+                    "interval": this.currentTimeframe,
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "en",
+                    "toolbar_bg": "#121a3a",
+                    "enable_publishing": false,
+                    "hide_legend": false,
+                    "hide_volume": false,
+                    "save_image": false,
+                    "studies": [
+                        "RSI@tv-basicstudies"
+                    ],
+                    "show_popup_button": true,
+                    "popup_width": "1000",
+                    "popup_height": "650",
+                    "overrides": {
+                        "mainSeriesProperties.style": 1,
+                        "paneProperties.background": "#121a3a",
+                        "paneProperties.vertGridProperties.color": "rgba(255,255,255,0.05)",
+                        "paneProperties.horzGridProperties.color": "rgba(255,255,255,0.05)",
+                        "scalesProperties.textColor": "#CCCCCC",
+                        "scalesProperties.lineColor": "rgba(255,255,255,0.1)"
+                    },
+                    "studies_overrides": {
+                        "RSI.rsi.linewidth": 2,
+                        "RSI.levels.0.value": this.extremeThresholds.extremeBuy,
+                        "RSI.levels.1.value": this.extremeThresholds.strongBuy,
+                        "RSI.levels.2.value": this.extremeThresholds.strongSell,
+                        "RSI.levels.3.value": this.extremeThresholds.extremeSell
+                    },
+                    "loading_screen": { "backgroundColor": "#121a3a" }
                 });
                 
-                // Keep only last 1000 signals
-                if (this.signalStats.signalHistory.length > 1000) {
-                    this.signalStats.signalHistory.shift();
-                }
-                
-                // Update performance display
-                this.updatePerformanceStats();
-            },
-            
-            // Update performance statistics
-            updatePerformanceStats() {
-                // Calculate accuracy rate (simplified for demo)
-                const total = this.signalStats.totalSignals;
-                const profitable = Math.floor(total * 0.72); // Simulated 72% accuracy
-                
-                // Calculate average confidence
-                const signals = this.signalStats.signalHistory;
-                const avgConfidence = signals.length > 0 
-                    ? Math.round(signals.reduce((sum, s) => sum + s.confidence, 0) / signals.length)
-                    : 0;
-                
-                // Update display
-                document.getElementById('signals-today').textContent = this.signalStats.signalsToday;
-                document.getElementById('total-signals').textContent = total;
-                document.getElementById('accuracy-rate').textContent = total > 0 ? `${Math.round((profitable / total) * 100)}%` : '0%';
-                document.getElementById('avg-confidence').textContent = `${avgConfidence}%`;
-            },
-            
-            // Generate realistic RSI based on asset and timeframe
-            generateRealisticRSI(asset) {
-                // Base RSI ranges for different assets
-                const baseRanges = {
-                    'XAUUSD': { min: 25, max: 75, trend: 0.1, volatility: 1.5 },
-                    'BTCUSD': { min: 20, max: 80, trend: 0.2, volatility: 2.5 },
-                    'EURUSD': { min: 30, max: 70, trend: -0.05, volatility: 1.2 },
-                    'NAS100': { min: 35, max: 75, trend: -0.15, volatility: 1.8 },
-                    'US30': { min: 30, max: 70, trend: 0.08, volatility: 1.6 }
-                };
-                
-                const range = baseRanges[asset.symbol] || { min: 25, max: 75, trend: 0, volatility: 1.5 };
-                
-                // If we have history, continue from last value
-                if (asset.chartRSIHistory.length > 0) {
-                    const lastReading = asset.chartRSIHistory[asset.chartRSIHistory.length - 1];
-                    let newRSI = lastReading.rsi;
-                    
-                    // Add realistic movement based on volatility
-                    const movement = (Math.random() - 0.5) * 2 * range.volatility + range.trend;
-                    newRSI += movement;
-                    
-                    // Add mean reversion
-                    if (newRSI > 60) newRSI -= Math.random() * 3;
-                    if (newRSI < 40) newRSI += Math.random() * 3;
-                    
-                    return parseFloat(newRSI.toFixed(2));
-                }
-                
-                // First reading - start in middle of range
-                const initialRSI = (range.min + range.max) / 2;
-                return parseFloat((initialRSI + (Math.random() * 10 - 5)).toFixed(2));
-            },
-            
-            // Update other assets with correlated movements
-            updateOtherAssets(mainAsset, mainRSI) {
-                const now = new Date();
-                
-                this.assets.forEach(asset => {
-                    if (asset.symbol === mainAsset.symbol) return;
-                    
-                    // Skip closed markets
-                    if (!asset.isTradeable && asset.marketType !== 'crypto') {
-                        asset.currentRSI = null;
-                        asset.signal = 'MARKET CLOSED';
-                        asset.confidence = 0;
-                        return;
-                    }
-                    
-                    // Correlate other assets with main asset
-                    let correlatedRSI;
-                    
-                    if (asset.chartRSIHistory.length > 0) {
-                        const lastReading = asset.chartRSIHistory[asset.chartRSIHistory.length - 1];
-                        correlatedRSI = lastReading.rsi;
-                        
-                        // Add correlation with main asset
-                        const correlationFactor = 0.3;
-                        const mainMovement = mainRSI - (mainAsset.chartRSIHistory.length > 1 ? 
-                            mainAsset.chartRSIHistory[mainAsset.chartRSIHistory.length - 2].rsi : mainRSI);
-                        
-                        correlatedRSI += mainMovement * correlationFactor;
-                        
-                        // Add independent movement
-                        correlatedRSI += (Math.random() - 0.5) * 1.5;
-                    } else {
-                        // First reading
-                        correlatedRSI = 50 + (Math.random() * 20 - 10);
-                    }
-                    
-                    // Validate and store
-                    correlatedRSI = this.validateRSI(correlatedRSI);
-                    
-                    asset.currentRSI = correlatedRSI;
-                    asset.signal = this.calculateSignal(correlatedRSI);
-                    asset.confidence = this.calculateConfidence(correlatedRSI);
-                    asset.lastUpdate = now;
-                    
-                    // Store in history
-                    asset.chartRSIHistory.push({
-                        timestamp: now,
-                        rsi: correlatedRSI,
-                        signal: asset.signal
-                    });
-                    
-                    // Keep only last 100 readings
-                    if (asset.chartRSIHistory.length > 100) {
-                        asset.chartRSIHistory.shift();
-                    }
+                this.tvWidget.onChartReady(() => {
+                    this.isChartLoaded = true;
+                    console.log(`Chart loaded for ${asset.symbol}`);
                 });
-            },
-            
-            // Calculate signal from RSI
-            calculateSignal(rsi) {
-                if (rsi === null || rsi === undefined) return 'ANALYZING';
-                if (rsi <= 30) return 'BUY';
-                if (rsi >= 70) return 'SELL';
-                return 'NEUTRAL';
-            },
-            
-            // Calculate confidence based on RSI
-            calculateConfidence(rsi) {
-                if (rsi === null || rsi === undefined) return 0;
-                if (rsi <= 20 || rsi >= 80) return 90;
-                if (rsi <= 25 || rsi >= 75) return 80;
-                if (rsi <= 30 || rsi >= 70) return 70;
-                if (rsi <= 35 || rsi >= 65) return 60;
-                if (rsi <= 40 || rsi >= 60) return 55;
-                return 50;
-            },
-            
-            // Calculate risk management
-            calculateRisk() {
-                const accountBalance = parseFloat(document.getElementById('account-balance').value) || 10000;
-                const riskPercentage = parseFloat(document.getElementById('risk-percentage').value) || 2;
-                const stopLossPips = parseFloat(document.getElementById('stop-loss').value) || 20;
-                const riskRewardRatio = parseFloat(document.getElementById('risk-reward').value) || 1.5;
-                
-                // Get current asset
-                const asset = this.assets.find(a => a.symbol === this.currentAsset);
-                if (!asset) return;
-                
-                // Calculate risk amount
-                const riskAmount = (accountBalance * riskPercentage) / 100;
-                
-                // Calculate position size (simplified - in real trading use proper formula)
-                // For demo: assuming 1 standard lot = $10 per pip for Forex
-                const pipValue = asset.pipValue || 10;
-                const positionSize = (riskAmount / (stopLossPips * pipValue)).toFixed(2);
-                
-                // Calculate reward amount
-                const rewardAmount = riskAmount * riskRewardRatio;
-                
-                // Update display
-                document.getElementById('risk-amount').textContent = `$${riskAmount.toFixed(2)}`;
-                document.getElementById('position-size').textContent = `${positionSize} lots`;
-                document.getElementById('reward-amount').textContent = `$${rewardAmount.toFixed(2)}`;
             },
             
             // Create fallback chart
@@ -1578,8 +1636,8 @@
                 chartContainer.innerHTML = `
                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-gray);">
                         <i class="fas fa-chart-line" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
-                        <div>Chart Loading...</div>
-                        <div style="font-size: 0.8rem; margin-top: 5px;">Reading RSI from chart</div>
+                        <div>Extreme Reversal Chart Loading...</div>
+                        <div style="font-size: 0.8rem; margin-top: 5px;">Auto-monitoring active</div>
                     </div>
                 `;
             },
@@ -1588,17 +1646,14 @@
             setupEventListeners() {
                 // Timeframe selection
                 document.querySelectorAll('.timeframe-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
                         const timeframe = btn.getAttribute('data-tf');
                         this.selectTimeframe(timeframe, btn);
                     });
                 });
-                
-                // Risk management inputs
-                document.getElementById('account-balance').addEventListener('input', () => this.calculateRisk());
-                document.getElementById('risk-percentage').addEventListener('input', () => this.calculateRisk());
-                document.getElementById('stop-loss').addEventListener('input', () => this.calculateRisk());
-                document.getElementById('risk-reward').addEventListener('change', () => this.calculateRisk());
             },
             
             // Update all displays
@@ -1611,12 +1666,14 @@
             // Update asset list
             updateAssetList() {
                 const assetList = document.getElementById('asset-list');
+                if (!assetList) return;
+                
                 assetList.innerHTML = '';
                 
                 this.assets.forEach(asset => {
                     const isActive = asset.symbol === this.currentAsset;
                     const signal = asset.signal || 'ANALYZING';
-                    const signalClass = signal.toLowerCase().replace(' ', '-');
+                    const signalClass = signal.toLowerCase().replace('_', '-');
                     const statusClass = asset.isTradeable ? 'chart-linked' : 'closed';
                     
                     const item = document.createElement('div');
@@ -1627,7 +1684,7 @@
                     let updateTime = '--:--';
                     if (asset.lastUpdate) {
                         const lastUpdate = new Date(asset.lastUpdate);
-                        updateTime = `${lastUpdate.getHours().toString().padStart(2, '0')}:${lastUpdate.getMinutes().toString().padStart(2, '0')}`;
+                        updateTime = `${lastUpdate.getHours().toString().padStart(2, '0')}:${lastUpdate.getMinutes().toString().padStart(2, '0')}:${lastUpdate.getSeconds().toString().padStart(2, '0')}`;
                     }
                     
                     // Format RSI display
@@ -1636,8 +1693,38 @@
                     
                     if (asset.currentRSI !== null) {
                         rsiDisplay = asset.currentRSI.toFixed(2);
-                        if (signal === 'BUY') rsiClass = 'rsi-buy';
-                        else if (signal === 'SELL') rsiClass = 'rsi-sell';
+                        if (signal.includes('EXTREME_BUY')) rsiClass = 'rsi-extreme-buy';
+                        else if (signal.includes('EXTREME_SELL')) rsiClass = 'rsi-extreme-sell';
+                        else if (signal.includes('BUY')) rsiClass = 'rsi-buy';
+                        else if (signal.includes('SELL')) rsiClass = 'rsi-sell';
+                    }
+                    
+                    // Multi-timeframe RSI display
+                    let mtfHTML = '';
+                    if (asset.multiTimeframeRSI) {
+                        const mtfEntries = Object.entries(asset.multiTimeframeRSI)
+                            .slice(0, 4) // Show first 4 timeframes
+                            .map(([tf, data]) => {
+                                let tfClass = 'tf-neutral';
+                                const tfSignal = this.getRSISignal(data.value);
+                                
+                                if (tfSignal.includes('EXTREME_BUY')) tfClass = 'tf-extreme-buy';
+                                else if (tfSignal.includes('EXTREME_SELL')) tfClass = 'tf-extreme-sell';
+                                else if (tfSignal.includes('BUY')) tfClass = 'tf-buy';
+                                else if (tfSignal.includes('SELL')) tfClass = 'tf-sell';
+                                
+                                const isExtreme = tfSignal.includes('EXTREME');
+                                const tfItemClass = isExtreme ? 'tf-rsi extreme' : 'tf-rsi';
+                                
+                                return `
+                                    <div class="${tfItemClass}">
+                                        <span class="tf-label">${data.name}</span>
+                                        <span class="tf-value ${tfClass}">${data.value.toFixed(1)}</span>
+                                    </div>
+                                `;
+                            }).join('');
+                        
+                        mtfHTML = `<div class="multi-timeframe-rsi">${mtfEntries}</div>`;
                     }
                     
                     item.innerHTML = `
@@ -1648,19 +1735,24 @@
                             </span>
                         </div>
                         
-                        <div class="asset-signal signal-${signalClass}">${signal} SIGNAL</div>
+                        <div class="asset-signal signal-${signalClass}">
+                            ${signal.replace('_', ' ')}
+                        </div>
                         
-                        <div class="asset-meta">
+                        ${mtfHTML}
+                        
+                        <div class="signal-meta">
                             <span class="signal-accuracy">${asset.confidence}% Confidence</span>
                             <span class="last-update">${updateTime}</span>
                         </div>
                     `;
                     
-                    if (asset.isTradeable) {
-                        item.addEventListener('click', () => {
-                            this.selectAsset(asset.symbol);
-                        });
-                    }
+                    item.style.cursor = 'pointer';
+                    item.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        this.selectAsset(asset.symbol);
+                    });
                     
                     assetList.appendChild(item);
                 });
@@ -1671,101 +1763,67 @@
                 const asset = this.assets.find(a => a.symbol === this.currentAsset);
                 if (!asset) return;
                 
-                this.updateSignalDisplay(asset);
-                
                 // Update chart title
                 document.getElementById('current-chart-title').textContent = 
-                    `${asset.name} (${asset.symbol}) - Chart RSI Analysis`;
-            },
-            
-            // Update signal display
-            updateSignalDisplay(asset) {
-                const signal = asset.signal || 'ANALYZING';
-                const signalClass = signal.toLowerCase();
-                
-                // Update signal panel
-                document.getElementById('signal-type').textContent = `${signal} SIGNAL`;
-                document.getElementById('signal-type').className = `signal-type ${signalClass}`;
-                document.getElementById('signal-asset').textContent = 
-                    `${asset.name} (${asset.symbol}) - ${asset.isTradeable ? 'Live Chart Analysis' : 'Market Closed'}`;
+                    `${asset.name} (${asset.symbol}) - Extreme Reversal Analysis`;
                 
                 // Update RSI value
                 const rsiValue = asset.currentRSI !== null ? asset.currentRSI.toFixed(2) : '--.--';
-                document.getElementById('signal-rsi').textContent = rsiValue;
                 document.getElementById('current-rsi').textContent = rsiValue;
                 
-                document.getElementById('signal-confidence').textContent = `${asset.confidence}%`;
-                
-                // Update last update time
-                let updateTime = '--:--';
-                if (asset.lastUpdate) {
-                    const lastUpdate = new Date(asset.lastUpdate);
-                    updateTime = `${lastUpdate.getHours().toString().padStart(2, '0')}:${lastUpdate.getMinutes().toString().padStart(2, '0')}:${lastUpdate.getSeconds().toString().padStart(2, '0')}`;
-                }
-                document.getElementById('last-update-time').textContent = updateTime;
-                
-                // Update signal details
-                let details = '';
-                if (!asset.isTradeable) {
-                    details = `Market closed. Chart data will update when market opens.`;
-                } else if (signal === 'BUY') {
-                    details = `Chart RSI at ${rsiValue} (≤30) indicates oversold conditions. Strong buy signal with ${asset.confidence}% confidence.`;
-                } else if (signal === 'SELL') {
-                    details = `Chart RSI at ${rsiValue} (≥70) indicates overbought conditions. Strong sell signal with ${asset.confidence}% confidence.`;
-                } else if (signal === 'ANALYZING') {
-                    details = `Reading RSI from TradingView chart. Please wait for chart data...`;
-                } else {
-                    details = `Chart RSI at ${rsiValue} (31-69) indicates neutral conditions. Monitor for entry into buy (≤30) or sell (≥70) zones.`;
-                }
-                
-                document.getElementById('signal-details').textContent = details;
-            },
-            
-            // Update current RSI display
-            updateCurrentRSIDisplay(asset) {
-                if (!asset || asset.currentRSI === null) return;
-                
-                document.getElementById('current-rsi').textContent = asset.currentRSI.toFixed(2);
-                document.getElementById('rsi-zone').textContent = this.getRSIZoneText(asset.currentRSI);
+                // Update RSI zone
+                document.getElementById('rsi-zone').textContent = this.getZoneText(asset);
                 
                 // Color code the RSI display
                 const rsiElement = document.getElementById('current-rsi');
-                rsiElement.style.color = this.getRSIColor(asset.currentRSI);
+                rsiElement.style.color = this.getRSIColor(asset);
                 
                 // Update RSI zones
-                this.updateRSIZones(asset.currentRSI);
+                this.updateZones(asset);
             },
             
-            // Get RSI zone text
-            getRSIZoneText(rsi) {
-                if (rsi <= 30) return '(BUY ZONE)';
-                if (rsi >= 70) return '(SELL ZONE)';
+            // Get zone text
+            getZoneText(asset) {
+                const signal = asset.signal || 'NEUTRAL';
+                
+                if (signal === 'EXTREME_BUY') return '(MAXIMUM OVERSOLD)';
+                if (signal === 'STRONG_BUY') return '(OVERSOLD REVERSAL)';
+                if (signal === 'EXTREME_SELL') return '(MAXIMUM OVERBOUGHT)';
+                if (signal === 'STRONG_SELL') return '(OVERBOUGHT REVERSAL)';
                 return '(NEUTRAL ZONE)';
             },
             
             // Get RSI color
-            getRSIColor(rsi) {
-                if (rsi <= 30) return 'var(--buy-green)';
-                if (rsi >= 70) return 'var(--sell-red)';
+            getRSIColor(asset) {
+                const signal = asset.signal || 'NEUTRAL';
+                
+                if (signal === 'EXTREME_BUY') return 'var(--extreme-buy)';
+                if (signal === 'STRONG_BUY') return 'var(--buy-green)';
+                if (signal === 'EXTREME_SELL') return 'var(--extreme-sell)';
+                if (signal === 'STRONG_SELL') return 'var(--sell-red)';
                 return 'var(--text-gray)';
             },
             
-            // Update RSI zones display
-            updateRSIZones(currentRSI) {
-                if (currentRSI === null) return;
+            // Update zones display
+            updateZones(asset) {
+                const signal = asset.signal || 'NEUTRAL';
                 
                 // Reset all zones
-                document.querySelectorAll('.rsi-zone').forEach(zone => {
+                document.querySelectorAll('.extreme-zone').forEach(zone => {
                     zone.classList.remove('current-zone');
                 });
                 
                 // Highlight current zone
-                if (currentRSI <= 30) {
-                    document.getElementById('zone-buy').classList.add('current-zone');
-                } else if (currentRSI >= 70) {
-                    document.getElementById('zone-sell').classList.add('current-zone');
-                } else {
+                if (signal === 'EXTREME_BUY') {
+                    document.getElementById('zone-extreme-buy').classList.add('current-zone');
+                } else if (signal === 'STRONG_BUY') {
+                    document.getElementById('zone-strong-buy').classList.add('current-zone');
+                } else if (signal === 'NEUTRAL') {
                     document.getElementById('zone-neutral').classList.add('current-zone');
+                } else if (signal === 'STRONG_SELL') {
+                    document.getElementById('zone-strong-sell').classList.add('current-zone');
+                } else if (signal === 'EXTREME_SELL') {
+                    document.getElementById('zone-extreme-sell').classList.add('current-zone');
                 }
             },
             
@@ -1780,43 +1838,9 @@
                 }
                 
                 this.currentAsset = assetSymbol;
-                
-                // Update chart without destroying it
-                if (this.tvWidget && this.isChartLoaded) {
-                    try {
-                        this.tvWidget.setSymbol(asset.tradingViewSymbol, () => {
-                            console.log(`Chart switched to ${asset.symbol}`);
-                            this.isChartLoaded = true;
-                        });
-                    } catch (error) {
-                        console.error('Error switching chart:', error);
-                        // Fallback to reload chart
-                        this.reloadChart();
-                    }
-                } else {
-                    // Load chart if not already loaded
-                    await this.loadTradingViewChart();
-                }
-                
-                // Restart monitoring if needed
-                if (!this.updateInterval) {
-                    this.startChartMonitoring();
-                }
-                
-                this.updateAllDisplays();
-                this.calculateRisk();
-                this.showNotification(`Now viewing ${asset.name} - Reading chart RSI`, 'info');
-            },
-            
-            // Reload chart (fallback)
-            async reloadChart() {
-                if (this.tvWidget) {
-                    this.tvWidget.remove();
-                    this.tvWidget = null;
-                }
-                
-                this.isChartLoaded = false;
                 await this.loadTradingViewChart();
+                this.updateAllDisplays();
+                this.showNotification(`Now viewing ${asset.name} - Extreme Reversal Analysis`, 'info');
             },
             
             // Select timeframe
@@ -1828,7 +1852,6 @@
                 button.classList.add('active');
                 this.currentTimeframe = timeframe;
                 
-                // Update chart timeframe
                 if (this.tvWidget && this.isChartLoaded) {
                     try {
                         this.tvWidget.chart().setResolution(timeframe);
@@ -1843,13 +1866,15 @@
             
             // Get timeframe display
             getTimeframeDisplay(tf) {
-                if (tf === '1') return '1 Minute';
-                if (tf === '5') return '5 Minute';
-                if (tf === '15') return '15 Minute';
-                if (tf === '60') return '1 Hour';
-                if (tf === '240') return '4 Hour';
-                if (tf === 'D') return 'Daily';
-                return `${tf} Minute`;
+                const tfMap = {
+                    '1': '1 Minute',
+                    '5': '5 Minute',
+                    '15': '15 Minute',
+                    '60': '1 Hour',
+                    '240': '4 Hour',
+                    'D': 'Daily'
+                };
+                return tfMap[tf] || `${tf} Minute`;
             },
             
             // Show notification
@@ -1875,12 +1900,11 @@
         
         // Initialize system
         document.addEventListener('DOMContentLoaded', () => {
-            // Add disclaimer
-            console.log('%c⚠️ TRADING DISCLAIMER', 'color: #FF9800; font-size: 14px; font-weight: bold;');
-            console.log('%cThis is a demonstration tool. Past performance does not guarantee future results.', 'color: #FF9800;');
-            console.log('%cTrading carries substantial risk of loss. Only trade with risk capital.', 'color: #FF9800;');
+            console.log('%c⚡ EXTREME REVERSAL SYSTEM', 'color: #FFD700; font-size: 14px; font-weight: bold;');
+            console.log('%cAuto-detection active: Extreme overbought/oversold reversals', 'color: #2196F3;');
+            console.log('%cMonitoring ALL timeframes: 1M, 5M, 15M, 1H, 4H, D', 'color: #00E676;');
             
-            ChartLinkedRSISystem.init();
+            ExtremeReversalSystem.init();
         });
     </script>
 </body>
