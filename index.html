@@ -496,7 +496,7 @@
             margin-top: 10px;
         }
         
-        /* Chart Container - FIXED FOR BETTER VISIBILITY */
+        /* Chart Container */
         .chart-container {
             height: 280px;
             margin: 30px 0;
@@ -743,6 +743,24 @@
             animation: fadeIn 0.5s ease-out;
         }
         
+        /* GitHub Pages Warning */
+        .github-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px solid #ea580c;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            animation: pulse 2s infinite;
+        }
+        
+        .github-warning.hidden {
+            display: none;
+        }
+        
         /* Mobile Responsive */
         @media (max-width: 1200px) {
             .controls-grid { grid-template-columns: 1fr; gap: 25px; }
@@ -786,6 +804,17 @@
 </head>
 <body>
     <div class="container">
+        <!-- GitHub Pages Warning -->
+        <div class="github-warning" id="githubWarning">
+            <div>⚠️</div>
+            <div>
+                <strong>GitHub Pages Detected</strong><br>
+                WebSocket connections may be blocked. For best results, 
+                <a href="https://vercel.com" target="_blank" style="color: white; text-decoration: underline;">deploy on Vercel</a>
+                or run locally.
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="header">
             <h1 class="title">⚡ KILER ZONE PRO</h1>
@@ -964,11 +993,24 @@
         </div>
     </div>
 
-    <!-- JavaScript - FIXED DERIV CONNECTION -->
+    <!-- JavaScript - GITHUB PAGES COMPATIBLE VERSION -->
     <script>
         // ===================== CONFIGURATION =====================
+        // Detect if we're on GitHub Pages
+        const isGitHubPages = window.location.hostname.includes('github.io');
+        
+        // Available WebSocket endpoints (will try each one)
+        const WS_ENDPOINTS = [
+            'wss://ws.deriv.com/websockets/v3',           // Primary
+            'wss://ws.binaryws.com/websockets/v3',        // Secondary
+            'wss://ws.derivws.com/websockets/v3',         // Tertiary
+        ];
+
         const CONFIG = {
-            DERIV_WS_URL: 'wss://ws.derivws.com/websockets/v3',
+            // Will try endpoints in order
+            WS_ENDPOINTS: WS_ENDPOINTS,
+            CURRENT_ENDPOINT_INDEX: 0,
+            
             RSI_PERIOD: 14,
             OVERSOLD: 30,
             OVERBOUGHT: 70,
@@ -1067,6 +1109,9 @@
                 };
                 this.chart = null;
                 this.priceHistory = new Map();
+                this.reconnectAttempts = 0;
+                this.maxReconnectAttempts = 3;
+                this.endpointIndex = 0;
                 
                 this.initializeAssets();
             }
@@ -1087,54 +1132,118 @@
                     this.priceHistory.set(assetKey, []);
                 });
             }
+            
+            getCurrentEndpoint() {
+                return WS_ENDPOINTS[this.endpointIndex];
+            }
+            
+            nextEndpoint() {
+                this.endpointIndex = (this.endpointIndex + 1) % WS_ENDPOINTS.length;
+                return this.getCurrentEndpoint();
+            }
+            
+            resetReconnect() {
+                this.reconnectAttempts = 0;
+                this.endpointIndex = 0;
+            }
+            
+            shouldReconnect() {
+                return this.reconnectAttempts < this.maxReconnectAttempts;
+            }
+            
+            incrementReconnect() {
+                this.reconnectAttempts++;
+            }
         }
 
         const state = new LiveTradingState();
 
-        // ===================== DERIV MT5 API CONNECTION - SIMPLIFIED =====================
+        // ===================== DERIV MT5 API - GITHUB COMPATIBLE =====================
         class DerivMT5API {
             constructor(apiToken) {
-                this.apiToken = apiToken;
+                this.apiToken = apiToken.trim();
                 this.websocket = null;
                 this.connected = false;
+                this.subscriptions = new Set();
+                this.reconnectTimeout = null;
+                this.pingInterval = null;
+                this.connectionAttempts = 0;
             }
 
             async connect() {
                 return new Promise((resolve, reject) => {
+                    // Show GitHub warning if needed
+                    if (isGitHubPages) {
+                        UI.showMessage(
+                            "GitHub Pages detected. WebSocket connections may be restricted. " +
+                            "For best results, deploy on Vercel or run locally.",
+                            "warning"
+                        );
+                    }
+                    
+                    // Clear any existing connection
+                    this.disconnect();
+                    
+                    const endpoint = state.getCurrentEndpoint();
+                    console.log(`🔗 Attempting connection to: ${endpoint}`);
+                    
                     try {
-                        // Use the correct WebSocket URL
-                        this.websocket = new WebSocket(CONFIG.DERIV_WS_URL);
+                        this.websocket = new WebSocket(endpoint);
+                        
+                        // Set connection timeout (15 seconds)
+                        const connectionTimeout = setTimeout(() => {
+                            if (!this.connected) {
+                                this.websocket.close();
+                                reject(new Error('Connection timeout (15s). Trying next endpoint...'));
+                            }
+                        }, 15000);
                         
                         this.websocket.onopen = () => {
-                            console.log('✅ WebSocket Connected to Deriv');
+                            console.log(`✅ WebSocket connected to ${endpoint}`);
+                            clearTimeout(connectionTimeout);
                             
                             // Send authorization request
                             const authRequest = {
                                 authorize: this.apiToken
                             };
+                            
+                            console.log('🔐 Sending authorization...');
                             this.websocket.send(JSON.stringify(authRequest));
                             
-                            // Set connection timeout
-                            setTimeout(() => {
-                                if (!this.connected) {
-                                    reject(new Error('Authorization timeout'));
-                                }
-                            }, 5000);
+                            // Start ping interval
+                            this.startPing();
                         };
                         
                         this.websocket.onmessage = (event) => {
                             try {
                                 const data = JSON.parse(event.data);
                                 
+                                // Handle ping response
+                                if (data.msg_type === 'ping') {
+                                    return;
+                                }
+                                
+                                console.log('📨 Received:', data.msg_type || 'message');
+                                
                                 if (data.error) {
-                                    console.error('Deriv Error:', data.error);
-                                    reject(new Error(data.error.message));
+                                    console.error('❌ Deriv API Error:', data.error);
+                                    
+                                    // Handle specific errors
+                                    if (data.error.code === 'AuthorizationRequired' || 
+                                        data.error.code === 'InvalidToken') {
+                                        reject(new Error('Invalid API token. Please check your token.'));
+                                    } else if (data.error.code === 'TokenExpired') {
+                                        reject(new Error('API token has expired. Generate a new one.'));
+                                    } else {
+                                        reject(new Error(data.error.message || 'API error'));
+                                    }
                                     return;
                                 }
                                 
                                 if (data.msg_type === 'authorize') {
-                                    console.log('🔓 Authorized to Deriv');
+                                    console.log('🎉 Authorized successfully');
                                     this.connected = true;
+                                    state.resetReconnect();
                                     resolve(data);
                                 }
                                 
@@ -1149,38 +1258,99 @@
                                 }
                                 
                             } catch (error) {
-                                console.error('Error parsing message:', error);
+                                console.error('❌ Error parsing message:', error);
                             }
                         };
                         
                         this.websocket.onerror = (error) => {
-                            console.error('WebSocket Error:', error);
-                            reject(new Error('Connection error. Please check your API token.'));
+                            console.error('❌ WebSocket Error:', error);
+                            clearTimeout(connectionTimeout);
+                            
+                            // Try next endpoint on error
+                            const nextEndpoint = state.nextEndpoint();
+                            reject(new Error(`Connection failed. Next: ${nextEndpoint}`));
                         };
                         
-                        this.websocket.onclose = () => {
-                            console.log('WebSocket disconnected');
+                        this.websocket.onclose = (event) => {
+                            console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+                            clearTimeout(connectionTimeout);
                             this.connected = false;
-                            UI.updateConnectionStatus(false, 'Disconnected from Deriv');
+                            this.stopPing();
+                            
+                            UI.updateConnectionStatus(false, 'Disconnected');
+                            
+                            // Attempt reconnect
+                            if (event.code !== 1000 && state.shouldReconnect()) {
+                                this.attemptReconnect();
+                            }
                         };
                         
                     } catch (error) {
+                        console.error('❌ Connection setup error:', error);
                         reject(error);
                     }
                 });
+            }
+
+            startPing() {
+                this.stopPing();
+                
+                this.pingInterval = setInterval(() => {
+                    if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                        this.websocket.send(JSON.stringify({ ping: 1 }));
+                    }
+                }, 25000);
+            }
+
+            stopPing() {
+                if (this.pingInterval) {
+                    clearInterval(this.pingInterval);
+                    this.pingInterval = null;
+                }
+            }
+
+            async attemptReconnect() {
+                if (state.reconnectAttempts >= state.maxReconnectAttempts) {
+                    UI.showMessage('Max reconnection attempts reached. Please refresh the page.', 'error');
+                    return;
+                }
+                
+                state.incrementReconnect();
+                const delay = Math.min(2000 * state.reconnectAttempts, 10000);
+                
+                UI.showMessage(`Reconnecting in ${delay/1000}s... (Attempt ${state.reconnectAttempts}/${state.maxReconnectAttempts})`, 'warning');
+                
+                this.reconnectTimeout = setTimeout(async () => {
+                    try {
+                        await this.connect();
+                        UI.showMessage('Reconnected successfully!', 'success');
+                        
+                        // Resubscribe to all active subscriptions
+                        this.resubscribeAll();
+                    } catch (error) {
+                        console.error('❌ Reconnect failed:', error.message);
+                    }
+                }, delay);
+            }
+
+            resubscribeAll() {
+                if (!this.connected || !this.websocket) return;
+                
+                const currentAsset = state.currentAsset;
+                if (currentAsset) {
+                    this.subscribeToTicks(currentAsset);
+                    this.getHistoricalCandles(currentAsset);
+                }
             }
 
             handleTick(tickData) {
                 if (!tickData || !tickData.symbol) return;
                 
                 const symbol = tickData.symbol;
-                const price = parseFloat(tickData.quote || tickData.ask || tickData.bid);
+                const price = parseFloat(tickData.quote || tickData.ask || tickData.bid || tickData.close);
                 
                 if (!price || isNaN(price)) return;
                 
-                console.log(`📈 ${symbol}: ${price}`);
-                
-                // Update state
                 const assetData = state.marketData.get(symbol);
                 if (assetData) {
                     assetData.previousPrice = assetData.currentPrice || price;
@@ -1191,7 +1361,6 @@
                     let history = state.priceHistory.get(symbol) || [];
                     history.push(price);
                     
-                    // Keep last 100 prices
                     if (history.length > 100) {
                         history = history.slice(-100);
                     }
@@ -1203,17 +1372,14 @@
                         assetData.prevRsi = assetData.rsi;
                         assetData.rsi = rsi;
                         
-                        // Generate signal
                         const signal = this.generateSignal(rsi, assetData.prevRsi);
                         assetData.signal = signal;
                         
-                        // Trigger signal if new
                         if (signal.type !== 'NEUTRAL') {
                             this.triggerSignal(symbol, signal, price);
                         }
                     }
                     
-                    // Update UI
                     if (symbol === state.currentAsset) {
                         UI.updateCurrentAssetDisplay();
                     }
@@ -1238,11 +1404,9 @@
                     
                     assetData.candles = candles;
                     
-                    // Extract prices for RSI
                     const prices = candles.map(c => c.close);
                     state.priceHistory.set(symbol, prices);
                     
-                    // Update chart
                     if (symbol === state.currentAsset && state.chart) {
                         ChartEngine.updateChart(state.chart.canvas, state.chart.ctx, candles);
                     }
@@ -1255,7 +1419,6 @@
                 let gains = 0;
                 let losses = 0;
 
-                // Calculate initial average gains and losses
                 for (let i = 1; i <= period; i++) {
                     const change = prices[i] - prices[i - 1];
                     if (change > 0) gains += change;
@@ -1265,7 +1428,6 @@
                 let avgGain = gains / period;
                 let avgLoss = losses / period;
 
-                // Calculate RSI using Wilder's smoothing method
                 for (let i = period + 1; i < prices.length; i++) {
                     const change = prices[i] - prices[i - 1];
                     
@@ -1332,10 +1494,8 @@
                     assetData.signal = signal;
                     assetData.lastSignalTime = Date.now();
                     
-                    // Add to log
                     UI.addSignalLog(symbol, signal, price);
                     
-                    // Update performance stats
                     if (signal.type === 'BUY') {
                         state.performance.buySignals++;
                     } else if (signal.type === 'SELL') {
@@ -1343,7 +1503,6 @@
                     }
                     state.performance.totalSignals = state.performance.buySignals + state.performance.sellSignals;
                     
-                    // Update UI
                     UI.updatePerformanceStats();
                     UI.playNotification(signal.type);
                     
@@ -1352,7 +1511,13 @@
             }
 
             subscribeToTicks(symbol) {
-                if (!this.connected || !this.websocket) return;
+                if (!this.connected || !this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+                    return;
+                }
+                
+                if (this.subscriptions.has(symbol)) {
+                    return;
+                }
                 
                 const request = {
                     ticks: symbol,
@@ -1360,11 +1525,25 @@
                 };
                 
                 this.websocket.send(JSON.stringify(request));
+                this.subscriptions.add(symbol);
                 console.log(`📡 Subscribed to ${symbol} ticks`);
             }
 
-            getHistoricalCandles(symbol) {
+            unsubscribeFromTicks(symbol) {
                 if (!this.connected || !this.websocket) return;
+                
+                const request = {
+                    forget: symbol
+                };
+                
+                this.websocket.send(JSON.stringify(request));
+                this.subscriptions.delete(symbol);
+            }
+
+            getHistoricalCandles(symbol) {
+                if (!this.connected || !this.websocket || this.websocket.readyState !== WebSocket.OPEN) {
+                    return;
+                }
                 
                 const request = {
                     ticks_history: symbol,
@@ -1381,11 +1560,21 @@
             }
 
             disconnect() {
-                if (this.websocket) {
-                    this.websocket.close();
+                if (this.reconnectTimeout) {
+                    clearTimeout(this.reconnectTimeout);
+                    this.reconnectTimeout = null;
                 }
+                
+                this.stopPing();
+                this.subscriptions.clear();
+                
+                if (this.websocket) {
+                    this.websocket.close(1000, 'User initiated disconnect');
+                    this.websocket = null;
+                }
+                
                 this.connected = false;
-                this.websocket = null;
+                console.log('🔌 Disconnected from Deriv');
             }
         }
 
@@ -1401,7 +1590,6 @@
                 
                 const ctx = canvas.getContext('2d');
                 
-                // Draw initial message
                 ctx.fillStyle = 'rgba(15, 23, 42, 1)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
@@ -1422,11 +1610,9 @@
                 const chartWidth = width - padding.left - padding.right;
                 const chartHeight = height - padding.top - padding.bottom;
                 
-                // Clear canvas
                 ctx.fillStyle = 'rgba(15, 23, 42, 1)';
                 ctx.fillRect(0, 0, width, height);
                 
-                // Calculate price range
                 const displayCandles = candles.slice(-30);
                 let minPrice = Infinity;
                 let maxPrice = -Infinity;
@@ -1436,7 +1622,6 @@
                     maxPrice = Math.max(maxPrice, candle.high);
                 });
                 
-                // Add padding to price range
                 const priceRange = maxPrice - minPrice;
                 const paddingPercent = 0.1;
                 minPrice -= priceRange * paddingPercent;
@@ -1445,11 +1630,9 @@
                 const candleWidth = (chartWidth / displayCandles.length) * 0.7;
                 const candleSpacing = chartWidth / displayCandles.length;
                 
-                // Draw candles
                 displayCandles.forEach((candle, index) => {
                     const x = padding.left + (index * candleSpacing) + (candleSpacing / 2);
                     
-                    // Calculate y positions
                     const openY = padding.top + chartHeight - ((candle.open - minPrice) / (maxPrice - minPrice) * chartHeight);
                     const closeY = padding.top + chartHeight - ((candle.close - minPrice) / (maxPrice - minPrice) * chartHeight);
                     const highY = padding.top + chartHeight - ((candle.high - minPrice) / (maxPrice - minPrice) * chartHeight);
@@ -1459,20 +1642,17 @@
                     ctx.strokeStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
                     ctx.fillStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
                     
-                    // Draw wick
                     ctx.beginPath();
                     ctx.moveTo(x, highY);
                     ctx.lineTo(x, lowY);
                     ctx.stroke();
                     
-                    // Draw body
                     const bodyTop = Math.min(openY, closeY);
                     const bodyHeight = Math.abs(openY - closeY);
                     
                     if (bodyHeight > 0) {
                         ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
                     } else {
-                        // Draw line for doji
                         ctx.beginPath();
                         ctx.moveTo(x - candleWidth / 2, bodyTop);
                         ctx.lineTo(x + candleWidth / 2, bodyTop);
@@ -1491,30 +1671,30 @@
                 
                 setInterval(() => this.updateTime(), 1000);
                 
-                // Load saved API token
                 const savedToken = localStorage.getItem('deriv_live_token');
                 if (savedToken) {
                     document.getElementById('apiToken').value = savedToken;
                 }
                 
-                // Initialize with Gold
                 this.updateAssetDisplay('frxXAUUSD');
+                
+                // Hide GitHub warning after 10 seconds
+                setTimeout(() => {
+                    document.getElementById('githubWarning').classList.add('hidden');
+                }, 10000);
                 
                 console.log('✅ KILER ZONE Live Dashboard Initialized');
             }
 
             static setupEventListeners() {
-                // Connect button
                 document.getElementById('connectBtn').addEventListener('click', async () => {
                     await this.connectToDeriv();
                 });
 
-                // Asset selector
                 document.getElementById('assetSelector').addEventListener('change', (e) => {
                     this.switchAsset(e.target.value);
                 });
 
-                // RSI parameter changes
                 document.getElementById('rsiPeriod').addEventListener('change', (e) => {
                     CONFIG.RSI_PERIOD = parseInt(e.target.value) || 14;
                 });
@@ -1529,7 +1709,6 @@
                     document.getElementById('overboughtLabel').textContent = CONFIG.OVERBOUGHT;
                 });
 
-                // API token input
                 document.getElementById('apiToken').addEventListener('input', (e) => {
                     const token = e.target.value.trim();
                     if (token) {
@@ -1537,10 +1716,15 @@
                     }
                 });
 
-                // Enter key to connect
                 document.getElementById('apiToken').addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
                         this.connectToDeriv();
+                    }
+                });
+
+                window.addEventListener('beforeunload', () => {
+                    if (window.derivAPI) {
+                        window.derivAPI.disconnect();
                     }
                 });
             }
@@ -1550,50 +1734,91 @@
                 const token = tokenInput.value.trim();
                 
                 if (!token) {
-                    alert('Please enter your Deriv API token');
+                    this.showMessage('Please enter your Deriv API token', 'error');
+                    return;
+                }
+                
+                if (token.length < 10) {
+                    this.showMessage('Invalid API token format', 'error');
                     return;
                 }
                 
                 const btn = document.getElementById('connectBtn');
+                const originalText = btn.innerHTML;
+                
                 btn.disabled = true;
                 btn.innerHTML = '<span>Connecting to Deriv MT5...</span>';
                 this.updateConnectionStatus(false, 'Connecting to Deriv...');
                 
-                try {
-                    // Initialize Deriv API
-                    window.derivAPI = new DerivMT5API(token);
-                    
-                    // Connect to Deriv
-                    await window.derivAPI.connect();
-                    
-                    // Update UI
-                    this.updateConnectionStatus(true, 'Connected to Deriv MT5');
-                    
-                    // Show dashboard components
-                    document.getElementById('mainControls').style.display = 'block';
-                    document.getElementById('dashboardContent').style.display = 'block';
-                    document.getElementById('assetDisplay').style.display = 'block';
-                    document.getElementById('apiSetup').style.display = 'none';
-                    
-                    // Initialize chart
-                    state.chart = ChartEngine.initChart();
-                    
-                    // Subscribe to current asset
-                    this.subscribeToAsset(state.currentAsset);
-                    
-                    // Update display
-                    this.updateCurrentAssetDisplay();
-                    
-                    console.log('🚀 Connected to Deriv MT5 Live Data');
-                    
-                } catch (error) {
-                    console.error('Connection failed:', error);
-                    alert(`Connection failed: ${error.message}`);
-                    this.updateConnectionStatus(false, 'Connection failed');
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = '<span>Connect to Deriv Live Data</span>';
+                let connected = false;
+                let lastError = null;
+                
+                // Try multiple endpoints
+                for (let i = 0; i < WS_ENDPOINTS.length; i++) {
+                    try {
+                        state.endpointIndex = i;
+                        window.derivAPI = new DerivMT5API(token);
+                        
+                        this.showMessage(`Trying endpoint ${i+1}/${WS_ENDPOINTS.length}...`, 'info');
+                        await window.derivAPI.connect();
+                        
+                        connected = true;
+                        break;
+                        
+                    } catch (error) {
+                        lastError = error;
+                        console.log(`Endpoint ${i+1} failed:`, error.message);
+                        
+                        // If it's a token error, don't try other endpoints
+                        if (error.message.includes('Invalid API token') || 
+                            error.message.includes('AuthorizationRequired')) {
+                            break;
+                        }
+                    }
                 }
+                
+                if (connected) {
+                    this.updateConnectionStatus(true, 'Connected to Deriv MT5');
+                    this.showDashboard();
+                    state.chart = ChartEngine.initChart();
+                    this.subscribeToAsset(state.currentAsset);
+                    this.updateCurrentAssetDisplay();
+                    this.showMessage('Successfully connected to Deriv!', 'success');
+                    
+                } else {
+                    let errorMsg = 'Connection failed to all endpoints. ';
+                    
+                    if (lastError && lastError.message.includes('Invalid API token')) {
+                        errorMsg = 'Invalid API token. Please check your token.';
+                        localStorage.removeItem('deriv_live_token');
+                        tokenInput.value = '';
+                    } else if (isGitHubPages) {
+                        errorMsg += 'GitHub Pages may block WebSocket connections. Try deploying on Vercel or running locally.';
+                    } else {
+                        errorMsg += 'Please check your internet connection.';
+                    }
+                    
+                    this.showMessage(errorMsg, 'error');
+                    this.updateConnectionStatus(false, 'Connection failed');
+                }
+                
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+
+            static showDashboard() {
+                document.getElementById('apiSetup').style.display = 'none';
+                
+                const mainControls = document.getElementById('mainControls');
+                mainControls.style.display = 'block';
+                mainControls.classList.add('fade-in');
+                
+                const dashboard = document.getElementById('dashboardContent');
+                dashboard.style.display = 'block';
+                
+                const assetDisplay = document.getElementById('assetDisplay');
+                assetDisplay.style.display = 'block';
+                assetDisplay.classList.add('fade-in');
             }
 
             static updateConnectionStatus(connected, message = '') {
@@ -1620,32 +1845,26 @@
 
             static switchAsset(assetSymbol) {
                 if (!window.derivAPI || !window.derivAPI.connected) {
-                    alert('Please connect to Deriv first');
+                    this.showMessage('Please connect to Deriv first', 'error');
                     document.getElementById('assetSelector').value = state.currentAsset;
                     return;
                 }
                 
-                // Update state
+                if (state.currentAsset && window.derivAPI.subscriptions.has(state.currentAsset)) {
+                    window.derivAPI.unsubscribeFromTicks(state.currentAsset);
+                }
+                
                 state.currentAsset = assetSymbol;
                 this.updateAssetDisplay(assetSymbol);
-                
-                // Subscribe to new asset
                 this.subscribeToAsset(assetSymbol);
-                
-                // Update display
                 this.updateCurrentAssetDisplay();
             }
 
             static subscribeToAsset(assetSymbol) {
                 if (!window.derivAPI || !window.derivAPI.connected) return;
                 
-                // Get historical candles first
                 window.derivAPI.getHistoricalCandles(assetSymbol);
-                
-                // Subscribe to real-time ticks
                 window.derivAPI.subscribeToTicks(assetSymbol);
-                
-                console.log(`📡 Subscribed to ${assetSymbol}`);
             }
 
             static updateAssetDisplay(assetSymbol) {
@@ -1665,7 +1884,6 @@
                 
                 if (!asset) return;
                 
-                // Update price display
                 const price = data?.currentPrice || 0;
                 const previousPrice = data?.previousPrice || price;
                 const change = previousPrice > 0 ? ((price - previousPrice) / previousPrice * 100) : 0;
@@ -1675,22 +1893,18 @@
                 changeElement.textContent = price > 0 ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : '0.00%';
                 changeElement.className = `price-change-large ${change >= 0 ? 'positive' : 'negative'}`;
                 
-                // Update RSI display
                 const rsiValue = data?.rsi || 50;
                 document.getElementById('rsiValue').textContent = `RSI: ${rsiValue.toFixed(2)}`;
                 
-                // Update RSI bar
                 const rsiBar = document.getElementById('rsiBar');
                 const rsiWidth = Math.min(Math.max(rsiValue, 0), 100);
                 rsiBar.style.width = `${rsiWidth}%`;
                 
-                // Set RSI bar color
                 let rsiClass = 'neutral';
                 if (rsiValue < CONFIG.OVERSOLD) rsiClass = 'oversold';
                 else if (rsiValue > CONFIG.OVERBOUGHT) rsiClass = 'overbought';
                 rsiBar.className = `rsi-bar-large ${rsiClass}`;
                 
-                // Update signal display
                 const signalDisplay = document.getElementById('signalDisplay');
                 const signalBadge = document.getElementById('signalBadge');
                 const signalStrength = document.getElementById('signalStrength');
@@ -1707,10 +1921,8 @@
                     signalStrength.textContent = 'Monitoring live market...';
                 }
                 
-                // Update market session
                 this.updateMarketSession(assetSymbol);
                 
-                // Update timestamps
                 if (data?.lastUpdate) {
                     const updateTime = new Date(data.lastUpdate);
                     document.getElementById('lastUpdate').textContent = updateTime.toLocaleTimeString('en-US', {
@@ -1731,7 +1943,6 @@
                     });
                 }
                 
-                // Update chart if we have candles
                 if (state.chart && data?.candles && data.candles.length > 0) {
                     ChartEngine.updateChart(state.chart.canvas, state.chart.ctx, data.candles);
                 }
@@ -1780,7 +1991,6 @@
                     <div class="log-price">${price.toFixed(asset.decimals)}</div>
                 `;
                 
-                // Add to the top
                 const existingEntries = logEntries.querySelectorAll('.log-entry');
                 if (existingEntries.length > 0) {
                     logEntries.insertBefore(logEntry, existingEntries[0]);
@@ -1788,13 +1998,11 @@
                     logEntries.appendChild(logEntry);
                 }
                 
-                // Keep only last MAX_LOG_ENTRIES
                 const entries = logEntries.querySelectorAll('.log-entry');
                 if (entries.length > CONFIG.MAX_LOG_ENTRIES) {
                     logEntries.removeChild(entries[entries.length - 1]);
                 }
                 
-                // Add to state log
                 state.signalLog.unshift({
                     time: Date.now(),
                     asset: assetSymbol,
@@ -1812,7 +2020,6 @@
                 document.getElementById('buySignals').textContent = state.performance.buySignals;
                 document.getElementById('sellSignals').textContent = state.performance.sellSignals;
                 
-                // Calculate win rate
                 if (state.performance.totalSignals > 0) {
                     const winRate = Math.floor((state.performance.totalSignals * 0.7) / state.performance.totalSignals * 100);
                     state.performance.winRate = winRate;
@@ -1841,6 +2048,48 @@
                     console.log('Audio notification not supported');
                 }
             }
+
+            static showMessage(message, type = 'info') {
+                const existingAlert = document.querySelector('.custom-alert');
+                if (existingAlert) existingAlert.remove();
+                
+                const colors = {
+                    success: 'var(--success)',
+                    error: 'var(--error)',
+                    warning: 'var(--warning)',
+                    info: 'var(--primary-blue)'
+                };
+                
+                const alert = document.createElement('div');
+                alert.className = 'custom-alert';
+                alert.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background: ${colors[type] || colors.info};
+                        color: white;
+                        padding: 15px 25px;
+                        border-radius: 10px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                        z-index: 1000;
+                        max-width: 400px;
+                        animation: fadeIn 0.3s ease-out;
+                        font-size: 0.9rem;
+                    ">
+                        <strong>${type.toUpperCase()}</strong><br>
+                        ${message}
+                    </div>
+                `;
+                
+                document.body.appendChild(alert);
+                
+                setTimeout(() => {
+                    if (alert.parentNode) {
+                        alert.parentNode.removeChild(alert);
+                    }
+                }, type === 'error' ? 7000 : 4000);
+            }
         }
 
         // ===================== INITIALIZATION =====================
@@ -1848,7 +2097,6 @@
             console.log('🚀 KILER ZONE Live Dashboard Initializing...');
             UI.init();
             
-            // Handle window resize
             window.addEventListener('resize', () => {
                 if (state.chart) {
                     const canvas = state.chart.canvas;
@@ -1861,13 +2109,6 @@
                     if (data && data.candles && data.candles.length > 0) {
                         ChartEngine.updateChart(canvas, state.chart.ctx, data.candles);
                     }
-                }
-            });
-            
-            // Handle beforeunload
-            window.addEventListener('beforeunload', () => {
-                if (window.derivAPI) {
-                    window.derivAPI.disconnect();
                 }
             });
         });
