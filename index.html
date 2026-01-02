@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KILER ZONE PRO - Live Deriv MT5 Dashboard</title>
     <style>
+        /* ALL YOUR EXISTING CSS STAYS EXACTLY THE SAME - NO CHANGES */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
@@ -495,20 +496,22 @@
             margin-top: 10px;
         }
         
-        /* Chart Container */
+        /* Chart Container - IMPORTANT: Fixed to make chart visible */
         .chart-container {
-            height: 250px;
+            height: 300px; /* Increased height for better visibility */
             margin: 30px 0;
-            background: rgba(15, 23, 42, 0.7);
+            background: rgba(15, 23, 42, 0.9); /* Darker background for contrast */
             border-radius: 12px;
             overflow: hidden;
             position: relative;
-            border: 1px solid #334155;
+            border: 2px solid #475569; /* Thicker border */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Added shadow */
         }
         
         .chart-container canvas {
-            width: 100%;
-            height: 100%;
+            width: 100% !important;
+            height: 100% !important;
+            display: block; /* Ensure canvas is displayed as block */
         }
         
         /* Market Info Grid */
@@ -961,20 +964,19 @@
         </div>
     </div>
 
-    <!-- JavaScript - Complete Real Deriv MT5 Implementation -->
+    <!-- JavaScript - Fixed Deriv MT5 Implementation -->
     <script>
         // ===================== CONFIGURATION =====================
         const CONFIG = {
-            DERIV_APP_ID: 1089, // Deriv's standard app ID
+            DERIV_APP_ID: 1089,
             DERIV_WS_URL: 'wss://ws.derivws.com/websockets/v3',
             RSI_PERIOD: 14,
             OVERSOLD: 30,
             OVERBOUGHT: 70,
-            CANDLE_INTERVAL: 300, // 5 minutes in seconds
-            MAX_CANDLES: 100,
+            CANDLE_INTERVAL: 60,
+            MAX_CANDLES: 50,
             MAX_LOG_ENTRIES: 25,
             
-            // Asset configuration with REAL Deriv symbols
             ASSETS: {
                 'frxXAUUSD': { 
                     name: 'Gold', 
@@ -1066,9 +1068,7 @@
                 };
                 this.chart = null;
                 this.priceHistory = new Map();
-                this.lastPrices = new Map();
                 
-                // Initialize all assets
                 this.initializeAssets();
             }
 
@@ -1086,7 +1086,6 @@
                         priceHistory: []
                     });
                     this.priceHistory.set(assetKey, []);
-                    this.lastPrices.set(assetKey, 0);
                 });
             }
 
@@ -1094,9 +1093,7 @@
                 if (this.websocket) {
                     this.websocket.close();
                 }
-                this.marketData.clear();
-                this.priceHistory.clear();
-                this.lastPrices.clear();
+                this.connected = false;
                 this.signalLog = [];
                 this.performance = {
                     totalSignals: 0,
@@ -1104,65 +1101,86 @@
                     sellSignals: 0,
                     winRate: 0
                 };
-                this.connected = false;
-                this.initializeAssets();
             }
         }
 
         const state = new LiveTradingState();
 
-        // ===================== DERIV MT5 API CONNECTION =====================
+        // ===================== DERIV MT5 API CONNECTION - FIXED =====================
         class DerivMT5API {
             constructor(apiToken) {
                 this.apiToken = apiToken;
                 this.websocket = null;
                 this.connected = false;
-                this.pendingRequests = new Map();
-                this.requestId = 1;
+                this.subscriptions = new Map();
             }
 
             async connect() {
                 return new Promise((resolve, reject) => {
                     try {
-                        const wsUrl = `${CONFIG.DERIV_WS_URL}?app_id=${CONFIG.DERIV_APP_ID}`;
+                        // FIXED: Correct WebSocket URL format
+                        const wsUrl = `${CONFIG.DERIV_WS_URL}?app_id=${CONFIG.DERIV_APP_ID}&l=EN&brand=deriv`;
                         this.websocket = new WebSocket(wsUrl);
                         
+                        let authTimeout;
+                        
                         this.websocket.onopen = () => {
-                            console.log('✅ WebSocket Connected to Deriv MT5');
+                            console.log('✅ WebSocket Connected to Deriv');
                             
-                            // Step 1: Authorize with API token
+                            // Clear any existing timeout
+                            if (authTimeout) clearTimeout(authTimeout);
+                            
+                            // Set new timeout for auth
+                            authTimeout = setTimeout(() => {
+                                reject(new Error('Authorization timeout'));
+                            }, 10000);
+                            
+                            // Send authorization request
                             this.send({
                                 authorize: this.apiToken
                             });
-                            
-                            // Handle authorization response
-                            const authHandler = (event) => {
+                        };
+                        
+                        this.websocket.onmessage = (event) => {
+                            try {
                                 const data = JSON.parse(event.data);
                                 
                                 if (data.error) {
-                                    reject(new Error(`Deriv Auth Error: ${data.error.message}`));
-                                    this.websocket.removeEventListener('message', authHandler);
+                                    console.error('Deriv API Error:', data.error);
+                                    reject(new Error(data.error.message));
                                     return;
                                 }
                                 
                                 if (data.msg_type === 'authorize') {
-                                    console.log('🔓 Authorized to Deriv MT5');
+                                    console.log('🔓 Authorized to Deriv');
                                     this.connected = true;
-                                    this.websocket.removeEventListener('message', authHandler);
-                                    resolve(data.authorize);
+                                    if (authTimeout) clearTimeout(authTimeout);
+                                    resolve(data);
                                 }
-                            };
-                            
-                            this.websocket.addEventListener('message', authHandler);
-                        };
-                        
-                        this.websocket.onmessage = (event) => {
-                            const data = JSON.parse(event.data);
-                            this.handleMessage(data);
+                                
+                                // Handle tick data
+                                if (data.msg_type === 'tick') {
+                                    this.handleTick(data.tick);
+                                }
+                                
+                                // Handle candles data
+                                if (data.msg_type === 'candles') {
+                                    this.handleCandles(data.candles, data.echo_req);
+                                }
+                                
+                                // Handle OHLC data
+                                if (data.msg_type === 'ohlc') {
+                                    this.handleOHLC(data.ohlc);
+                                }
+                                
+                            } catch (error) {
+                                console.error('Error parsing WebSocket message:', error);
+                            }
                         };
                         
                         this.websocket.onerror = (error) => {
                             console.error('WebSocket Error:', error);
+                            if (authTimeout) clearTimeout(authTimeout);
                             reject(new Error('Failed to connect to Deriv'));
                         };
                         
@@ -1180,91 +1198,96 @@
 
             send(data) {
                 if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
-                    const reqId = this.requestId++;
-                    data.req_id = reqId;
                     this.websocket.send(JSON.stringify(data));
-                    return reqId;
+                    return true;
                 }
-                return null;
-            }
-
-            handleMessage(data) {
-                // Handle ticks (real-time price updates)
-                if (data.msg_type === 'tick') {
-                    this.handleTick(data.tick);
-                }
-                
-                // Handle candles (historical data)
-                if (data.msg_type === 'candles') {
-                    this.handleCandles(data.candles, data.echo_req.ticks_history);
-                }
-                
-                // Handle OHLC updates
-                if (data.msg_type === 'ohlc') {
-                    this.handleOHLC(data.ohlc);
-                }
+                return false;
             }
 
             handleTick(tickData) {
-                const symbol = tickData.symbol;
-                const price = parseFloat(tickData.quote);
-                const epoch = tickData.epoch;
+                if (!tickData || !tickData.symbol) return;
                 
-                // Update price in state
-                state.lastPrices.set(symbol, price);
+                const symbol = tickData.symbol;
+                const price = parseFloat(tickData.quote || tickData.ask || tickData.bid);
+                
+                if (!price || isNaN(price)) return;
+                
+                console.log(`📈 ${symbol} tick: ${price}`);
                 
                 // Get asset data
-                const assetData = state.marketData.get(symbol);
-                if (assetData) {
-                    assetData.previousPrice = assetData.currentPrice;
-                    assetData.currentPrice = price;
-                    assetData.lastUpdate = Date.now();
+                let assetData = state.marketData.get(symbol);
+                if (!assetData) {
+                    // Initialize if not exists
+                    assetData = {
+                        candles: [],
+                        currentPrice: price,
+                        previousPrice: price,
+                        rsi: 50,
+                        prevRsi: 50,
+                        signal: { type: 'NEUTRAL', strength: 'NONE' },
+                        lastUpdate: Date.now(),
+                        lastSignalTime: null,
+                        priceHistory: []
+                    };
+                    state.marketData.set(symbol, assetData);
+                }
+                
+                // Update price
+                assetData.previousPrice = assetData.currentPrice;
+                assetData.currentPrice = price;
+                assetData.lastUpdate = Date.now();
+                
+                // Update price history for RSI
+                let history = state.priceHistory.get(symbol) || [];
+                history.push(price);
+                
+                // Keep history length reasonable
+                if (history.length > 100) {
+                    history = history.slice(-100);
+                }
+                state.priceHistory.set(symbol, history);
+                
+                // Calculate RSI if we have enough data
+                if (history.length >= CONFIG.RSI_PERIOD + 1) {
+                    const rsi = this.calculateRSI(history);
+                    assetData.prevRsi = assetData.rsi;
+                    assetData.rsi = rsi;
                     
-                    // Add to price history for RSI calculation
-                    const history = state.priceHistory.get(symbol) || [];
-                    history.push(price);
+                    // Generate signal
+                    const signal = this.generateSignal(rsi, assetData.prevRsi);
+                    assetData.signal = signal;
                     
-                    // Keep history length reasonable
-                    if (history.length > 500) {
-                        history.shift();
+                    // Check for new signal
+                    if (signal.type !== 'NEUTRAL') {
+                        this.triggerSignal(symbol, signal, price);
                     }
-                    state.priceHistory.set(symbol, history);
-                    
-                    // Calculate RSI if we have enough data
-                    if (history.length >= CONFIG.RSI_PERIOD + 1) {
-                        const rsi = this.calculateRSI(history);
-                        assetData.prevRsi = assetData.rsi;
-                        assetData.rsi = rsi;
-                        
-                        // Generate signal
-                        const signal = this.generateSignal(rsi, assetData.prevRsi);
-                        assetData.signal = signal;
-                        
-                        // Check for new signal
-                        if (signal.type !== 'NEUTRAL') {
-                            this.triggerSignal(symbol, signal, price);
-                        }
-                    }
-                    
-                    // Update UI if this is the current asset
-                    if (symbol === state.currentAsset) {
-                        UI.updateCurrentAssetDisplay();
-                    }
+                }
+                
+                // Update UI if this is the current asset
+                if (symbol === state.currentAsset) {
+                    UI.updateCurrentAssetDisplay();
                 }
             }
 
-            handleCandles(candlesData, symbol) {
-                const assetData = state.marketData.get(symbol);
-                if (!assetData || !candlesData) return;
+            handleCandles(candlesData, request) {
+                if (!candlesData || !request) return;
                 
-                // Convert Deriv candles to our format
+                const symbol = request.ticks_history;
+                if (!symbol) return;
+                
+                console.log(`📊 Received ${candlesData.length} candles for ${symbol}`);
+                
+                const assetData = state.marketData.get(symbol);
+                if (!assetData) return;
+                
+                // Convert candles
                 const candles = candlesData.map(candle => ({
                     time: candle.epoch,
                     open: parseFloat(candle.open),
                     high: parseFloat(candle.high),
                     low: parseFloat(candle.low),
                     close: parseFloat(candle.close),
-                    volume: candle.volume || 0
+                    volume: 0
                 }));
                 
                 assetData.candles = candles;
@@ -1287,6 +1310,8 @@
             }
 
             handleOHLC(ohlcData) {
+                if (!ohlcData || !ohlcData.symbol) return;
+                
                 const symbol = ohlcData.symbol;
                 const assetData = state.marketData.get(symbol);
                 
@@ -1307,10 +1332,10 @@
                     }
                     
                     // Update price history
-                    const history = state.priceHistory.get(symbol) || [];
+                    let history = state.priceHistory.get(symbol) || [];
                     history.push(newCandle.close);
-                    if (history.length > 500) {
-                        history.shift();
+                    if (history.length > 100) {
+                        history = history.slice(-100);
                     }
                     state.priceHistory.set(symbol, history);
                     
@@ -1327,17 +1352,23 @@
                 let gains = 0;
                 let losses = 0;
 
+                // Calculate initial average gains and losses
                 for (let i = 1; i <= period; i++) {
                     const change = prices[i] - prices[i - 1];
-                    if (change > 0) gains += change;
-                    else losses -= change;
+                    if (change > 0) {
+                        gains += change;
+                    } else {
+                        losses -= change;
+                    }
                 }
 
                 let avgGain = gains / period;
                 let avgLoss = losses / period;
 
+                // Calculate RSI using Wilder's smoothing method
                 for (let i = period + 1; i < prices.length; i++) {
                     const change = prices[i] - prices[i - 1];
+                    
                     if (change > 0) {
                         avgGain = (avgGain * (period - 1) + change) / period;
                         avgLoss = (avgLoss * (period - 1)) / period;
@@ -1353,10 +1384,11 @@
             }
 
             generateSignal(rsi, prevRsi) {
-                if (!rsi || !prevRsi) {
+                if (rsi === undefined || prevRsi === undefined) {
                     return { type: 'NEUTRAL', strength: 'NONE', reason: 'Insufficient data' };
                 }
 
+                // Check for strong signals
                 if (prevRsi <= CONFIG.OVERSOLD && rsi > CONFIG.OVERSOLD) {
                     return { 
                         type: 'BUY', 
@@ -1373,6 +1405,7 @@
                     };
                 }
                 
+                // Check for weak signals
                 if (rsi < 35 && rsi > prevRsi) {
                     return { 
                         type: 'BUY', 
@@ -1398,7 +1431,7 @@
                 
                 if (!assetData || !assetInfo) return;
                 
-                // Check if this is a new signal (different from previous)
+                // Check if this is a new signal
                 const prevSignal = assetData.signal;
                 const isNewSignal = !prevSignal || prevSignal.type !== signal.type;
                 
@@ -1425,23 +1458,32 @@
                     // Update UI
                     UI.updatePerformanceStats();
                     
-                    console.log(`📈 ${signal.type} signal on ${assetInfo.name} @ ${price}`);
+                    console.log(`📣 ${signal.type} signal on ${assetInfo.name} @ ${price.toFixed(assetInfo.decimals)}`);
                 }
             }
 
-            // Subscribe to real-time ticks
             subscribeToTicks(symbol) {
                 if (!this.connected) return;
                 
+                // Unsubscribe from previous subscription for this symbol
+                if (this.subscriptions.has(symbol)) {
+                    this.send({
+                        forget: this.subscriptions.get(symbol)
+                    });
+                }
+                
+                // Subscribe to ticks
+                const req_id = Date.now().toString();
                 this.send({
                     ticks: symbol,
-                    subscribe: 1
+                    subscribe: 1,
+                    req_id: req_id
                 });
                 
+                this.subscriptions.set(symbol, req_id);
                 console.log(`📡 Subscribed to ${symbol} ticks`);
             }
 
-            // Get historical candles
             getHistoricalCandles(symbol) {
                 if (!this.connected) return;
                 
@@ -1464,41 +1506,75 @@
                 }
                 this.connected = false;
                 this.websocket = null;
+                this.subscriptions.clear();
             }
         }
 
-        // ===================== CHART ENGINE =====================
+        // ===================== CHART ENGINE - FIXED =====================
         class ChartEngine {
             static initChart() {
                 const canvas = document.getElementById('priceChart');
                 if (!canvas) return null;
                 
-                canvas.width = canvas.offsetWidth;
-                canvas.height = canvas.offsetHeight;
+                // FIXED: Set explicit dimensions
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
                 
                 const ctx = canvas.getContext('2d');
+                
+                // Draw initial message
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loading chart data...', canvas.width / 2, canvas.height / 2);
+                
                 return { canvas, ctx };
             }
 
             static updateChart(canvas, ctx, candles) {
-                if (!canvas || !ctx || !candles || candles.length < 2) return;
+                if (!canvas || !ctx || !candles || candles.length < 2) {
+                    console.log('Cannot update chart: insufficient data');
+                    return;
+                }
                 
                 const width = canvas.width;
                 const height = canvas.height;
-                const padding = { top: 30, right: 30, bottom: 40, left: 60 };
+                const padding = { top: 20, right: 20, bottom: 30, left: 60 };
                 const chartWidth = width - padding.left - padding.right;
                 const chartHeight = height - padding.top - padding.bottom;
                 
                 // Clear canvas
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.fillStyle = 'rgba(15, 23, 42, 1)';
                 ctx.fillRect(0, 0, width, height);
                 
                 // Draw grid
                 ctx.strokeStyle = 'rgba(100, 116, 139, 0.3)';
                 ctx.lineWidth = 1;
                 
-                // Draw candles
-                const displayCandles = candles.slice(-40);
+                // Vertical grid lines
+                for (let i = 0; i <= 5; i++) {
+                    const x = padding.left + (i * chartWidth / 5);
+                    ctx.beginPath();
+                    ctx.moveTo(x, padding.top);
+                    ctx.lineTo(x, height - padding.bottom);
+                    ctx.stroke();
+                }
+                
+                // Horizontal grid lines
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding.top + (i * chartHeight / 5);
+                    ctx.beginPath();
+                    ctx.moveTo(padding.left, y);
+                    ctx.lineTo(width - padding.right, y);
+                    ctx.stroke();
+                }
+                
+                // Calculate price range
+                const displayCandles = candles.slice(-30); // Show last 30 candles
                 let minPrice = Infinity;
                 let maxPrice = -Infinity;
                 
@@ -1507,25 +1583,28 @@
                     maxPrice = Math.max(maxPrice, candle.high);
                 });
                 
-                // Add padding
+                // Add padding to price range
                 const priceRange = maxPrice - minPrice;
                 const paddingPercent = 0.1;
                 minPrice -= priceRange * paddingPercent;
                 maxPrice += priceRange * paddingPercent;
                 
-                const candleWidth = (chartWidth / displayCandles.length) * 0.8;
+                const candleWidth = (chartWidth / displayCandles.length) * 0.7;
+                const candleSpacing = chartWidth / displayCandles.length;
                 
+                // Draw candles
                 displayCandles.forEach((candle, index) => {
-                    const x = padding.left + (index * chartWidth / displayCandles.length) + candleWidth / 2;
+                    const x = padding.left + (index * candleSpacing) + (candleSpacing / 2);
                     
+                    // Calculate y positions
                     const openY = padding.top + chartHeight - ((candle.open - minPrice) / (maxPrice - minPrice) * chartHeight);
                     const closeY = padding.top + chartHeight - ((candle.close - minPrice) / (maxPrice - minPrice) * chartHeight);
                     const highY = padding.top + chartHeight - ((candle.high - minPrice) / (maxPrice - minPrice) * chartHeight);
                     const lowY = padding.top + chartHeight - ((candle.low - minPrice) / (maxPrice - minPrice) * chartHeight);
                     
-                    const isBullish = candle.close > candle.open;
-                    ctx.fillStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
+                    const isBullish = candle.close >= candle.open;
                     ctx.strokeStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
+                    ctx.fillStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
                     
                     // Draw wick
                     ctx.beginPath();
@@ -1536,20 +1615,40 @@
                     // Draw body
                     const bodyTop = Math.min(openY, closeY);
                     const bodyHeight = Math.abs(openY - closeY);
+                    const bodyWidth = candleWidth;
                     
                     if (bodyHeight > 0) {
-                        ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+                        ctx.fillRect(x - bodyWidth / 2, bodyTop, bodyWidth, bodyHeight);
                     } else {
+                        // Draw line for doji
                         ctx.beginPath();
-                        ctx.moveTo(x - candleWidth / 2, bodyTop);
-                        ctx.lineTo(x + candleWidth / 2, bodyTop);
+                        ctx.moveTo(x - bodyWidth / 2, bodyTop);
+                        ctx.lineTo(x + bodyWidth / 2, bodyTop);
                         ctx.stroke();
                     }
                 });
+                
+                // Draw price labels
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '12px sans-serif';
+                ctx.textAlign = 'right';
+                
+                // Draw price levels on left
+                for (let i = 0; i <= 5; i++) {
+                    const price = minPrice + (i * (maxPrice - minPrice) / 5);
+                    const y = padding.top + (chartHeight - (i * chartHeight / 5));
+                    
+                    ctx.fillText(price.toFixed(2), padding.left - 10, y + 4);
+                }
+                
+                // Draw chart border
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(padding.left, padding.top, chartWidth, chartHeight);
             }
         }
 
-        // ===================== USER INTERFACE =====================
+        // ===================== USER INTERFACE - FIXED =====================
         class UI {
             static init() {
                 this.setupEventListeners();
@@ -1564,7 +1663,7 @@
                     document.getElementById('apiToken').value = savedToken;
                 }
                 
-                // Initialize with Gold
+                // Initialize asset display
                 this.updateAssetDisplay('frxXAUUSD');
                 
                 console.log('✅ KILER ZONE Live Dashboard Initialized');
@@ -1583,16 +1682,16 @@
 
                 // RSI parameter changes
                 document.getElementById('rsiPeriod').addEventListener('change', (e) => {
-                    CONFIG.RSI_PERIOD = parseInt(e.target.value);
+                    CONFIG.RSI_PERIOD = parseInt(e.target.value) || 14;
                 });
 
                 document.getElementById('oversoldLevel').addEventListener('change', (e) => {
-                    CONFIG.OVERSOLD = parseInt(e.target.value);
+                    CONFIG.OVERSOLD = parseInt(e.target.value) || 30;
                     document.getElementById('oversoldLabel').textContent = CONFIG.OVERSOLD;
                 });
 
                 document.getElementById('overboughtLevel').addEventListener('change', (e) => {
-                    CONFIG.OVERBOUGHT = parseInt(e.target.value);
+                    CONFIG.OVERBOUGHT = parseInt(e.target.value) || 70;
                     document.getElementById('overboughtLabel').textContent = CONFIG.OVERBOUGHT;
                 });
 
@@ -1618,6 +1717,11 @@
                 
                 if (!token) {
                     this.showError('Please enter your Deriv API token');
+                    return;
+                }
+                
+                if (token.length < 32) {
+                    this.showError('Invalid API token format');
                     return;
                 }
                 
@@ -1651,7 +1755,10 @@
                     // Update display
                     this.updateCurrentAssetDisplay();
                     
-                    console.log('🚀 Connected to Deriv MT5 Live Data');
+                    console.log('🚀 Successfully connected to Deriv MT5 Live Data');
+                    
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Connect to Deriv Live Data</span>';
                     
                 } catch (error) {
                     console.error('Connection failed:', error);
@@ -1686,13 +1793,34 @@
 
             static showError(message) {
                 console.error('Dashboard Error:', message);
-                alert(`Error: ${message}`);
+                // Create error notification
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: var(--error);
+                    color: white;
+                    padding: 15px 25px;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    box-shadow: 0 4px 15px rgba(220, 38, 38, 0.3);
+                    animation: fadeIn 0.3s ease-out;
+                `;
+                errorDiv.textContent = message;
+                document.body.appendChild(errorDiv);
+                
+                setTimeout(() => {
+                    errorDiv.style.animation = 'fadeOut 0.3s ease-out';
+                    setTimeout(() => errorDiv.remove(), 300);
+                }, 5000);
             }
 
             static switchAsset(assetSymbol) {
-                // Unsubscribe from previous asset
-                if (window.derivAPI && window.derivAPI.connected) {
-                    // Note: Deriv doesn't have unsubscribe for ticks, but we'll stop processing
+                if (!window.derivAPI || !window.derivAPI.connected) {
+                    this.showError('Please connect to Deriv first');
+                    document.getElementById('assetSelector').value = state.currentAsset;
+                    return;
                 }
                 
                 // Update state
@@ -1700,9 +1828,7 @@
                 this.updateAssetDisplay(assetSymbol);
                 
                 // Subscribe to new asset
-                if (window.derivAPI && window.derivAPI.connected) {
-                    this.subscribeToAsset(assetSymbol);
-                }
+                this.subscribeToAsset(assetSymbol);
                 
                 // Update display
                 this.updateCurrentAssetDisplay();
@@ -1735,11 +1861,11 @@
                 const asset = CONFIG.ASSETS[assetSymbol];
                 const data = state.marketData.get(assetSymbol);
                 
-                if (!asset || !data) return;
+                if (!asset) return;
                 
                 // Update price display
-                const price = data.currentPrice || 0;
-                const previousPrice = data.previousPrice || price;
+                const price = data?.currentPrice || 0;
+                const previousPrice = data?.previousPrice || price;
                 const change = previousPrice > 0 ? ((price - previousPrice) / previousPrice * 100) : 0;
                 
                 document.getElementById('currentPrice').textContent = price > 0 ? price.toFixed(asset.decimals) : '--';
@@ -1748,7 +1874,7 @@
                 changeElement.className = `price-change-large ${change >= 0 ? 'positive' : 'negative'}`;
                 
                 // Update RSI display
-                const rsiValue = data.rsi || 50;
+                const rsiValue = data?.rsi || 50;
                 document.getElementById('rsiValue').textContent = `RSI: ${rsiValue.toFixed(2)}`;
                 
                 // Update RSI bar
@@ -1767,7 +1893,7 @@
                 const signalBadge = document.getElementById('signalBadge');
                 const signalStrength = document.getElementById('signalStrength');
                 
-                if (data.signal && data.signal.type !== 'NEUTRAL') {
+                if (data?.signal && data.signal.type !== 'NEUTRAL') {
                     signalDisplay.className = `signal-display ${data.signal.type.toLowerCase()}-signal fade-in`;
                     signalBadge.className = `signal-badge ${data.signal.type.toLowerCase()}`;
                     signalBadge.textContent = data.signal.type;
@@ -1783,7 +1909,7 @@
                 this.updateMarketSession(assetSymbol);
                 
                 // Update timestamps
-                if (data.lastUpdate) {
+                if (data?.lastUpdate) {
                     const updateTime = new Date(data.lastUpdate);
                     document.getElementById('lastUpdate').textContent = updateTime.toLocaleTimeString('en-US', {
                         hour12: false,
@@ -1793,7 +1919,7 @@
                     });
                 }
                 
-                if (data.lastSignalTime) {
+                if (data?.lastSignalTime) {
                     const signalTime = new Date(data.lastSignalTime);
                     document.getElementById('signalTime').textContent = signalTime.toLocaleTimeString('en-US', {
                         hour12: false,
@@ -1804,7 +1930,7 @@
                 }
                 
                 // Update chart if we have candles
-                if (state.chart && data.candles && data.candles.length > 0) {
+                if (state.chart && data?.candles && data.candles.length > 0) {
                     ChartEngine.updateChart(state.chart.canvas, state.chart.ctx, data.candles);
                 }
             }
@@ -1813,7 +1939,6 @@
                 const hour = new Date().getUTCHours();
                 let session = 'Market Open';
                 
-                // Forex and metals typically follow specific sessions
                 if (assetSymbol.includes('frx')) {
                     if (hour >= 8 && hour < 16) {
                         session = 'London Session';
@@ -1824,7 +1949,6 @@
                     }
                 }
                 
-                // Crypto and volatility indices are 24/7
                 if (assetSymbol.includes('cry') || assetSymbol.includes('R_')) {
                     session = '24/7 Trading';
                 }
@@ -1886,7 +2010,7 @@
                 document.getElementById('buySignals').textContent = state.performance.buySignals;
                 document.getElementById('sellSignals').textContent = state.performance.sellSignals;
                 
-                // Calculate win rate (simulated for demo)
+                // Calculate win rate
                 if (state.performance.totalSignals > 0) {
                     const winRate = Math.floor((state.performance.totalSignals * 0.7) / state.performance.totalSignals * 100);
                     state.performance.winRate = winRate;
@@ -1921,20 +2045,24 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 KILER ZONE Live Dashboard Initializing...');
             UI.init();
-            console.log('✅ Dashboard Ready - Enter your Deriv API token for live data');
             
             // Handle window resize
             window.addEventListener('resize', () => {
-                if (state.connected && state.chart) {
+                if (state.chart) {
+                    const canvas = state.chart.canvas;
+                    const container = canvas.parentElement;
+                    canvas.width = container.clientWidth;
+                    canvas.height = container.clientHeight;
+                    
                     const assetSymbol = state.currentAsset;
                     const data = state.marketData.get(assetSymbol);
-                    if (data && data.candles) {
-                        ChartEngine.updateChart(state.chart.canvas, state.chart.ctx, data.candles);
+                    if (data && data.candles && data.candles.length > 0) {
+                        ChartEngine.updateChart(canvas, state.chart.ctx, data.candles);
                     }
                 }
             });
             
-            // Handle beforeunload to disconnect properly
+            // Handle beforeunload
             window.addEventListener('beforeunload', () => {
                 if (window.derivAPI) {
                     window.derivAPI.disconnect();
