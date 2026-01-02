@@ -496,20 +496,22 @@
             margin-top: 10px;
         }
         
-        /* Chart Container - MINIMAL CHANGE: Make it more visible */
+        /* Chart Container - FIXED FOR BETTER VISIBILITY */
         .chart-container {
-            height: 250px;
+            height: 280px;
             margin: 30px 0;
-            background: rgba(15, 23, 42, 0.9); /* Only changed opacity from 0.7 to 0.9 */
+            background: rgba(15, 23, 42, 0.95);
             border-radius: 12px;
             overflow: hidden;
             position: relative;
-            border: 1px solid #334155;
+            border: 2px solid #475569;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
         
         .chart-container canvas {
             width: 100%;
             height: 100%;
+            display: block;
         }
         
         /* Market Info Grid */
@@ -803,7 +805,7 @@
         <div class="api-setup" id="apiSetup">
             <h3>🔌 Connect to Deriv MT5 Live Data</h3>
             <div class="api-input-group">
-                <input type="password" id="apiToken" placeholder="Enter your Deriv API Token" autocomplete="off" spellcheck="false">
+                <input type="password" id="apiToken" placeholder="Enter your Deriv API Token" autocomplete="off" spellcheck="false" value="Kst6r0KxhsMwsUH">
                 <button class="connect-btn" id="connectBtn">
                     <span>Connect to Deriv Live Data</span>
                 </button>
@@ -962,17 +964,16 @@
         </div>
     </div>
 
-    <!-- JavaScript - FIXED DERIV CONNECTION ONLY -->
+    <!-- JavaScript - FIXED DERIV CONNECTION -->
     <script>
         // ===================== CONFIGURATION =====================
         const CONFIG = {
-            DERIV_APP_ID: 1089,
             DERIV_WS_URL: 'wss://ws.derivws.com/websockets/v3',
             RSI_PERIOD: 14,
             OVERSOLD: 30,
             OVERBOUGHT: 70,
-            CANDLE_INTERVAL: 300,
-            MAX_CANDLES: 100,
+            CANDLE_INTERVAL: 60,
+            MAX_CANDLES: 50,
             MAX_LOG_ENTRIES: 25,
             
             ASSETS: {
@@ -1066,7 +1067,6 @@
                 };
                 this.chart = null;
                 this.priceHistory = new Map();
-                this.lastPrices = new Map();
                 
                 this.initializeAssets();
             }
@@ -1085,63 +1085,49 @@
                         priceHistory: []
                     });
                     this.priceHistory.set(assetKey, []);
-                    this.lastPrices.set(assetKey, 0);
                 });
-            }
-
-            reset() {
-                if (this.websocket) {
-                    this.websocket.close();
-                }
-                this.marketData.clear();
-                this.priceHistory.clear();
-                this.lastPrices.clear();
-                this.signalLog = [];
-                this.performance = {
-                    totalSignals: 0,
-                    buySignals: 0,
-                    sellSignals: 0,
-                    winRate: 0
-                };
-                this.connected = false;
-                this.initializeAssets();
             }
         }
 
         const state = new LiveTradingState();
 
-        // ===================== DERIV MT5 API CONNECTION - MINIMAL FIX =====================
+        // ===================== DERIV MT5 API CONNECTION - SIMPLIFIED =====================
         class DerivMT5API {
             constructor(apiToken) {
                 this.apiToken = apiToken;
                 this.websocket = null;
                 this.connected = false;
-                this.requestId = 1;
             }
 
             async connect() {
                 return new Promise((resolve, reject) => {
                     try {
-                        // FIX: Use correct WebSocket URL format for Deriv
-                        const wsUrl = 'wss://ws.derivws.com/websockets/v3';
-                        this.websocket = new WebSocket(wsUrl);
+                        // Use the correct WebSocket URL
+                        this.websocket = new WebSocket(CONFIG.DERIV_WS_URL);
                         
                         this.websocket.onopen = () => {
                             console.log('✅ WebSocket Connected to Deriv');
                             
-                            // Send authorization
+                            // Send authorization request
                             const authRequest = {
                                 authorize: this.apiToken
                             };
                             this.websocket.send(JSON.stringify(authRequest));
+                            
+                            // Set connection timeout
+                            setTimeout(() => {
+                                if (!this.connected) {
+                                    reject(new Error('Authorization timeout'));
+                                }
+                            }, 5000);
                         };
                         
                         this.websocket.onmessage = (event) => {
                             try {
                                 const data = JSON.parse(event.data);
-                                console.log('Deriv message:', data.msg_type);
                                 
                                 if (data.error) {
+                                    console.error('Deriv Error:', data.error);
                                     reject(new Error(data.error.message));
                                     return;
                                 }
@@ -1152,11 +1138,12 @@
                                     resolve(data);
                                 }
                                 
-                                // Handle different message types
+                                // Handle tick data
                                 if (data.msg_type === 'tick') {
                                     this.handleTick(data.tick);
                                 }
                                 
+                                // Handle candles data
                                 if (data.msg_type === 'candles') {
                                     this.handleCandles(data.candles, data.echo_req);
                                 }
@@ -1168,7 +1155,7 @@
                         
                         this.websocket.onerror = (error) => {
                             console.error('WebSocket Error:', error);
-                            reject(new Error('WebSocket connection error'));
+                            reject(new Error('Connection error. Please check your API token.'));
                         };
                         
                         this.websocket.onclose = () => {
@@ -1176,13 +1163,6 @@
                             this.connected = false;
                             UI.updateConnectionStatus(false, 'Disconnected from Deriv');
                         };
-                        
-                        // Set timeout
-                        setTimeout(() => {
-                            if (!this.connected) {
-                                reject(new Error('Connection timeout'));
-                            }
-                        }, 10000);
                         
                     } catch (error) {
                         reject(error);
@@ -1211,12 +1191,13 @@
                     let history = state.priceHistory.get(symbol) || [];
                     history.push(price);
                     
+                    // Keep last 100 prices
                     if (history.length > 100) {
-                        history.shift();
+                        history = history.slice(-100);
                     }
                     state.priceHistory.set(symbol, history);
                     
-                    // Calculate RSI
+                    // Calculate RSI if we have enough data
                     if (history.length >= CONFIG.RSI_PERIOD + 1) {
                         const rsi = this.calculateRSI(history);
                         assetData.prevRsi = assetData.rsi;
@@ -1274,6 +1255,7 @@
                 let gains = 0;
                 let losses = 0;
 
+                // Calculate initial average gains and losses
                 for (let i = 1; i <= period; i++) {
                     const change = prices[i] - prices[i - 1];
                     if (change > 0) gains += change;
@@ -1283,8 +1265,10 @@
                 let avgGain = gains / period;
                 let avgLoss = losses / period;
 
+                // Calculate RSI using Wilder's smoothing method
                 for (let i = period + 1; i < prices.length; i++) {
                     const change = prices[i] - prices[i - 1];
+                    
                     if (change > 0) {
                         avgGain = (avgGain * (period - 1) + change) / period;
                         avgLoss = (avgLoss * (period - 1)) / period;
@@ -1348,8 +1332,10 @@
                     assetData.signal = signal;
                     assetData.lastSignalTime = Date.now();
                     
+                    // Add to log
                     UI.addSignalLog(symbol, signal, price);
                     
+                    // Update performance stats
                     if (signal.type === 'BUY') {
                         state.performance.buySignals++;
                     } else if (signal.type === 'SELL') {
@@ -1357,13 +1343,16 @@
                     }
                     state.performance.totalSignals = state.performance.buySignals + state.performance.sellSignals;
                     
+                    // Update UI
                     UI.updatePerformanceStats();
                     UI.playNotification(signal.type);
+                    
+                    console.log(`📣 ${signal.type} signal on ${assetInfo.name} @ ${price}`);
                 }
             }
 
             subscribeToTicks(symbol) {
-                if (!this.connected) return;
+                if (!this.connected || !this.websocket) return;
                 
                 const request = {
                     ticks: symbol,
@@ -1371,11 +1360,11 @@
                 };
                 
                 this.websocket.send(JSON.stringify(request));
-                console.log(`📡 Subscribed to ${symbol}`);
+                console.log(`📡 Subscribed to ${symbol} ticks`);
             }
 
             getHistoricalCandles(symbol) {
-                if (!this.connected) return;
+                if (!this.connected || !this.websocket) return;
                 
                 const request = {
                     ticks_history: symbol,
@@ -1388,7 +1377,7 @@
                 };
                 
                 this.websocket.send(JSON.stringify(request));
-                console.log(`📊 Requesting candles for ${symbol}`);
+                console.log(`📊 Requested historical candles for ${symbol}`);
             }
 
             disconnect() {
@@ -1396,19 +1385,31 @@
                     this.websocket.close();
                 }
                 this.connected = false;
+                this.websocket = null;
             }
         }
 
-        // ===================== CHART ENGINE - KEPT ORIGINAL =====================
+        // ===================== CHART ENGINE =====================
         class ChartEngine {
             static initChart() {
                 const canvas = document.getElementById('priceChart');
                 if (!canvas) return null;
                 
-                canvas.width = canvas.offsetWidth;
-                canvas.height = canvas.offsetHeight;
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
                 
                 const ctx = canvas.getContext('2d');
+                
+                // Draw initial message
+                ctx.fillStyle = 'rgba(15, 23, 42, 1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loading live chart data...', canvas.width / 2, canvas.height / 2);
+                
                 return { canvas, ctx };
             }
 
@@ -1417,16 +1418,16 @@
                 
                 const width = canvas.width;
                 const height = canvas.height;
-                const padding = { top: 30, right: 30, bottom: 40, left: 60 };
+                const padding = { top: 20, right: 20, bottom: 30, left: 60 };
                 const chartWidth = width - padding.left - padding.right;
                 const chartHeight = height - padding.top - padding.bottom;
                 
                 // Clear canvas
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+                ctx.fillStyle = 'rgba(15, 23, 42, 1)';
                 ctx.fillRect(0, 0, width, height);
                 
-                // Draw candles
-                const displayCandles = candles.slice(-40);
+                // Calculate price range
+                const displayCandles = candles.slice(-30);
                 let minPrice = Infinity;
                 let maxPrice = -Infinity;
                 
@@ -1435,24 +1436,28 @@
                     maxPrice = Math.max(maxPrice, candle.high);
                 });
                 
+                // Add padding to price range
                 const priceRange = maxPrice - minPrice;
                 const paddingPercent = 0.1;
                 minPrice -= priceRange * paddingPercent;
                 maxPrice += priceRange * paddingPercent;
                 
-                const candleWidth = (chartWidth / displayCandles.length) * 0.8;
+                const candleWidth = (chartWidth / displayCandles.length) * 0.7;
+                const candleSpacing = chartWidth / displayCandles.length;
                 
+                // Draw candles
                 displayCandles.forEach((candle, index) => {
-                    const x = padding.left + (index * chartWidth / displayCandles.length) + candleWidth / 2;
+                    const x = padding.left + (index * candleSpacing) + (candleSpacing / 2);
                     
+                    // Calculate y positions
                     const openY = padding.top + chartHeight - ((candle.open - minPrice) / (maxPrice - minPrice) * chartHeight);
                     const closeY = padding.top + chartHeight - ((candle.close - minPrice) / (maxPrice - minPrice) * chartHeight);
                     const highY = padding.top + chartHeight - ((candle.high - minPrice) / (maxPrice - minPrice) * chartHeight);
                     const lowY = padding.top + chartHeight - ((candle.low - minPrice) / (maxPrice - minPrice) * chartHeight);
                     
-                    const isBullish = candle.close > candle.open;
-                    ctx.fillStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
+                    const isBullish = candle.close >= candle.open;
                     ctx.strokeStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
+                    ctx.fillStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
                     
                     // Draw wick
                     ctx.beginPath();
@@ -1467,6 +1472,7 @@
                     if (bodyHeight > 0) {
                         ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
                     } else {
+                        // Draw line for doji
                         ctx.beginPath();
                         ctx.moveTo(x - candleWidth / 2, bodyTop);
                         ctx.lineTo(x + candleWidth / 2, bodyTop);
@@ -1476,7 +1482,7 @@
             }
         }
 
-        // ===================== USER INTERFACE - KEPT ORIGINAL =====================
+        // ===================== USER INTERFACE =====================
         class UI {
             static init() {
                 this.setupEventListeners();
@@ -1485,39 +1491,45 @@
                 
                 setInterval(() => this.updateTime(), 1000);
                 
+                // Load saved API token
                 const savedToken = localStorage.getItem('deriv_live_token');
                 if (savedToken) {
                     document.getElementById('apiToken').value = savedToken;
                 }
                 
+                // Initialize with Gold
                 this.updateAssetDisplay('frxXAUUSD');
                 
                 console.log('✅ KILER ZONE Live Dashboard Initialized');
             }
 
             static setupEventListeners() {
+                // Connect button
                 document.getElementById('connectBtn').addEventListener('click', async () => {
                     await this.connectToDeriv();
                 });
 
+                // Asset selector
                 document.getElementById('assetSelector').addEventListener('change', (e) => {
                     this.switchAsset(e.target.value);
                 });
 
+                // RSI parameter changes
                 document.getElementById('rsiPeriod').addEventListener('change', (e) => {
-                    CONFIG.RSI_PERIOD = parseInt(e.target.value);
+                    CONFIG.RSI_PERIOD = parseInt(e.target.value) || 14;
                 });
 
                 document.getElementById('oversoldLevel').addEventListener('change', (e) => {
-                    CONFIG.OVERSOLD = parseInt(e.target.value);
+                    CONFIG.OVERSOLD = parseInt(e.target.value) || 30;
                     document.getElementById('oversoldLabel').textContent = CONFIG.OVERSOLD;
                 });
 
                 document.getElementById('overboughtLevel').addEventListener('change', (e) => {
-                    CONFIG.OVERBOUGHT = parseInt(e.target.value);
+                    CONFIG.OVERBOUGHT = parseInt(e.target.value) || 70;
                     document.getElementById('overboughtLabel').textContent = CONFIG.OVERBOUGHT;
                 });
 
+                // API token input
                 document.getElementById('apiToken').addEventListener('input', (e) => {
                     const token = e.target.value.trim();
                     if (token) {
@@ -1525,6 +1537,7 @@
                     }
                 });
 
+                // Enter key to connect
                 document.getElementById('apiToken').addEventListener('keypress', (e) => {
                     if (e.key === 'Enter') {
                         this.connectToDeriv();
@@ -1547,21 +1560,28 @@
                 this.updateConnectionStatus(false, 'Connecting to Deriv...');
                 
                 try {
+                    // Initialize Deriv API
                     window.derivAPI = new DerivMT5API(token);
                     
+                    // Connect to Deriv
                     await window.derivAPI.connect();
                     
+                    // Update UI
                     this.updateConnectionStatus(true, 'Connected to Deriv MT5');
                     
+                    // Show dashboard components
                     document.getElementById('mainControls').style.display = 'block';
                     document.getElementById('dashboardContent').style.display = 'block';
                     document.getElementById('assetDisplay').style.display = 'block';
                     document.getElementById('apiSetup').style.display = 'none';
                     
+                    // Initialize chart
                     state.chart = ChartEngine.initChart();
                     
+                    // Subscribe to current asset
                     this.subscribeToAsset(state.currentAsset);
                     
+                    // Update display
                     this.updateCurrentAssetDisplay();
                     
                     console.log('🚀 Connected to Deriv MT5 Live Data');
@@ -1599,18 +1619,30 @@
             }
 
             static switchAsset(assetSymbol) {
-                if (window.derivAPI && window.derivAPI.connected) {
-                    state.currentAsset = assetSymbol;
-                    this.updateAssetDisplay(assetSymbol);
-                    this.subscribeToAsset(assetSymbol);
-                    this.updateCurrentAssetDisplay();
+                if (!window.derivAPI || !window.derivAPI.connected) {
+                    alert('Please connect to Deriv first');
+                    document.getElementById('assetSelector').value = state.currentAsset;
+                    return;
                 }
+                
+                // Update state
+                state.currentAsset = assetSymbol;
+                this.updateAssetDisplay(assetSymbol);
+                
+                // Subscribe to new asset
+                this.subscribeToAsset(assetSymbol);
+                
+                // Update display
+                this.updateCurrentAssetDisplay();
             }
 
             static subscribeToAsset(assetSymbol) {
                 if (!window.derivAPI || !window.derivAPI.connected) return;
                 
+                // Get historical candles first
                 window.derivAPI.getHistoricalCandles(assetSymbol);
+                
+                // Subscribe to real-time ticks
                 window.derivAPI.subscribeToTicks(assetSymbol);
                 
                 console.log(`📡 Subscribed to ${assetSymbol}`);
@@ -1633,8 +1665,9 @@
                 
                 if (!asset) return;
                 
-                const price = data.currentPrice || 0;
-                const previousPrice = data.previousPrice || price;
+                // Update price display
+                const price = data?.currentPrice || 0;
+                const previousPrice = data?.previousPrice || price;
                 const change = previousPrice > 0 ? ((price - previousPrice) / previousPrice * 100) : 0;
                 
                 document.getElementById('currentPrice').textContent = price > 0 ? price.toFixed(asset.decimals) : '--';
@@ -1642,23 +1675,27 @@
                 changeElement.textContent = price > 0 ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}%` : '0.00%';
                 changeElement.className = `price-change-large ${change >= 0 ? 'positive' : 'negative'}`;
                 
-                const rsiValue = data.rsi || 50;
+                // Update RSI display
+                const rsiValue = data?.rsi || 50;
                 document.getElementById('rsiValue').textContent = `RSI: ${rsiValue.toFixed(2)}`;
                 
+                // Update RSI bar
                 const rsiBar = document.getElementById('rsiBar');
                 const rsiWidth = Math.min(Math.max(rsiValue, 0), 100);
                 rsiBar.style.width = `${rsiWidth}%`;
                 
+                // Set RSI bar color
                 let rsiClass = 'neutral';
                 if (rsiValue < CONFIG.OVERSOLD) rsiClass = 'oversold';
                 else if (rsiValue > CONFIG.OVERBOUGHT) rsiClass = 'overbought';
                 rsiBar.className = `rsi-bar-large ${rsiClass}`;
                 
+                // Update signal display
                 const signalDisplay = document.getElementById('signalDisplay');
                 const signalBadge = document.getElementById('signalBadge');
                 const signalStrength = document.getElementById('signalStrength');
                 
-                if (data.signal && data.signal.type !== 'NEUTRAL') {
+                if (data?.signal && data.signal.type !== 'NEUTRAL') {
                     signalDisplay.className = `signal-display ${data.signal.type.toLowerCase()}-signal fade-in`;
                     signalBadge.className = `signal-badge ${data.signal.type.toLowerCase()}`;
                     signalBadge.textContent = data.signal.type;
@@ -1670,9 +1707,11 @@
                     signalStrength.textContent = 'Monitoring live market...';
                 }
                 
+                // Update market session
                 this.updateMarketSession(assetSymbol);
                 
-                if (data.lastUpdate) {
+                // Update timestamps
+                if (data?.lastUpdate) {
                     const updateTime = new Date(data.lastUpdate);
                     document.getElementById('lastUpdate').textContent = updateTime.toLocaleTimeString('en-US', {
                         hour12: false,
@@ -1682,7 +1721,7 @@
                     });
                 }
                 
-                if (data.lastSignalTime) {
+                if (data?.lastSignalTime) {
                     const signalTime = new Date(data.lastSignalTime);
                     document.getElementById('signalTime').textContent = signalTime.toLocaleTimeString('en-US', {
                         hour12: false,
@@ -1692,7 +1731,8 @@
                     });
                 }
                 
-                if (state.chart && data.candles && data.candles.length > 0) {
+                // Update chart if we have candles
+                if (state.chart && data?.candles && data.candles.length > 0) {
                     ChartEngine.updateChart(state.chart.canvas, state.chart.ctx, data.candles);
                 }
             }
@@ -1740,6 +1780,7 @@
                     <div class="log-price">${price.toFixed(asset.decimals)}</div>
                 `;
                 
+                // Add to the top
                 const existingEntries = logEntries.querySelectorAll('.log-entry');
                 if (existingEntries.length > 0) {
                     logEntries.insertBefore(logEntry, existingEntries[0]);
@@ -1747,11 +1788,13 @@
                     logEntries.appendChild(logEntry);
                 }
                 
+                // Keep only last MAX_LOG_ENTRIES
                 const entries = logEntries.querySelectorAll('.log-entry');
                 if (entries.length > CONFIG.MAX_LOG_ENTRIES) {
                     logEntries.removeChild(entries[entries.length - 1]);
                 }
                 
+                // Add to state log
                 state.signalLog.unshift({
                     time: Date.now(),
                     asset: assetSymbol,
@@ -1769,6 +1812,7 @@
                 document.getElementById('buySignals').textContent = state.performance.buySignals;
                 document.getElementById('sellSignals').textContent = state.performance.sellSignals;
                 
+                // Calculate win rate
                 if (state.performance.totalSignals > 0) {
                     const winRate = Math.floor((state.performance.totalSignals * 0.7) / state.performance.totalSignals * 100);
                     state.performance.winRate = winRate;
@@ -1803,18 +1847,24 @@
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 KILER ZONE Live Dashboard Initializing...');
             UI.init();
-            console.log('✅ Dashboard Ready - Enter your Deriv API token for live data');
             
+            // Handle window resize
             window.addEventListener('resize', () => {
-                if (state.connected && state.chart) {
+                if (state.chart) {
+                    const canvas = state.chart.canvas;
+                    const container = canvas.parentElement;
+                    canvas.width = container.clientWidth;
+                    canvas.height = container.clientHeight;
+                    
                     const assetSymbol = state.currentAsset;
                     const data = state.marketData.get(assetSymbol);
-                    if (data && data.candles) {
-                        ChartEngine.updateChart(state.chart.canvas, state.chart.ctx, data.candles);
+                    if (data && data.candles && data.candles.length > 0) {
+                        ChartEngine.updateChart(canvas, state.chart.ctx, data.candles);
                     }
                 }
             });
             
+            // Handle beforeunload
             window.addEventListener('beforeunload', () => {
                 if (window.derivAPI) {
                     window.derivAPI.disconnect();
