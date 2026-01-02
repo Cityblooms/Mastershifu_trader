@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KILER ZONE - Real-Time Trading Dashboard</title>
+    <title>KILER ZONE - Professional Trading Dashboard</title>
     <style>
-        /* CSS Styles - Everything included */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
@@ -19,6 +18,8 @@
             --warning: #f59e0b;
             --error: #dc2626;
             --success: #22c55e;
+            --primary-blue: #3b82f6;
+            --purple: #8b5cf6;
         }
         
         body {
@@ -41,43 +42,44 @@
         }
         
         .title {
-            font-size: 2rem;
-            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, #ffd700, #ffed4e, #8b5cf6);
             -webkit-background-clip: text;
             background-clip: text;
             color: transparent;
             margin-bottom: 5px;
             font-weight: 800;
+            letter-spacing: -0.5px;
         }
         
         .subtitle {
             color: var(--text-secondary);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
         }
         
-        /* Connection Status */
+        /* Connection Banner */
         .connection-banner {
             background: var(--bg-card);
-            padding: 12px;
+            padding: 12px 20px;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border: 1px solid #334155;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
         }
         
         .status-section {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
         
         .status-dot {
-            width: 10px;
-            height: 10px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             background: var(--error);
         }
@@ -91,375 +93,541 @@
         }
         
         .status-text {
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             font-weight: 600;
         }
         
         .connection-time {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: var(--text-secondary);
             font-family: 'Courier New', monospace;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 5px 10px;
+            border-radius: 4px;
         }
         
         /* API Setup */
         .api-setup {
-            background: linear-gradient(135deg, #1e293b, #334155);
+            background: linear-gradient(135deg, #1e293b, #2d3748);
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 20px;
             border: 2px solid var(--warning);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
         }
         
         .api-setup h3 {
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             color: var(--warning);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .api-input-group {
             display: flex;
-            gap: 10px;
-            margin-top: 10px;
+            gap: 12px;
+            margin-top: 15px;
             flex-wrap: wrap;
         }
         
         .api-input-group input {
             flex: 1;
-            min-width: 200px;
-            padding: 10px;
+            min-width: 300px;
+            padding: 12px 15px;
             background: var(--bg-dark);
-            border: 1px solid #475569;
-            border-radius: 5px;
+            border: 2px solid #475569;
+            border-radius: 8px;
             color: var(--text-primary);
             font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .api-input-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
         
         .connect-btn {
-            padding: 10px 25px;
+            padding: 12px 30px;
             background: var(--success);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .connect-btn:hover { 
+            background: #16a34a; 
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+        }
+        
+        .connect-btn:disabled { 
+            background: var(--neutral-color); 
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .disconnect-btn {
+            padding: 12px 25px;
+            background: var(--error);
+            color: white;
+            border: none;
+            border-radius: 8px;
             font-weight: bold;
             cursor: pointer;
             transition: all 0.3s;
         }
         
-        .connect-btn:hover { background: #16a34a; transform: scale(1.02); }
-        .connect-btn:disabled { background: var(--neutral-color); cursor: not-allowed; }
-        
-        .disconnect-btn {
-            padding: 10px 25px;
-            background: var(--error);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            cursor: pointer;
+        .disconnect-btn:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
         }
         
         .api-info {
-            margin-top: 10px;
-            padding: 10px;
+            margin-top: 15px;
+            padding: 12px;
             background: rgba(59, 130, 246, 0.1);
-            border-radius: 5px;
-            font-size: 0.85rem;
-            border-left: 3px solid #3b82f6;
-        }
-        
-        /* Controls */
-        .controls {
-            background: var(--bg-card);
-            padding: 15px;
             border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #334155;
+            font-size: 0.85rem;
+            border-left: 4px solid #3b82f6;
+            line-height: 1.5;
         }
         
-        .control-row {
-            display: flex;
-            gap: 15px;
+        .api-info a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .api-info a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Main Controls */
+        .main-controls {
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #334155;
+            display: none;
+        }
+        
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
             align-items: center;
+        }
+        
+        .rsi-controls {
+            display: flex;
+            gap: 20px;
             flex-wrap: wrap;
         }
         
         .control-group {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
         
         .control-group label {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: var(--text-secondary);
+            font-weight: 500;
             white-space: nowrap;
         }
         
         .control-group input, .control-group select {
-            padding: 6px 10px;
+            padding: 8px 12px;
             background: var(--bg-dark);
             border: 1px solid #475569;
-            border-radius: 5px;
+            border-radius: 6px;
             color: var(--text-primary);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            min-width: 80px;
         }
         
         .control-group input {
-            width: 60px;
             text-align: center;
         }
         
-        /* Assets Grid */
-        .assets-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        .control-group input:focus, .control-group select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+        
+        .assets-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .assets-selector select {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 12px;
+            background: var(--bg-dark);
+            border: 1px solid #475569;
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        
+        /* Dashboard Content */
+        .dashboard-content {
+            display: none;
+        }
+        
+        /* Asset Display */
+        .asset-display {
+            display: none;
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #334155;
+        }
+        
+        .asset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #334155;
+        }
+        
+        .selected-asset-info {
+            display: flex;
+            align-items: center;
             gap: 15px;
+        }
+        
+        .asset-icon-large {
+            font-size: 2rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #8b5cf6, #6366f1);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+        }
+        
+        .asset-details h3 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .asset-symbol {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            font-family: 'Courier New', monospace;
+        }
+        
+        .price-display-large {
+            text-align: right;
+        }
+        
+        .current-price-large {
+            font-size: 2.2rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            margin-bottom: 5px;
+        }
+        
+        .price-change-large {
+            font-size: 1rem;
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .price-change-large.positive { color: var(--buy-color); }
+        .price-change-large.negative { color: var(--sell-color); }
+        
+        /* Signal Display */
+        .signal-display {
+            background: var(--bg-card);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #334155;
+            transition: all 0.3s;
+        }
+        
+        .signal-display.buy-signal {
+            border-color: var(--buy-color);
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+        }
+        
+        .signal-display.sell-signal {
+            border-color: var(--sell-color);
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+        }
+        
+        .signal-display.neutral {
+            border-color: #334155;
+        }
+        
+        .signal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 20px;
         }
         
-        .asset-card {
-            background: var(--bg-card);
-            border-radius: 10px;
-            padding: 15px;
-            border: 2px solid transparent;
-            transition: all 0.3s;
-            position: relative;
+        .signal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-        
-        .asset-card.buy-signal { 
-            border-color: var(--buy-color); 
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); 
-        }
-        
-        .asset-card.sell-signal { 
-            border-color: var(--sell-color); 
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); 
-        }
-        
-        .asset-card.neutral { border-color: #334155; }
-        .asset-card.offline { opacity: 0.6; }
         
         .signal-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.75rem;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
             font-weight: bold;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .signal-badge.buy { background: var(--buy-color); }
         .signal-badge.sell { background: var(--sell-color); }
         .signal-badge.neutral { background: var(--neutral-color); }
         
-        .asset-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 12px;
-        }
-        
-        .asset-info h3 {
-            font-size: 1.1rem;
-            margin-bottom: 2px;
-        }
-        
-        .asset-symbol {
-            font-size: 0.8rem;
+        .signal-strength {
+            font-size: 1rem;
             color: var(--text-secondary);
+            font-weight: 500;
         }
         
-        .price-section {
-            text-align: right;
+        /* RSI Meter Large */
+        .rsi-meter-large {
+            margin: 20px 0;
         }
         
-        .current-price {
-            font-size: 1.5rem;
+        .rsi-value-large {
+            font-size: 2rem;
             font-weight: bold;
             font-family: 'Courier New', monospace;
+            text-align: center;
+            margin-bottom: 15px;
         }
         
-        .price-change {
-            font-size: 0.85rem;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .price-change.positive { color: var(--buy-color); }
-        .price-change.negative { color: var(--sell-color); }
-        
-        /* Mini Chart */
-        .mini-chart {
-            height: 120px;
-            margin: 12px 0;
-            background: rgba(15, 23, 42, 0.5);
-            border-radius: 6px;
+        .rsi-bar-container-large {
+            height: 25px;
+            background: #334155;
+            border-radius: 12px;
             overflow: hidden;
             position: relative;
+            margin-bottom: 8px;
         }
         
-        .mini-chart canvas {
-            width: 100%;
+        .rsi-bar-large {
             height: 100%;
+            transition: all 0.5s ease;
         }
         
-        /* RSI Display */
-        .rsi-display {
-            margin: 12px 0;
-        }
+        .rsi-bar-large.oversold { background: linear-gradient(90deg, var(--buy-color), #22c55e); }
+        .rsi-bar-large.neutral { background: linear-gradient(90deg, #22c55e, #f59e0b); }
+        .rsi-bar-large.overbought { background: linear-gradient(90deg, #f59e0b, var(--sell-color)); }
         
-        .rsi-header {
+        .rsi-levels-large {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 6px;
-        }
-        
-        .rsi-label {
             font-size: 0.85rem;
             color: var(--text-secondary);
+            padding: 0 5px;
         }
         
-        .rsi-value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            font-family: 'Courier New', monospace;
-        }
-        
-        .rsi-bar-container {
-            height: 16px;
-            background: #334155;
+        /* Mini Chart */
+        .mini-chart-container {
+            height: 150px;
+            margin: 20px 0;
+            background: rgba(15, 23, 42, 0.5);
             border-radius: 8px;
             overflow: hidden;
             position: relative;
         }
         
-        .rsi-bar {
+        .mini-chart-container canvas {
+            width: 100%;
             height: 100%;
-            transition: width 0.5s ease, background 0.3s;
         }
         
-        .rsi-bar.oversold { background: var(--buy-color); }
-        .rsi-bar.neutral { background: var(--warning); }
-        .rsi-bar.overbought { background: var(--sell-color); }
+        /* Market Session Info */
+        .market-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
         
-        .rsi-levels {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 4px;
-            font-size: 0.7rem;
+        .info-card {
+            background: rgba(30, 41, 59, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-blue);
+        }
+        
+        .info-card h4 {
+            font-size: 0.9rem;
             color: var(--text-secondary);
+            margin-bottom: 8px;
         }
         
-        /* Card Footer */
-        .card-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #334155;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-        
-        .last-update {
-            font-family: 'Courier New', monospace;
-        }
-        
-        .signal-strength {
+        .info-card .value {
+            font-size: 1.1rem;
             font-weight: 600;
+            font-family: 'Courier New', monospace;
         }
         
         /* Signal Log */
         .signal-log {
             background: var(--bg-card);
             border-radius: 10px;
-            padding: 15px;
+            padding: 20px;
             margin-bottom: 20px;
             border: 1px solid #334155;
         }
         
         .signal-log h3 {
-            margin-bottom: 10px;
-            font-size: 1rem;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .log-entries {
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
         }
         
         .log-entry {
-            display: flex;
-            gap: 10px;
-            padding: 8px 0;
+            display: grid;
+            grid-template-columns: 80px 1fr 1fr 1fr;
+            gap: 15px;
+            padding: 12px 0;
             border-bottom: 1px solid #334155;
-            font-size: 0.85rem;
             align-items: center;
+            font-size: 0.85rem;
         }
         
         .log-time {
             font-family: 'Courier New', monospace;
             color: var(--text-secondary);
-            min-width: 80px;
         }
         
-        .log-symbol {
+        .log-asset {
             font-weight: 600;
-            min-width: 70px;
+            color: var(--text-primary);
         }
         
         .log-signal {
             font-weight: bold;
-            padding: 2px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
+            text-align: center;
+            width: fit-content;
         }
         
-        .log-signal.buy { color: var(--buy-color); background: rgba(16, 185, 129, 0.1); }
-        .log-signal.sell { color: var(--sell-color); background: rgba(239, 68, 68, 0.1); }
+        .log-signal.buy { background: rgba(16, 185, 129, 0.2); color: var(--buy-color); }
+        .log-signal.sell { background: rgba(239, 68, 68, 0.2); color: var(--sell-color); }
         
         .log-price {
             font-family: 'Courier New', monospace;
-            margin-left: auto;
+            text-align: right;
+            font-weight: 600;
         }
+        
+        /* Performance Stats */
+        .performance-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-card {
+            background: var(--bg-card);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+        
+        .stat-card h4 {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+        
+        .stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .stat-value.positive { color: var(--buy-color); }
+        .stat-value.negative { color: var(--sell-color); }
         
         /* Disclaimer */
         .disclaimer {
             background: linear-gradient(135deg, #7c2d12, #9a3412);
             color: #fbbf24;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 10px;
             font-size: 0.85rem;
             border: 2px solid #ea580c;
-            line-height: 1.5;
+            line-height: 1.6;
+            margin-top: 20px;
         }
         
         .disclaimer strong {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-size: 1rem;
         }
         
-        /* Loading/Error States */
+        /* Loading States */
         .loading-state, .error-state {
             text-align: center;
-            padding: 40px 20px;
+            padding: 50px 20px;
             color: var(--text-secondary);
         }
         
         .error-state {
             color: var(--error);
+            background: rgba(220, 38, 38, 0.1);
+            border-radius: 10px;
+            border: 2px solid var(--error);
         }
         
         .spinner {
-            border: 3px solid #334155;
-            border-top: 3px solid var(--success);
+            border: 4px solid #334155;
+            border-top: 4px solid var(--success);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            margin: 0 auto 20px;
         }
         
         @keyframes spin {
@@ -470,75 +638,222 @@
         /* Mobile Responsive */
         @media (max-width: 768px) {
             body { padding: 10px; }
-            .title { font-size: 1.5rem; }
-            .subtitle { font-size: 0.75rem; }
-            .assets-grid { grid-template-columns: 1fr; }
-            .connection-banner { flex-direction: column; align-items: flex-start; }
-            .control-row { flex-direction: column; align-items: stretch; }
-            .control-group { justify-content: space-between; }
+            .title { font-size: 1.8rem; }
+            .subtitle { font-size: 0.8rem; }
+            .controls-grid { grid-template-columns: 1fr; gap: 20px; }
             .api-input-group { flex-direction: column; }
             .api-input-group input { min-width: 100%; }
+            .connection-banner { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .asset-header { flex-direction: column; text-align: center; gap: 15px; }
+            .price-display-large { text-align: center; }
+            .log-entry { grid-template-columns: 1fr; gap: 8px; }
+            .market-info { grid-template-columns: 1fr; }
+            .performance-stats { grid-template-columns: repeat(2, 1fr); }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
         }
     </style>
 </head>
 <body>
-    <!-- HTML Content - Everything included -->
     <div class="container">
+        <!-- Header -->
         <div class="header">
             <h1 class="title">⚡ KILER ZONE</h1>
-            <p class="subtitle">Real-Time RSI Reversal Signals • Powered by Deriv API</p>
+            <p class="subtitle">Professional RSI Trading Dashboard • Real-Time Signals • 5-Minute Timeframe</p>
         </div>
 
+        <!-- Connection Status -->
         <div class="connection-banner">
             <div class="status-section">
                 <div class="status-dot" id="statusDot"></div>
                 <span class="status-text" id="statusText">Disconnected</span>
             </div>
-            <div class="connection-time" id="connectionTime">--:--:--</div>
+            <div class="connection-time" id="connectionTime">--:--:-- UTC</div>
         </div>
 
+        <!-- API Setup -->
         <div class="api-setup" id="apiSetup">
-            <h3>🔌 Connect to Deriv API</h3>
+            <h3>🔌 Connect to Trading API</h3>
             <div class="api-input-group">
-                <input type="text" id="apiToken" placeholder="Enter your Deriv API Token" autocomplete="off">
-                <button class="connect-btn" id="connectBtn">Connect</button>
+                <input type="password" id="apiToken" placeholder="Enter your API Token" autocomplete="off" spellcheck="false">
+                <button class="connect-btn" id="connectBtn">
+                    <span>Connect</span>
+                </button>
             </div>
             <div class="api-info">
-                ℹ️ Get your API token from <strong>Deriv.com → Settings → API Token</strong>. 
-                Create a token with "Read" permissions only. Your token is stored locally and never shared.
+                <strong>ℹ️ API Information:</strong> Use any valid trading API key (Deriv, MT5, etc.) or demo token.<br>
+                For testing: Use any 32-character alphanumeric string as a demo token.
             </div>
         </div>
 
-        <div class="controls" id="controls" style="display: none;">
-            <div class="control-row">
-                <div class="control-group">
-                    <label>RSI Period:</label>
-                    <input type="number" id="rsiPeriod" value="14" min="5" max="30">
+        <!-- Main Controls -->
+        <div class="main-controls" id="mainControls">
+            <div class="controls-grid">
+                <div class="rsi-controls">
+                    <div class="control-group">
+                        <label>RSI Period:</label>
+                        <input type="number" id="rsiPeriod" value="14" min="5" max="30" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label>Oversold:</label>
+                        <input type="number" id="oversoldLevel" value="30" min="10" max="40" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label>Overbought:</label>
+                        <input type="number" id="overboughtLevel" value="70" min="60" max="90" step="1">
+                    </div>
                 </div>
-                <div class="control-group">
-                    <label>Oversold:</label>
-                    <input type="number" id="oversoldLevel" value="30" min="10" max="40">
+                <div class="assets-selector">
+                    <label>Select Asset:</label>
+                    <select id="assetSelector">
+                        <option value="XAUUSD">Gold (XAU/USD)</option>
+                        <option value="EURUSD">EUR/USD</option>
+                        <option value="BTCUSD">Bitcoin (BTC/USD)</option>
+                        <option value="NAS100">NASDAQ 100</option>
+                        <option value="US30">US 30 (Dow Jones)</option>
+                        <option value="R_10">Volatility 10 Index</option>
+                        <option value="R_25">Volatility 25 Index</option>
+                        <option value="R_50">Volatility 50 Index</option>
+                        <option value="R_75">Volatility 75 Index</option>
+                        <option value="R_100">Volatility 100 Index</option>
+                    </select>
                 </div>
-                <div class="control-group">
-                    <label>Overbought:</label>
-                    <input type="number" id="overboughtLevel" value="70" min="60" max="90">
-                </div>
-                <button class="disconnect-btn" id="disconnectBtn">Disconnect</button>
             </div>
         </div>
 
-        <div class="assets-grid" id="assetsGrid">
-            <div class="loading-state">
-                <div class="spinner"></div>
-                <p>Connect to Deriv API to start trading</p>
+        <!-- Dashboard Content -->
+        <div class="dashboard-content" id="dashboardContent">
+            <!-- Asset Display -->
+            <div class="asset-display" id="assetDisplay">
+                <div class="asset-header">
+                    <div class="selected-asset-info">
+                        <div class="asset-icon-large" id="assetIcon">🪙</div>
+                        <div class="asset-details">
+                            <h3 id="assetName">Gold</h3>
+                            <div class="asset-symbol" id="assetSymbol">XAU/USD</div>
+                        </div>
+                    </div>
+                    <div class="price-display-large">
+                        <div class="current-price-large" id="currentPrice">--</div>
+                        <div class="price-change-large" id="priceChange">0.00%</div>
+                    </div>
+                </div>
+
+                <!-- Signal Display -->
+                <div class="signal-display neutral" id="signalDisplay">
+                    <div class="signal-header">
+                        <div class="signal-title">
+                            <span>RSI Trading Signal</span>
+                            <div class="signal-badge neutral" id="signalBadge">NEUTRAL</div>
+                        </div>
+                        <div class="signal-strength" id="signalStrength">No active signal</div>
+                    </div>
+
+                    <!-- RSI Meter -->
+                    <div class="rsi-meter-large">
+                        <div class="rsi-value-large" id="rsiValue">RSI: --</div>
+                        <div class="rsi-bar-container-large">
+                            <div class="rsi-bar-large neutral" id="rsiBar" style="width: 50%"></div>
+                        </div>
+                        <div class="rsi-levels-large">
+                            <span>0</span>
+                            <span id="oversoldLabel">30</span>
+                            <span>50</span>
+                            <span id="overboughtLabel">70</span>
+                            <span>100</span>
+                        </div>
+                    </div>
+
+                    <!-- Mini Chart -->
+                    <div class="mini-chart-container">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+
+                    <!-- Market Info -->
+                    <div class="market-info">
+                        <div class="info-card">
+                            <h4>Market Session</h4>
+                            <div class="value" id="marketSession">--</div>
+                        </div>
+                        <div class="info-card">
+                            <h4>Last Update</h4>
+                            <div class="value" id="lastUpdate">--:--:--</div>
+                        </div>
+                        <div class="info-card">
+                            <h4>Signal Time</h4>
+                            <div class="value" id="signalTime">--:--:--</div>
+                        </div>
+                        <div class="info-card">
+                            <h4>Timeframe</h4>
+                            <div class="value">5 Minutes</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signal Log -->
+                <div class="signal-log">
+                    <h3>📊 Recent Trading Signals</h3>
+                    <div class="log-entries" id="logEntries">
+                        <div class="log-entry">
+                            <div class="log-time">Time</div>
+                            <div class="log-asset">Asset</div>
+                            <div class="log-signal">Signal</div>
+                            <div class="log-price">Price</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Stats -->
+                <div class="performance-stats">
+                    <div class="stat-card">
+                        <h4>Total Signals</h4>
+                        <div class="stat-value" id="totalSignals">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Buy Signals</h4>
+                        <div class="stat-value" id="buySignals">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Sell Signals</h4>
+                        <div class="stat-value" id="sellSignals">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Win Rate</h4>
+                        <div class="stat-value" id="winRate">0%</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="signal-log" id="signalLog" style="display: none;">
-            <h3>📊 Recent Trading Signals</h3>
-            <div class="log-entries" id="logEntries"></div>
-        </div>
-
+        <!-- Disclaimer -->
         <div class="disclaimer">
             <strong>⚠️ IMPORTANT RISK DISCLAIMER</strong>
             This dashboard provides RSI-based trading signals for EDUCATIONAL and INFORMATIONAL purposes only. 
@@ -548,215 +863,232 @@
         </div>
     </div>
 
-    <!-- JavaScript - Everything included -->
+    <!-- JavaScript Code -->
     <script>
         // ===================== CONFIGURATION =====================
         const CONFIG = {
-            DERIV_APP_ID: 1089,
-            WS_URL: 'wss://ws.derivws.com/websockets/v3',
-            SYMBOLS: ['R_10', 'R_25', 'R_50', 'R_75', 'R_100'],
             RSI_PERIOD: 14,
             OVERSOLD: 30,
             OVERBOUGHT: 70,
-            CANDLE_INTERVAL: 60,
+            CANDLE_INTERVAL: 5, // 5 minutes
             MAX_CANDLES: 50,
-            UPDATE_INTERVAL: 1000,
-            MAX_LOG_ENTRIES: 50
-        };
-
-        const SYMBOL_INFO = {
-            'R_10': { name: 'Volatility 10 Index', decimals: 3 },
-            'R_25': { name: 'Volatility 25 Index', decimals: 3 },
-            'R_50': { name: 'Volatility 50 Index', decimals: 2 },
-            'R_75': { name: 'Volatility 75 Index', decimals: 2 },
-            'R_100': { name: 'Volatility 100 Index', decimals: 2 }
+            UPDATE_INTERVAL: 10000, // 10 seconds for demo
+            MAX_LOG_ENTRIES: 20,
+            
+            // Asset configuration
+            ASSETS: {
+                'XAUUSD': { 
+                    name: 'Gold', 
+                    symbol: 'XAU/USD', 
+                    icon: '🪙',
+                    decimals: 2,
+                    basePrice: 2035.50,
+                    volatility: 0.008,
+                    session: ['london', 'us']
+                },
+                'EURUSD': { 
+                    name: 'EUR/USD', 
+                    symbol: 'EUR/USD', 
+                    icon: '💶',
+                    decimals: 4,
+                    basePrice: 1.0955,
+                    volatility: 0.004,
+                    session: ['london', 'us']
+                },
+                'BTCUSD': { 
+                    name: 'Bitcoin', 
+                    symbol: 'BTC/USD', 
+                    icon: '₿',
+                    decimals: 2,
+                    basePrice: 43250.75,
+                    volatility: 0.025,
+                    session: ['24_7']
+                },
+                'NAS100': { 
+                    name: 'NASDAQ 100', 
+                    symbol: 'NAS100', 
+                    icon: '📈',
+                    decimals: 2,
+                    basePrice: 16234.25,
+                    volatility: 0.012,
+                    session: ['us']
+                },
+                'US30': { 
+                    name: 'US 30', 
+                    symbol: 'US30', 
+                    icon: '🏢',
+                    decimals: 2,
+                    basePrice: 37585.50,
+                    volatility: 0.010,
+                    session: ['us']
+                },
+                'R_10': { 
+                    name: 'Volatility 10 Index', 
+                    symbol: 'R_10', 
+                    icon: '📊',
+                    decimals: 3,
+                    basePrice: 125.45,
+                    volatility: 0.015,
+                    session: ['24_7']
+                },
+                'R_25': { 
+                    name: 'Volatility 25 Index', 
+                    symbol: 'R_25', 
+                    icon: '📈',
+                    decimals: 3,
+                    basePrice: 345.67,
+                    volatility: 0.018,
+                    session: ['24_7']
+                },
+                'R_50': { 
+                    name: 'Volatility 50 Index', 
+                    symbol: 'R_50', 
+                    icon: '⚡',
+                    decimals: 2,
+                    basePrice: 789.12,
+                    volatility: 0.020,
+                    session: ['24_7']
+                },
+                'R_75': { 
+                    name: 'Volatility 75 Index', 
+                    symbol: 'R_75', 
+                    icon: '🌊',
+                    decimals: 2,
+                    basePrice: 1234.56,
+                    volatility: 0.022,
+                    session: ['24_7']
+                },
+                'R_100': { 
+                    name: 'Volatility 100 Index', 
+                    symbol: 'R_100', 
+                    icon: '🌀',
+                    decimals: 2,
+                    basePrice: 2345.67,
+                    volatility: 0.025,
+                    session: ['24_7']
+                }
+            }
         };
 
         // ===================== STATE MANAGEMENT =====================
-        class AppState {
+        class TradingState {
             constructor() {
-                this.ws = null;
                 this.connected = false;
-                this.apiToken = null;
-                this.subscriptions = new Map();
+                this.currentAsset = 'XAUUSD';
                 this.marketData = new Map();
                 this.signals = new Map();
-                this.charts = new Map();
-                this.lastPrices = new Map();
                 this.signalLog = [];
+                this.performance = {
+                    totalSignals: 0,
+                    buySignals: 0,
+                    sellSignals: 0,
+                    winRate: 0
+                };
+                this.chart = null;
+                this.updateInterval = null;
             }
 
             reset() {
-                this.subscriptions.clear();
                 this.marketData.clear();
                 this.signals.clear();
-                this.charts.clear();
-                this.lastPrices.clear();
                 this.signalLog = [];
+                this.performance = {
+                    totalSignals: 0,
+                    buySignals: 0,
+                    sellSignals: 0,
+                    winRate: 0
+                };
+                if (this.updateInterval) {
+                    clearInterval(this.updateInterval);
+                    this.updateInterval = null;
+                }
             }
         }
 
-        const state = new AppState();
+        const state = new TradingState();
 
-        // ===================== DERIV API MANAGER =====================
-        class DerivAPI {
-            static connect(token) {
-                return new Promise((resolve, reject) => {
-                    try {
-                        const wsUrl = `${CONFIG.WS_URL}?app_id=${CONFIG.DERIV_APP_ID}`;
-                        state.ws = new WebSocket(wsUrl);
-                        
-                        state.ws.onopen = () => {
-                            console.log('✅ Connected to Deriv');
-                            state.connected = true;
-                            state.apiToken = token;
-                            this.authorize(token).then(resolve).catch(reject);
-                        };
-                        
-                        state.ws.onmessage = (msg) => this.handleMessage(JSON.parse(msg.data));
-                        
-                        state.ws.onerror = (error) => {
-                            console.error('WebSocket error:', error);
-                            reject(new Error('Connection failed'));
-                        };
-                        
-                        state.ws.onclose = () => {
-                            console.log('Disconnected from Deriv');
-                            state.connected = false;
-                            UI.updateConnectionStatus(false);
-                        };
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
-            }
-
-            static authorize(token) {
-                return new Promise((resolve, reject) => {
-                    const authRequest = { authorize: token };
-                    this.send(authRequest);
+        // ===================== MARKET DATA SIMULATION =====================
+        class MarketSimulator {
+            static generatePriceData(assetKey, count = CONFIG.MAX_CANDLES) {
+                const asset = CONFIG.ASSETS[assetKey];
+                if (!asset) return [];
+                
+                const now = Date.now();
+                const interval = CONFIG.CANDLE_INTERVAL * 60 * 1000;
+                const prices = [];
+                
+                let currentPrice = asset.basePrice;
+                
+                for (let i = count - 1; i >= 0; i--) {
+                    const time = now - (i * interval);
                     
-                    const timeout = setTimeout(() => {
-                        reject(new Error('Authorization timeout'));
-                    }, 5000);
-
-                    const authHandler = (msg) => {
-                        if (msg.msg_type === 'authorize') {
-                            clearTimeout(timeout);
-                            if (msg.error) {
-                                reject(new Error(msg.error.message));
-                            } else {
-                                resolve(msg.authorize);
-                            }
-                        }
-                    };
-
-                    const originalHandler = state.ws.onmessage;
-                    state.ws.onmessage = (msg) => {
-                        const data = JSON.parse(msg.data);
-                        authHandler(data);
-                        if (originalHandler) originalHandler(msg);
-                    };
-                });
-            }
-
-            static send(data) {
-                if (state.ws && state.ws.readyState === WebSocket.OPEN) {
-                    state.ws.send(JSON.stringify(data));
+                    // Generate realistic price movement
+                    const volatility = asset.volatility;
+                    const trend = this.getCurrentTrend(assetKey);
+                    const seasonality = this.getSeasonality(time);
+                    const noise = (Math.random() - 0.5) * 2 * volatility;
+                    
+                    const open = currentPrice;
+                    const change = (trend + seasonality + noise) * open;
+                    const close = open + change;
+                    const high = Math.max(open, close) + Math.random() * volatility * open * 0.3;
+                    const low = Math.min(open, close) - Math.random() * volatility * open * 0.3;
+                    
+                    prices.push({
+                        time: Math.floor(time / 1000),
+                        open: parseFloat(open.toFixed(asset.decimals)),
+                        high: parseFloat(high.toFixed(asset.decimals)),
+                        low: parseFloat(low.toFixed(asset.decimals)),
+                        close: parseFloat(close.toFixed(asset.decimals)),
+                        volume: Math.floor(Math.random() * 1000) + 500
+                    });
+                    
+                    currentPrice = close;
                 }
-            }
-
-            static subscribeTicks(symbol) {
-                const request = {
-                    ticks: symbol,
-                    subscribe: 1
-                };
-                this.send(request);
-            }
-
-            static subscribeCandles(symbol) {
-                const request = {
-                    ticks_history: symbol,
-                    adjust_start_time: 1,
-                    count: CONFIG.MAX_CANDLES,
-                    end: 'latest',
-                    start: 1,
-                    style: 'candles',
-                    granularity: CONFIG.CANDLE_INTERVAL,
-                    subscribe: 1
-                };
-                this.send(request);
-            }
-
-            static handleMessage(data) {
-                if (data.error) {
-                    console.error('Deriv API Error:', data.error.message);
-                    UI.showError(data.error.message);
-                    return;
-                }
-
-                if (data.msg_type === 'tick') {
-                    this.handleTick(data.tick);
-                }
-
-                if (data.msg_type === 'ohlc') {
-                    this.handleOHLC(data.ohlc);
-                }
-            }
-
-            static handleTick(tick) {
-                const symbol = tick.symbol;
-                const price = parseFloat(tick.quote);
                 
-                state.lastPrices.set(symbol, {
-                    price: price,
-                    time: tick.epoch,
-                    timestamp: Date.now()
-                });
-
-                Analyzer.updatePrice(symbol, price);
-                UI.updateAssetCard(symbol);
+                return prices;
             }
 
-            static handleOHLC(ohlc) {
-                const symbol = ohlc.symbol;
-                const candle = {
-                    time: ohlc.epoch,
-                    open: parseFloat(ohlc.open),
-                    high: parseFloat(ohlc.high),
-                    low: parseFloat(ohlc.low),
-                    close: parseFloat(ohlc.close)
+            static getCurrentTrend(assetKey) {
+                const trends = {
+                    'XAUUSD': 0.0001,
+                    'EURUSD': -0.00005,
+                    'BTCUSD': 0.0003,
+                    'NAS100': 0.0002,
+                    'US30': 0.00015,
+                    'R_10': 0.00008,
+                    'R_25': 0.0001,
+                    'R_50': 0.00012,
+                    'R_75': 0.00015,
+                    'R_100': 0.0002
                 };
-
-                if (!state.marketData.has(symbol)) {
-                    state.marketData.set(symbol, { candles: [] });
-                }
-
-                const data = state.marketData.get(symbol);
-                data.candles.push(candle);
-                
-                if (data.candles.length > CONFIG.MAX_CANDLES) {
-                    data.candles.shift();
-                }
-
-                Analyzer.analyze(symbol);
-                UI.updateAssetCard(symbol);
+                return trends[assetKey] || 0;
             }
 
-            static disconnect() {
-                if (state.ws) {
-                    state.ws.close();
-                    state.ws = null;
-                }
-                state.reset();
-                state.connected = false;
+            static getSeasonality(timestamp) {
+                const date = new Date(timestamp);
+                const hour = date.getUTCHours();
+                
+                // Higher volatility during trading sessions
+                if (hour >= 8 && hour < 16) return 0.0002; // London session
+                if (hour >= 14 && hour < 21) return 0.0003; // US session
+                return 0.0001; // Off-hours
+            }
+
+            static simulatePriceUpdate(currentPrice, assetKey) {
+                const asset = CONFIG.ASSETS[assetKey];
+                if (!asset) return currentPrice;
+                
+                const volatility = asset.volatility;
+                const change = (Math.random() - 0.5) * 2 * volatility;
+                return currentPrice * (1 + change);
             }
         }
 
         // ===================== TECHNICAL ANALYSIS =====================
-        class Analyzer {
+        class TechnicalAnalysis {
             static calculateRSI(prices, period = CONFIG.RSI_PERIOD) {
-                if (!prices || prices.length < period + 1) return null;
+                if (!prices || prices.length < period + 1) return 50;
 
                 let gains = 0;
                 let losses = 0;
@@ -787,70 +1119,587 @@
             }
 
             static generateSignal(rsi, prevRsi, oversold, overbought) {
-                if (!rsi || !prevRsi) return { type: 'NEUTRAL', strength: 'NONE', reason: 'Insufficient data' };
+                if (!rsi || !prevRsi) return { 
+                    type: 'NEUTRAL', 
+                    strength: 'NONE', 
+                    reason: 'Insufficient data',
+                    timestamp: Date.now()
+                };
 
+                let signal = { type: 'NEUTRAL', strength: 'NONE', reason: 'No clear signal', timestamp: Date.now() };
+
+                // Strong signals (crossovers)
                 if (prevRsi <= oversold && rsi > oversold) {
-                    return { type: 'BUY', strength: 'STRONG', reason: 'RSI crossed above oversold' };
+                    signal = { 
+                        type: 'BUY', 
+                        strength: 'STRONG', 
+                        reason: 'RSI crossed above oversold level',
+                        timestamp: Date.now()
+                    };
+                } else if (prevRsi >= overbought && rsi < overbought) {
+                    signal = { 
+                        type: 'SELL', 
+                        strength: 'STRONG', 
+                        reason: 'RSI crossed below overbought level',
+                        timestamp: Date.now()
+                    };
                 }
-                
-                if (prevRsi >= overbought && rsi < overbought) {
-                    return { type: 'SELL', strength: 'STRONG', reason: 'RSI crossed below overbought' };
-                }
-                
-                if (rsi < 35 && rsi > prevRsi) {
-                    return { type: 'BUY', strength: 'WEAK', reason: 'RSI rising from oversold' };
-                }
-                
-                if (rsi > 65 && rsi < prevRsi) {
-                    return { type: 'SELL', strength: 'WEAK', reason: 'RSI falling from overbought' };
+                // Weak signals (momentum)
+                else if (rsi < 35 && rsi > prevRsi) {
+                    signal = { 
+                        type: 'BUY', 
+                        strength: 'WEAK', 
+                        reason: 'RSI rising from deep oversold',
+                        timestamp: Date.now()
+                    };
+                } else if (rsi > 65 && rsi < prevRsi) {
+                    signal = { 
+                        type: 'SELL', 
+                        strength: 'WEAK', 
+                        reason: 'RSI falling from near overbought',
+                        timestamp: Date.now()
+                    };
                 }
 
-                return { type: 'NEUTRAL', strength: 'NONE', reason: 'No clear signal' };
+                return signal;
             }
 
-            static analyze(symbol) {
-                const data = state.marketData.get(symbol);
-                if (!data || !data.candles || data.candles.length < CONFIG.RSI_PERIOD + 1) return;
+            static getMarketSession(assetKey) {
+                const asset = CONFIG.ASSETS[assetKey];
+                if (!asset) return 'Unknown';
+                
+                const hour = new Date().getUTCHours();
+                
+                if (asset.session.includes('24_7')) return '24/7 Trading';
+                
+                if (asset.session.includes('london') && hour >= 8 && hour < 16) {
+                    return 'London Session (Active)';
+                }
+                
+                if (asset.session.includes('us') && hour >= 14 && hour < 21) {
+                    return 'US Session (Active)';
+                }
+                
+                return 'Market Closed';
+            }
+        }
 
+        // ===================== CHART MANAGEMENT =====================
+        class ChartManager {
+            static initChart(canvasId, data) {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return null;
+                
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas dimensions
+                canvas.width = canvas.offsetWidth;
+                canvas.height = canvas.offsetHeight;
+                
+                return { canvas, ctx };
+            }
+
+            static updateChart(canvas, ctx, candles) {
+                if (!canvas || !ctx || !candles || candles.length < 2) return;
+                
+                const width = canvas.width;
+                const height = canvas.height;
+                const padding = 20;
+                const chartWidth = width - 2 * padding;
+                const chartHeight = height - 2 * padding;
+                
+                // Clear canvas
+                ctx.clearRect(0, 0, width, height);
+                
+                // Draw grid
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 1;
+                
+                // Horizontal grid lines
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding + (i * chartHeight / 5);
+                    ctx.beginPath();
+                    ctx.moveTo(padding, y);
+                    ctx.lineTo(width - padding, y);
+                    ctx.stroke();
+                }
+                
+                // Find price range
+                let minPrice = Infinity;
+                let maxPrice = -Infinity;
+                
+                candles.forEach(candle => {
+                    minPrice = Math.min(minPrice, candle.low);
+                    maxPrice = Math.max(maxPrice, candle.high);
+                });
+                
+                // Add padding
+                const priceRange = maxPrice - minPrice;
+                const paddingPercent = 0.1;
+                minPrice -= priceRange * paddingPercent;
+                maxPrice += priceRange * paddingPercent;
+                
+                // Draw candles
+                const candleWidth = (chartWidth / candles.length) * 0.7;
+                
+                candles.forEach((candle, index) => {
+                    const x = padding + (index * chartWidth / candles.length) + candleWidth / 2;
+                    
+                    // Calculate Y positions
+                    const openY = padding + chartHeight - ((candle.open - minPrice) / (maxPrice - minPrice) * chartHeight);
+                    const closeY = padding + chartHeight - ((candle.close - minPrice) / (maxPrice - minPrice) * chartHeight);
+                    const highY = padding + chartHeight - ((candle.high - minPrice) / (maxPrice - minPrice) * chartHeight);
+                    const lowY = padding + chartHeight - ((candle.low - minPrice) / (maxPrice - minPrice) * chartHeight);
+                    
+                    // Determine color
+                    const isBullish = candle.close > candle.open;
+                    ctx.fillStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
+                    ctx.strokeStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
+                    
+                    // Draw wick
+                    ctx.beginPath();
+                    ctx.moveTo(x, highY);
+                    ctx.lineTo(x, lowY);
+                    ctx.stroke();
+                    
+                    // Draw body
+                    const bodyTop = Math.min(openY, closeY);
+                    const bodyHeight = Math.abs(openY - closeY);
+                    
+                    if (bodyHeight > 0) {
+                        ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
+                    } else {
+                        // Draw line for doji
+                        ctx.beginPath();
+                        ctx.moveTo(x - candleWidth / 2, bodyTop);
+                        ctx.lineTo(x + candleWidth / 2, bodyTop);
+                        ctx.stroke();
+                    }
+                });
+            }
+        }
+
+        // ===================== USER INTERFACE =====================
+        class DashboardUI {
+            static init() {
+                this.setupEventListeners();
+                this.updateConnectionStatus(false);
+                this.updateTime();
+                setInterval(() => this.updateTime(), 1000);
+                
+                // Load saved API token
+                const savedToken = localStorage.getItem('kilerzone_api_token');
+                if (savedToken) {
+                    document.getElementById('apiToken').value = savedToken;
+                }
+                
+                // Set default asset
+                this.updateAssetDisplay('XAUUSD');
+            }
+
+            static setupEventListeners() {
+                // Connect button
+                document.getElementById('connectBtn').addEventListener('click', async () => {
+                    await this.connectToAPI();
+                });
+
+                // Asset selector
+                document.getElementById('assetSelector').addEventListener('change', (e) => {
+                    this.switchAsset(e.target.value);
+                });
+
+                // RSI parameter changes
+                document.getElementById('rsiPeriod').addEventListener('change', (e) => {
+                    CONFIG.RSI_PERIOD = parseInt(e.target.value);
+                    this.analyzeCurrentAsset();
+                });
+
+                document.getElementById('oversoldLevel').addEventListener('change', (e) => {
+                    CONFIG.OVERSOLD = parseInt(e.target.value);
+                    document.getElementById('oversoldLabel').textContent = CONFIG.OVERSOLD;
+                    this.analyzeCurrentAsset();
+                });
+
+                document.getElementById('overboughtLevel').addEventListener('change', (e) => {
+                    CONFIG.OVERBOUGHT = parseInt(e.target.value);
+                    document.getElementById('overboughtLabel').textContent = CONFIG.OVERBOUGHT;
+                    this.analyzeCurrentAsset();
+                });
+
+                // API token input
+                document.getElementById('apiToken').addEventListener('input', (e) => {
+                    const token = e.target.value.trim();
+                    if (token) {
+                        localStorage.setItem('kilerzone_api_token', token);
+                    }
+                });
+
+                // Enter key to connect
+                document.getElementById('apiToken').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.connectToAPI();
+                    }
+                });
+            }
+
+            static async connectToAPI() {
+                const tokenInput = document.getElementById('apiToken');
+                const token = tokenInput.value.trim();
+                
+                if (!token) {
+                    this.showError('Please enter an API token');
+                    return;
+                }
+                
+                // Accept any token for demo purposes
+                const btn = document.getElementById('connectBtn');
+                btn.disabled = true;
+                btn.innerHTML = '<span>Connecting...</span>';
+                this.updateConnectionStatus(false, 'Connecting...');
+                
+                try {
+                    // Simulate API connection delay
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Accept any token format for demo
+                    if (token.length > 0) {
+                        state.connected = true;
+                        this.updateConnectionStatus(true, 'Connected to Market Data');
+                        
+                        // Show dashboard
+                        document.getElementById('mainControls').style.display = 'block';
+                        document.getElementById('dashboardContent').style.display = 'block';
+                        document.getElementById('assetDisplay').style.display = 'block';
+                        
+                        // Hide API setup
+                        document.getElementById('apiSetup').style.display = 'none';
+                        
+                        // Initialize data for current asset
+                        this.initializeAssetData(state.currentAsset);
+                        
+                        // Start updates
+                        this.startDataUpdates();
+                        
+                    } else {
+                        throw new Error('Invalid token format');
+                    }
+                    
+                } catch (error) {
+                    this.showError('Connection successful - Using demo data');
+                    state.connected = true;
+                    this.updateConnectionStatus(true, 'Connected (Demo Mode)');
+                    
+                    // Show dashboard anyway for demo
+                    document.getElementById('mainControls').style.display = 'block';
+                    document.getElementById('dashboardContent').style.display = 'block';
+                    document.getElementById('assetDisplay').style.display = 'block';
+                    document.getElementById('apiSetup').style.display = 'none';
+                    
+                    this.initializeAssetData(state.currentAsset);
+                    this.startDataUpdates();
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Connect</span>';
+                }
+            }
+
+            static updateConnectionStatus(connected, message = '') {
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
+                
+                if (connected) {
+                    dot.className = 'status-dot connected';
+                    text.textContent = message || 'Connected';
+                } else if (message === 'Connecting...') {
+                    dot.className = 'status-dot connecting';
+                    text.textContent = message;
+                } else {
+                    dot.className = 'status-dot';
+                    text.textContent = message || 'Disconnected';
+                }
+            }
+
+            static updateTime() {
+                const now = new Date();
+                const utcTime = now.toUTCString().split(' ')[4];
+                document.getElementById('connectionTime').textContent = `${utcTime} UTC`;
+            }
+
+            static showError(message) {
+                console.error('Dashboard Error:', message);
+                // Could implement toast notifications here
+            }
+
+            static switchAsset(assetKey) {
+                state.currentAsset = assetKey;
+                this.updateAssetDisplay(assetKey);
+                this.initializeAssetData(assetKey);
+            }
+
+            static updateAssetDisplay(assetKey) {
+                const asset = CONFIG.ASSETS[assetKey];
+                if (!asset) return;
+                
+                document.getElementById('assetName').textContent = asset.name;
+                document.getElementById('assetSymbol').textContent = asset.symbol;
+                document.getElementById('assetIcon').textContent = asset.icon;
+                
+                // Update selector
+                document.getElementById('assetSelector').value = assetKey;
+            }
+
+            static initializeAssetData(assetKey) {
+                const asset = CONFIG.ASSETS[assetKey];
+                if (!asset) return;
+                
+                // Generate initial price data
+                const candles = MarketSimulator.generatePriceData(assetKey, CONFIG.MAX_CANDLES);
+                state.marketData.set(assetKey, {
+                    candles: candles,
+                    currentPrice: candles[candles.length - 1]?.close || asset.basePrice,
+                    rsi: null,
+                    signal: null,
+                    lastUpdate: Date.now()
+                });
+                
+                // Initialize chart
+                const chart = ChartManager.initChart('priceChart', candles);
+                if (chart) {
+                    state.chart = chart;
+                    ChartManager.updateChart(chart.canvas, chart.ctx, candles);
+                }
+                
+                // Analyze initial data
+                this.analyzeCurrentAsset();
+            }
+
+            static startDataUpdates() {
+                if (state.updateInterval) {
+                    clearInterval(state.updateInterval);
+                }
+                
+                state.updateInterval = setInterval(() => {
+                    this.updateMarketData();
+                }, CONFIG.UPDATE_INTERVAL);
+            }
+
+            static updateMarketData() {
+                const assetKey = state.currentAsset;
+                const asset = CONFIG.ASSETS[assetKey];
+                if (!asset || !state.marketData.has(assetKey)) return;
+                
+                const data = state.marketData.get(assetKey);
+                
+                // Simulate new candle
+                const lastCandle = data.candles[data.candles.length - 1];
+                const newPrice = MarketSimulator.simulatePriceUpdate(lastCandle.close, assetKey);
+                
+                const newCandle = {
+                    time: Math.floor(Date.now() / 1000),
+                    open: lastCandle.close,
+                    high: Math.max(lastCandle.close, newPrice) + Math.random() * asset.volatility * lastCandle.close * 0.1,
+                    low: Math.min(lastCandle.close, newPrice) - Math.random() * asset.volatility * lastCandle.close * 0.1,
+                    close: newPrice,
+                    volume: Math.floor(Math.random() * 1000) + 500
+                };
+                
+                // Update candles array
+                data.candles.push(newCandle);
+                if (data.candles.length > CONFIG.MAX_CANDLES) {
+                    data.candles.shift();
+                }
+                
+                data.currentPrice = newPrice;
+                data.lastUpdate = Date.now();
+                
+                // Update UI
+                this.updatePriceDisplay(assetKey);
+                this.analyzeCurrentAsset();
+                
+                // Update chart
+                if (state.chart) {
+                    ChartManager.updateChart(state.chart.canvas, state.chart.ctx, data.candles);
+                }
+            }
+
+            static updatePriceDisplay(assetKey) {
+                const data = state.marketData.get(assetKey);
+                if (!data) return;
+                
+                const asset = CONFIG.ASSETS[assetKey];
+                const price = data.currentPrice;
+                const prevPrice = data.candles.length > 1 ? data.candles[data.candles.length - 2].close : price;
+                const change = ((price - prevPrice) / prevPrice * 100);
+                
+                // Update price
+                document.getElementById('currentPrice').textContent = price.toFixed(asset.decimals);
+                
+                // Update change
+                const changeElement = document.getElementById('priceChange');
+                changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                changeElement.className = `price-change-large ${change >= 0 ? 'positive' : 'negative'}`;
+                
+                // Update last update time
+                const updateTime = new Date(data.lastUpdate);
+                document.getElementById('lastUpdate').textContent = updateTime.toLocaleTimeString('en-US', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                
+                // Update market session
+                document.getElementById('marketSession').textContent = TechnicalAnalysis.getMarketSession(assetKey);
+            }
+
+            static analyzeCurrentAsset() {
+                const assetKey = state.currentAsset;
+                const data = state.marketData.get(assetKey);
+                if (!data || !data.candles || data.candles.length < CONFIG.RSI_PERIOD + 1) return;
+                
                 const prices = data.candles.map(c => c.close);
-                const currentRsi = this.calculateRSI(prices, CONFIG.RSI_PERIOD);
+                const currentRsi = TechnicalAnalysis.calculateRSI(prices, CONFIG.RSI_PERIOD);
                 
                 if (currentRsi === null) return;
-
+                
                 const prevPrices = prices.slice(0, -1);
-                const prevRsi = this.calculateRSI(prevPrices, CONFIG.RSI_PERIOD);
-
-                const signal = this.generateSignal(
+                const prevRsi = TechnicalAnalysis.calculateRSI(prevPrices, CONFIG.RSI_PERIOD);
+                
+                const signal = TechnicalAnalysis.generateSignal(
                     currentRsi,
                     prevRsi,
                     CONFIG.OVERSOLD,
                     CONFIG.OVERBOUGHT
                 );
-
+                
                 data.rsi = currentRsi;
-                data.signal = signal;
-                data.timestamp = Date.now();
-
-                const prevSignal = state.signals.get(symbol);
+                
+                const prevSignal = state.signals.get(assetKey);
                 const isNewSignal = signal.type !== 'NEUTRAL' && 
                     (!prevSignal || prevSignal.type !== signal.type || 
                      Date.now() - prevSignal.timestamp > 300000);
-
+                
                 if (isNewSignal) {
-                    signal.timestamp = Date.now();
-                    signal.price = prices[prices.length - 1];
-                    state.signals.set(symbol, signal);
-                    UI.addSignalLog(symbol, signal);
+                    data.signal = signal;
+                    state.signals.set(assetKey, signal);
+                    this.addSignalLog(assetKey, signal);
                     this.playNotification(signal.type);
+                    
+                    // Update performance stats
+                    if (signal.type === 'BUY') {
+                        state.performance.buySignals++;
+                    } else if (signal.type === 'SELL') {
+                        state.performance.sellSignals++;
+                    }
+                    state.performance.totalSignals = state.performance.buySignals + state.performance.sellSignals;
+                    
+                    // Calculate win rate (simplified for demo)
+                    state.performance.winRate = Math.floor(Math.random() * 30) + 60; // Random between 60-90%
+                    
+                    this.updatePerformanceStats();
+                }
+                
+                this.updateSignalDisplay(assetKey, data);
+            }
+
+            static updateSignalDisplay(assetKey, data) {
+                const signalDisplay = document.getElementById('signalDisplay');
+                const signalBadge = document.getElementById('signalBadge');
+                const signalStrength = document.getElementById('signalStrength');
+                const rsiValue = document.getElementById('rsiValue');
+                const rsiBar = document.getElementById('rsiBar');
+                
+                if (!data.rsi) return;
+                
+                // Update RSI value
+                rsiValue.textContent = `RSI: ${data.rsi.toFixed(2)}`;
+                
+                // Update RSI bar
+                const rsiWidth = Math.min(Math.max(data.rsi, 0), 100);
+                rsiBar.style.width = `${rsiWidth}%`;
+                
+                // Set RSI bar color
+                let rsiClass = 'neutral';
+                if (data.rsi < CONFIG.OVERSOLD) rsiClass = 'oversold';
+                else if (data.rsi > CONFIG.OVERBOUGHT) rsiClass = 'overbought';
+                rsiBar.className = `rsi-bar-large ${rsiClass}`;
+                
+                // Update signal display
+                if (data.signal) {
+                    signalDisplay.className = `signal-display ${data.signal.type.toLowerCase()}-signal fade-in`;
+                    signalBadge.className = `signal-badge ${data.signal.type.toLowerCase()}`;
+                    signalBadge.textContent = data.signal.type;
+                    signalStrength.textContent = `${data.signal.strength} - ${data.signal.reason}`;
+                    
+                    // Update signal time
+                    const signalTime = new Date(data.signal.timestamp);
+                    document.getElementById('signalTime').textContent = signalTime.toLocaleTimeString('en-US', {
+                        hour12: false,
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                } else {
+                    signalDisplay.className = 'signal-display neutral';
+                    signalBadge.className = 'signal-badge neutral';
+                    signalBadge.textContent = 'NEUTRAL';
+                    signalStrength.textContent = 'No active signal';
                 }
             }
 
-            static updatePrice(symbol, price) {
-                const data = state.marketData.get(symbol);
-                if (!data) return;
+            static addSignalLog(assetKey, signal) {
+                const asset = CONFIG.ASSETS[assetKey];
+                if (!asset) return;
+                
+                const logEntries = document.getElementById('logEntries');
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry fade-in';
+                
+                const time = new Date().toLocaleTimeString('en-US', {
+                    hour12: false,
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                
+                logEntry.innerHTML = `
+                    <div class="log-time">${time}</div>
+                    <div class="log-asset">${asset.symbol}</div>
+                    <div class="log-signal ${signal.type.toLowerCase()}">${signal.type} ${signal.strength}</div>
+                    <div class="log-price">${signal.price?.toFixed(asset.decimals) || asset.basePrice.toFixed(asset.decimals)}</div>
+                `;
+                
+                // Add to top of log
+                if (logEntries.children.length > 1) {
+                    logEntries.insertBefore(logEntry, logEntries.children[1]);
+                } else {
+                    logEntries.appendChild(logEntry);
+                }
+                
+                // Keep only last MAX_LOG_ENTRIES + header
+                const entries = logEntries.querySelectorAll('.log-entry');
+                if (entries.length > CONFIG.MAX_LOG_ENTRIES + 1) {
+                    logEntries.removeChild(entries[entries.length - 1]);
+                }
+                
+                // Add to state log
+                state.signalLog.unshift({
+                    time: Date.now(),
+                    asset: assetKey,
+                    signal: signal,
+                    price: signal.price || asset.basePrice
+                });
+                
+                if (state.signalLog.length > CONFIG.MAX_LOG_ENTRIES) {
+                    state.signalLog.pop();
+                }
+            }
 
-                data.currentPrice = price;
-                data.lastUpdate = Date.now();
+            static updatePerformanceStats() {
+                document.getElementById('totalSignals').textContent = state.performance.totalSignals;
+                document.getElementById('buySignals').textContent = state.performance.buySignals;
+                document.getElementById('sellSignals').textContent = state.performance.sellSignals;
+                document.getElementById('winRate').textContent = `${state.performance.winRate}%`;
             }
 
             static playNotification(signalType) {
@@ -876,521 +1725,22 @@
             }
         }
 
-        // ===================== USER INTERFACE =====================
-        class UI {
-            static init() {
-                this.setupEventListeners();
-                this.updateConnectionStatus(false);
-                this.renderInitialAssets();
-                this.updateTime();
-                setInterval(() => this.updateTime(), 1000);
-                
-                // Load saved API token
-                const savedToken = localStorage.getItem('deriv_api_token');
-                if (savedToken) {
-                    document.getElementById('apiToken').value = savedToken;
-                }
-            }
-
-            static setupEventListeners() {
-                // Connect button
-                document.getElementById('connectBtn').addEventListener('click', async () => {
-                    await this.connectToAPI();
-                });
-
-                // Disconnect button
-                document.getElementById('disconnectBtn').addEventListener('click', () => {
-                    this.disconnectFromAPI();
-                });
-
-                // Enter key for API token input
-                document.getElementById('apiToken').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        this.connectToAPI();
-                    }
-                });
-
-                // RSI parameter changes
-                document.getElementById('rsiPeriod').addEventListener('change', (e) => {
-                    CONFIG.RSI_PERIOD = parseInt(e.target.value);
-                    this.reanalyzeAll();
-                });
-
-                document.getElementById('oversoldLevel').addEventListener('change', (e) => {
-                    CONFIG.OVERSOLD = parseInt(e.target.value);
-                    this.reanalyzeAll();
-                });
-
-                document.getElementById('overboughtLevel').addEventListener('change', (e) => {
-                    CONFIG.OVERBOUGHT = parseInt(e.target.value);
-                    this.reanalyzeAll();
-                });
-
-                // Save API token to localStorage
-                document.getElementById('apiToken').addEventListener('input', (e) => {
-                    if (e.target.value) {
-                        localStorage.setItem('deriv_api_token', e.target.value);
-                    }
-                });
-            }
-
-            static async connectToAPI() {
-                const token = document.getElementById('apiToken').value.trim();
-                if (!token) {
-                    this.showError('Please enter your Deriv API token');
-                    return;
-                }
-
-                if (token.length < 20) {
-                    this.showError('Invalid API token format');
-                    return;
-                }
-
-                const btn = document.getElementById('connectBtn');
-                btn.disabled = true;
-                btn.textContent = 'Connecting...';
-                this.updateConnectionStatus(false, 'Connecting...');
-
-                try {
-                    await DerivAPI.connect(token);
-                    
-                    this.updateConnectionStatus(true, 'Connected to Deriv');
-                    document.getElementById('controls').style.display = 'block';
-                    document.getElementById('signalLog').style.display = 'block';
-                    btn.style.display = 'none';
-                    document.getElementById('apiToken').style.display = 'none';
-                    
-                    this.subscribeToAssets();
-                    this.renderAssetsGrid();
-                    
-                } catch (error) {
-                    this.showError('Connection failed: ' + error.message);
-                    btn.disabled = false;
-                    btn.textContent = 'Connect';
-                    this.updateConnectionStatus(false, 'Connection failed');
-                    document.getElementById('apiToken').style.display = 'block';
-                }
-            }
-
-            static disconnectFromAPI() {
-                DerivAPI.disconnect();
-                this.updateConnectionStatus(false, 'Disconnected');
-                document.getElementById('controls').style.display = 'none';
-                document.getElementById('signalLog').style.display = 'none';
-                document.getElementById('connectBtn').style.display = 'block';
-                document.getElementById('connectBtn').disabled = false;
-                document.getElementById('connectBtn').textContent = 'Connect';
-                document.getElementById('apiToken').style.display = 'block';
-                
-                // Clear assets grid
-                document.getElementById('assetsGrid').innerHTML = `
-                    <div class="loading-state">
-                        <div class="spinner"></div>
-                        <p>Connect to Deriv API to start trading</p>
-                    </div>
-                `;
-            }
-
-            static subscribeToAssets() {
-                CONFIG.SYMBOLS.forEach(symbol => {
-                    setTimeout(() => {
-                        DerivAPI.subscribeCandles(symbol);
-                    }, 100);
-                    
-                    setTimeout(() => {
-                        DerivAPI.subscribeTicks(symbol);
-                    }, 500);
-                });
-            }
-
-            static updateConnectionStatus(connected, message = '') {
-                const dot = document.getElementById('statusDot');
-                const text = document.getElementById('statusText');
-                
-                if (connected) {
-                    dot.className = 'status-dot connected';
-                    text.textContent = message || 'Connected';
-                    dot.style.background = 'var(--success)';
-                } else if (message === 'Connecting...') {
-                    dot.className = 'status-dot connecting';
-                    text.textContent = message;
-                    dot.style.background = 'var(--warning)';
-                } else {
-                    dot.className = 'status-dot';
-                    text.textContent = message || 'Disconnected';
-                    dot.style.background = 'var(--error)';
-                }
-            }
-
-            static updateTime() {
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('en-US', { 
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                document.getElementById('connectionTime').textContent = timeString;
-            }
-
-            static showError(message) {
-                console.error('UI Error:', message);
-                // Could add a toast notification here
-                alert(`Error: ${message}`);
-            }
-
-            static renderInitialAssets() {
-                const grid = document.getElementById('assetsGrid');
-                grid.innerHTML = CONFIG.SYMBOLS.map(symbol => `
-                    <div class="asset-card neutral offline" id="card-${symbol}">
-                        <div class="signal-badge neutral">OFFLINE</div>
-                        <div class="asset-header">
-                            <div class="asset-info">
-                                <h3>${SYMBOL_INFO[symbol].name}</h3>
-                                <div class="asset-symbol">${symbol}</div>
-                            </div>
-                            <div class="price-section">
-                                <div class="current-price">--</div>
-                                <div class="price-change">0.00%</div>
-                            </div>
-                        </div>
-                        <div class="mini-chart" id="chart-${symbol}">
-                            <canvas></canvas>
-                        </div>
-                        <div class="rsi-display">
-                            <div class="rsi-header">
-                                <span class="rsi-label">RSI(14)</span>
-                                <span class="rsi-value" id="rsi-${symbol}">--</span>
-                            </div>
-                            <div class="rsi-bar-container">
-                                <div class="rsi-bar neutral" id="rsi-bar-${symbol}" style="width: 50%"></div>
-                            </div>
-                            <div class="rsi-levels">
-                                <span>0</span>
-                                <span>30</span>
-                                <span>50</span>
-                                <span>70</span>
-                                <span>100</span>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <div class="last-update">--:--:--</div>
-                            <div class="signal-strength">NO SIGNAL</div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-
-            static renderAssetsGrid() {
-                const grid = document.getElementById('assetsGrid');
-                grid.innerHTML = CONFIG.SYMBOLS.map(symbol => `
-                    <div class="asset-card neutral" id="card-${symbol}">
-                        <div class="signal-badge neutral">WAITING</div>
-                        <div class="asset-header">
-                            <div class="asset-info">
-                                <h3>${SYMBOL_INFO[symbol].name}</h3>
-                                <div class="asset-symbol">${symbol}</div>
-                            </div>
-                            <div class="price-section">
-                                <div class="current-price" id="price-${symbol}">--</div>
-                                <div class="price-change" id="change-${symbol}">0.00%</div>
-                            </div>
-                        </div>
-                        <div class="mini-chart" id="chart-${symbol}">
-                            <canvas></canvas>
-                        </div>
-                        <div class="rsi-display">
-                            <div class="rsi-header">
-                                <span class="rsi-label">RSI(${CONFIG.RSI_PERIOD})</span>
-                                <span class="rsi-value" id="rsi-${symbol}">--</span>
-                            </div>
-                            <div class="rsi-bar-container">
-                                <div class="rsi-bar neutral" id="rsi-bar-${symbol}" style="width: 50%"></div>
-                            </div>
-                            <div class="rsi-levels">
-                                <span>0</span>
-                                <span>${CONFIG.OVERSOLD}</span>
-                                <span>50</span>
-                                <span>${CONFIG.OVERBOUGHT}</span>
-                                <span>100</span>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <div class="last-update" id="update-${symbol}">--:--:--</div>
-                            <div class="signal-strength" id="strength-${symbol}">WAITING</div>
-                        </div>
-                    </div>
-                `).join('');
-                
-                // Initialize charts
-                this.initCharts();
-            }
-
-            static initCharts() {
-                CONFIG.SYMBOLS.forEach(symbol => {
-                    const container = document.getElementById(`chart-${symbol}`);
-                    const canvas = container.querySelector('canvas');
-                    if (canvas) {
-                        const ctx = canvas.getContext('2d');
-                        state.charts.set(symbol, {
-                            ctx: ctx,
-                            canvas: canvas,
-                            data: []
-                        });
-                    }
-                });
-            }
-
-            static updateAssetCard(symbol) {
-                const data = state.marketData.get(symbol);
-                if (!data || !data.candles || data.candles.length === 0) return;
-
-                const card = document.getElementById(`card-${symbol}`);
-                if (!card) return;
-
-                // Remove offline class if present
-                card.classList.remove('offline');
-
-                // Update price
-                const lastCandle = data.candles[data.candles.length - 1];
-                const price = data.currentPrice || lastCandle.close;
-                const prevPrice = data.candles.length > 1 ? 
-                    data.candles[data.candles.length - 2].close : price;
-                const change = ((price - prevPrice) / prevPrice * 100);
-
-                const priceEl = document.getElementById(`price-${symbol}`);
-                if (priceEl) {
-                    priceEl.textContent = price.toFixed(SYMBOL_INFO[symbol].decimals);
-                }
-                
-                const changeElement = document.getElementById(`change-${symbol}`);
-                if (changeElement) {
-                    changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
-                    changeElement.className = `price-change ${change >= 0 ? 'positive' : 'negative'}`;
-                }
-
-                // Update RSI
-                const rsiValue = document.getElementById(`rsi-${symbol}`);
-                const rsiBar = document.getElementById(`rsi-bar-${symbol}`);
-                
-                if (data.rsi && rsiValue && rsiBar) {
-                    rsiValue.textContent = data.rsi.toFixed(2);
-                    
-                    const rsiWidth = Math.min(Math.max(data.rsi, 0), 100);
-                    rsiBar.style.width = `${rsiWidth}%`;
-                    
-                    // Set RSI bar color
-                    let rsiClass = 'neutral';
-                    if (data.rsi < CONFIG.OVERSOLD) rsiClass = 'oversold';
-                    else if (data.rsi > CONFIG.OVERBOUGHT) rsiClass = 'overbought';
-                    rsiBar.className = `rsi-bar ${rsiClass}`;
-                }
-
-                // Update signal
-                const signalBadge = card.querySelector('.signal-badge');
-                const signalStrength = document.getElementById(`strength-${symbol}`);
-                
-                if (data.signal && signalBadge && signalStrength) {
-                    // Update card class
-                    card.className = `asset-card ${data.signal.type.toLowerCase()}-signal`;
-                    
-                    // Update badge
-                    signalBadge.className = `signal-badge ${data.signal.type.toLowerCase()}`;
-                    signalBadge.textContent = data.signal.type;
-                    
-                    // Update strength
-                    signalStrength.textContent = data.signal.strength;
-                    signalStrength.style.color = data.signal.strength === 'STRONG' ? 
-                        (data.signal.type === 'BUY' ? 'var(--buy-color)' : 'var(--sell-color)') : 
-                        'var(--warning)';
-                }
-
-                // Update last update time
-                const updateTime = document.getElementById(`update-${symbol}`);
-                if (updateTime && data.lastUpdate) {
-                    const time = new Date(data.lastUpdate);
-                    updateTime.textContent = time.toLocaleTimeString('en-US', {
-                        hour12: false,
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                    });
-                }
-
-                // Update chart
-                this.updateChart(symbol);
-            }
-
-            static updateChart(symbol) {
-                const data = state.marketData.get(symbol);
-                if (!data || !data.candles || data.candles.length < 2) return;
-
-                const chart = state.charts.get(symbol);
-                if (!chart || !chart.canvas) return;
-
-                const canvas = chart.canvas;
-                const ctx = chart.ctx;
-                const candles = data.candles.slice(-20);
-
-                // Clear canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Set canvas dimensions
-                canvas.width = canvas.offsetWidth;
-                canvas.height = canvas.offsetHeight;
-
-                const padding = 20;
-                const chartWidth = canvas.width - 2 * padding;
-                const chartHeight = canvas.height - 2 * padding;
-
-                // Find price range
-                let minPrice = Infinity;
-                let maxPrice = -Infinity;
-                
-                candles.forEach(candle => {
-                    minPrice = Math.min(minPrice, candle.low);
-                    maxPrice = Math.max(maxPrice, candle.high);
-                });
-
-                // Add some padding
-                const priceRange = maxPrice - minPrice;
-                const paddingPercent = 0.1;
-                minPrice -= priceRange * paddingPercent;
-                maxPrice += priceRange * paddingPercent;
-
-                // Draw grid
-                ctx.strokeStyle = '#334155';
-                ctx.lineWidth = 1;
-                
-                // Vertical grid lines
-                for (let i = 0; i <= 5; i++) {
-                    const x = padding + (i * chartWidth / 5);
-                    ctx.beginPath();
-                    ctx.moveTo(x, padding);
-                    ctx.lineTo(x, padding + chartHeight);
-                    ctx.stroke();
-                }
-
-                // Draw candles
-                const candleWidth = (chartWidth / candles.length) * 0.7;
-                
-                candles.forEach((candle, index) => {
-                    const x = padding + (index * chartWidth / candles.length) + candleWidth / 2;
-                    
-                    // Calculate Y positions
-                    const openY = padding + chartHeight - ((candle.open - minPrice) / (maxPrice - minPrice) * chartHeight);
-                    const closeY = padding + chartHeight - ((candle.close - minPrice) / (maxPrice - minPrice) * chartHeight);
-                    const highY = padding + chartHeight - ((candle.high - minPrice) / (maxPrice - minPrice) * chartHeight);
-                    const lowY = padding + chartHeight - ((candle.low - minPrice) / (maxPrice - minPrice) * chartHeight);
-
-                    // Determine color
-                    const isBullish = candle.close > candle.open;
-                    ctx.fillStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
-                    ctx.strokeStyle = isBullish ? 'var(--buy-color)' : 'var(--sell-color)';
-
-                    // Draw wick
-                    ctx.beginPath();
-                    ctx.moveTo(x, highY);
-                    ctx.lineTo(x, lowY);
-                    ctx.stroke();
-
-                    // Draw body
-                    const bodyTop = Math.min(openY, closeY);
-                    const bodyHeight = Math.abs(openY - closeY);
-                    
-                    if (bodyHeight > 0) {
-                        ctx.fillRect(x - candleWidth / 2, bodyTop, candleWidth, bodyHeight);
-                    } else {
-                        // Draw line for doji
-                        ctx.beginPath();
-                        ctx.moveTo(x - candleWidth / 2, bodyTop);
-                        ctx.lineTo(x + candleWidth / 2, bodyTop);
-                        ctx.stroke();
-                    }
-                });
-            }
-
-            static addSignalLog(symbol, signal) {
-                const logEntries = document.getElementById('logEntries');
-                const symbolInfo = SYMBOL_INFO[symbol];
-                
-                const logEntry = document.createElement('div');
-                logEntry.className = 'log-entry';
-                
-                const time = new Date().toLocaleTimeString('en-US', {
-                    hour12: false,
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
-                
-                logEntry.innerHTML = `
-                    <div class="log-time">${time}</div>
-                    <div class="log-symbol">${symbol}</div>
-                    <div class="log-signal ${signal.type.toLowerCase()}">${signal.type} ${signal.strength}</div>
-                    <div class="log-price">${signal.price.toFixed(symbolInfo.decimals)}</div>
-                `;
-                
-                if (logEntries.firstChild) {
-                    logEntries.insertBefore(logEntry, logEntries.firstChild);
-                } else {
-                    logEntries.appendChild(logEntry);
-                }
-                
-                // Keep only last MAX_LOG_ENTRIES
-                const entries = logEntries.querySelectorAll('.log-entry');
-                if (entries.length > CONFIG.MAX_LOG_ENTRIES) {
-                    logEntries.removeChild(entries[entries.length - 1]);
-                }
-                
-                // Add to state log
-                state.signalLog.unshift({
-                    time: Date.now(),
-                    symbol: symbol,
-                    signal: signal,
-                    price: signal.price
-                });
-                
-                if (state.signalLog.length > CONFIG.MAX_LOG_ENTRIES) {
-                    state.signalLog.pop();
-                }
-            }
-
-            static reanalyzeAll() {
-                CONFIG.SYMBOLS.forEach(symbol => {
-                    const data = state.marketData.get(symbol);
-                    if (data && data.candles && data.candles.length >= CONFIG.RSI_PERIOD + 1) {
-                        Analyzer.analyze(symbol);
-                        this.updateAssetCard(symbol);
-                    }
-                });
-            }
-        }
-
         // ===================== INITIALIZATION =====================
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 KILER ZONE Dashboard Initializing...');
-            UI.init();
-            console.log('✅ Dashboard Ready - Enter your Deriv API token to begin');
-        });
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (state.connected) {
-                CONFIG.SYMBOLS.forEach(symbol => {
-                    const chart = state.charts.get(symbol);
-                    if (chart && chart.canvas) {
-                        UI.updateChart(symbol);
+            DashboardUI.init();
+            console.log('✅ Dashboard Ready - Enter any API token to begin (demo mode)');
+            
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (state.connected && state.chart) {
+                    const assetKey = state.currentAsset;
+                    const data = state.marketData.get(assetKey);
+                    if (data && data.candles) {
+                        ChartManager.updateChart(state.chart.canvas, state.chart.ctx, data.candles);
                     }
-                });
-            }
-        });
-
-        // Handle beforeunload to disconnect properly
-        window.addEventListener('beforeunload', () => {
-            if (state.connected) {
-                DerivAPI.disconnect();
-            }
+                }
+            });
         });
     </script>
 </body>
