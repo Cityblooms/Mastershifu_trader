@@ -1,3 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KILER ZONE - Trading Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --buy: #10b981; --sell: #ef4444; --neutral: #6b7280;
+            --bg-dark: #0f172a; --bg-card: #1e293b;
+            --text: #f1f5f9; --text-dim: #94a3b8;
+            --warning: #f59e0b; --error: #dc2626; --success: #22c55e;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-dark); color: var(--text);
+            padding: 12px; min-height: 100vh;
+        }
+        
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        .header {
+            text-align: center; margin-bottom: 15px;
+            padding-bottom: 12px; border-bottom: 2px solid var(--bg-card);
+        }
+        
+        .title {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            -webkit-background-clip: text; background-clip: text;
+            color: transparent; font-weight: 800;
+        }
+        
+        .subtitle { color: var(--text-dim); font-size: 0.8rem; }
+        
+        .status-bar {
+            background: var(--bg-card); padding: 10px;
+            border-radius: 8px; margin-bottom: 12px;
+            display: flex; justify-content: space-between;
+            align-items: center; gap: 10px; flex-wrap: wrap;
+        }
+        
+        .status-item {
+            display: flex; align-items: center; gap: 8px;
+        }
+        
+        .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: var(--error);
+        }
+        
+        .dot.on { background: var(--success); animation: pulse 2s infinite; }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.5; }
+        }
+        
+        .api-panel {
+            background: var(--bg-card); padding: 15px;
+            border-radius: 8px; margin-bottom: 12px;
+            border: 2px solid var(--warning);
+        }
+        
+        .api-panel h3 { margin-bottom: 8px; color: var(--warning); font-size: 1rem; }
+        
+        .api-input {
+            display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+        }
+        
+        .api-input input {
+            flex: 1; min-width: 200px; padding: 8px;
+            background: var(--bg-dark); border: 1px solid #475569;
+            border-radius: 5px; color: var(--text);
+        }
+        
+        .btn {
+            padding: 8px 20px; border: none;
+            border-radius: 5px; font-weight: bold;
+            cursor: pointer; transition: all 0.2s;
+        }
+        
+        .btn-connect { background: var(--success); color: white; }
+        .btn-connect:hover { background: #16a34a; }
+        .btn-disconnect { background: var(--error); color: white; }
+        .btn:disabled { background: var(--neutral); cursor: not-allowed; opacity: 0.5; }
+        
+        .info-box {
+            margin-top: 8px; padding: 8px;
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 3px solid #3b82f6;
+            font-size: 0.8rem; border-radius: 4px;
+        }
+        
+        .debug-box {
+            margin-top: 8px; padding: 8px;
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 3px solid var(--error);
+            font-size: 0.75rem; border-radius: 4px;
+            font-family: monospace; max-height: 150px;
+            overflow-y: auto; display: none;
+        }
+        
+        .demo-mode {
+            background: linear-gradient(135deg, #7c2d12, #9a3412);
+            padding: 10px; border-radius: 8px; margin-bottom: 12px;
+            text-align: center; color: #fbbf24;
+            border: 2px solid #ea580c;
+        }
+        
+        .controls {
+            background: var(--bg-card); padding: 12px;
+            border-radius: 8px; margin-bottom: 12px;
+        }
+        
+        .controls-row {
+            display: flex; gap: 12px; flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .control {
+            display: flex; align-items: center; gap: 6px;
+        }
+        
+        .control label { font-size: 0.8rem; color: var(--text-dim); white-space: nowrap; }
+        .control input, .control select {
+            padding: 5px 8px;
+            background: var(--bg-dark); border: 1px solid #475569;
+            border-radius: 4px; color: var(--text); font-size: 0.85rem;
+        }
+        
+        .control input[type="number"] {
+            width: 55px; text-align: center;
+        }
+        
+        .control select {
+            min-width: 150px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px; margin-bottom: 15px;
+        }
+        
+        .card {
+            background: var(--bg-card); border-radius: 8px;
+            padding: 12px; border: 2px solid #334155;
+            position: relative; transition: all 0.3s;
+        }
+        
+        .card.buy { border-color: var(--buy); box-shadow: 0 0 15px rgba(16, 185, 129, 0.3); }
+        .card.sell { border-color: var(--sell); box-shadow: 0 0 15px rgba(239, 68, 68, 0.3); }
+        
+        .badge {
+            position: absolute; top: 8px; right: 8px;
+            padding: 3px 10px; border-radius: 10px;
+            font-size: 0.7rem; font-weight: bold;
+        }
+        
+        .badge.buy { background: var(--buy); }
+        .badge.sell { background: var(--sell); }
+        .badge.neutral { background: var(--neutral); }
+        
+        .card-top {
+            display: flex; justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        .asset-name { font-size: 1rem; font-weight: 600; }
+        .asset-symbol { font-size: 0.75rem; color: var(--text-dim); }
+        
+        .price-box { text-align: right; }
+        .price { font-size: 1.3rem; font-weight: bold; font-family: monospace; }
+        .change { font-size: 0.8rem; font-family: monospace; }
+        .change.up { color: var(--buy); }
+        .change.down { color: var(--sell); }
+        
+        .chart-box {
+            height: 100px; margin: 10px 0;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 6px; overflow: hidden;
+        }
+        
+        .chart-box canvas { width: 100%; height: 100%; }
+        
+        .rsi-box { margin: 10px 0; }
+        
+        .rsi-top {
+            display: flex; justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        
+        .rsi-label { font-size: 0.8rem; color: var(--text-dim); }
+        .rsi-val { font-size: 1.1rem; font-weight: bold; font-family: monospace; }
+        
+        .rsi-bar-bg {
+            height: 14px; background: #334155;
+            border-radius: 7px; overflow: hidden;
+        }
+        
+        .rsi-bar {
+            height: 100%; transition: width 0.5s, background 0.3s;
+        }
+        
+        .rsi-bar.low { background: var(--buy); }
+        .rsi-bar.mid { background: var(--warning); }
+        .rsi-bar.high { background: var(--sell); }
+        
+        .rsi-marks {
+            display: flex; justify-content: space-between;
+            font-size: 0.65rem; color: var(--text-dim);
+            margin-top: 2px;
+        }
+        
+        .card-foot {
+            display: flex; justify-content: space-between;
+            margin-top: 10px; padding-top: 10px;
+            border-top: 1px solid #334155;
+            font-size: 0.75rem; color: var(--text-dim);
+        }
+        
+        .log-panel {
+            background: var(--bg-card); border-radius: 8px;
+            padding: 12px; margin-bottom: 15px;
+        }
+        
+        .log-panel h3 { margin-bottom: 8px; font-size: 0.95rem; }
+        
+        .log-list {
+            max-height: 180px; overflow-y: auto;
+        }
+        
+        .log-item {
+            display: flex; gap: 8px; padding: 6px 0;
+            border-bottom: 1px solid #334155;
+            font-size: 0.8rem; align-items: center;
+        }
+        
+        .log-time {
+            font-family: monospace; color: var(--text-dim);
+            min-width: 70px;
+        }
+        
+        .log-sym { font-weight: 600; min-width: 60px; }
+        
+        .log-sig {
+            font-weight: bold; padding: 2px 6px;
+            border-radius: 3px; font-size: 0.7rem;
+        }
+        
+        .log-sig.buy { color: var(--buy); background: rgba(16, 185, 129, 0.1); }
+        .log-sig.sell { color: var(--sell); background: rgba(239, 68, 68, 0.1); }
+        
+        .log-price {
+            font-family: monospace; margin-left: auto;
+        }
+        
+        .disclaimer {
+            background: linear-gradient(135deg, #7c2d12, #9a3412);
+            color: #fbbf24; padding: 12px;
+            border-radius: 8px; font-size: 0.8rem;
+            border: 2px solid #ea580c;
+        }
+        
+        .disclaimer strong {
+            display: block; margin-bottom: 6px;
+        }
+        
+        .loading, .error {
+            text-align: center; padding: 30px;
+            color: var(--text-dim);
+        }
+        
+        .spinner {
+            border: 3px solid #334155;
+            border-top: 3px solid var(--success);
+            border-radius: 50%; width: 35px; height: 35px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 12px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 8px; }
+            .title { font-size: 1.5rem; }
+            .grid { grid-template-columns: 1fr; }
+            .status-bar, .controls-row { flex-direction: column; align-items: stretch; }
+            .api-input { flex-direction: column; }
+            .api-input input { min-width: 100%; }
+            .control select { min-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">⚡ KILER ZONE</h1>
+            <p class="subtitle">Real-Time RSI Reversal Signals • Multi-Asset Trading</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="dot" id="dot"></div>
+                <span id="status">Ready to Connect</span>
+            </div>
+            <div id="time" style="font-family: monospace; font-size: 0.85rem;">--:--:--</div>
+        </div>
+
+        <div class="demo-mode" id="demoMode" style="display: none;">
+            ⚠️ <strong>DEMO MODE</strong> - Using simulated data. Connect Deriv API for real market data.
+        </div>
+
+        <div class="api-panel" id="apiPanel">
+            <h3>🔌 Connect to Deriv API (Optional)</h3>
+            <div class="api-input">
+                <input type="text" id="token" placeholder="Enter Deriv API Token (or use Demo Mode)">
+                <button class="btn btn-connect" id="connectBtn">Connect</button>
+                <button class="btn btn-connect" id="demoBtn">Demo Mode</button>
+            </div>
+            <div class="info-box">
+                <strong>Real Data:</strong> Get token at Deriv.com → Settings → API Token (Read only)<br>
+                <strong>Demo Mode:</strong> Test with simulated market data (no API needed)
+            </div>
+            <div class="debug-box" id="debugBox"></div>
+        </div>
+
+        <div class="controls" id="controls" style="display: none;">
+            <div class="controls-row">
+                <div class="control">
+                    <label>Asset:</label>
+                    <select id="assetSelect">
+                        <option value="frxAUDUSD">Gold (XAU/USD)</option>
+                        <option value="frxEURUSD">EUR/USD</option>
+                        <option value="frxGBPUSD">GBP/USD</option>
+                        <option value="BOOM1000">NAS100</option>
+                        <option value="BOOM500">US30</option>
+                        <option value="cryBTCUSD">Bitcoin</option>
+                        <option value="R_10">Volatility 10</option>
+                        <option value="R_25">Volatility 25</option>
+                        <option value="R_50">Volatility 50</option>
+                        <option value="R_75">Volatility 75</option>
+                        <option value="R_100">Volatility 100</option>
+                    </select>
+                </div>
+                <div class="control">
+                    <label>RSI Period:</label>
+                    <input type="number" id="period" value="14" min="5" max="30">
+                </div>
+                <div class="control">
+                    <label>Oversold:</label>
+                    <input type="number" id="oversold" value="30" min="10" max="40">
+                </div>
+                <div class="control">
+                    <label>Overbought:</label>
+                    <input type="number" id="overbought" value="70" min="60" max="90">
+                </div>
+                <button class="btn btn-disconnect" id="disconnectBtn">Disconnect</button>
+            </div>
+        </div>
+
+        <div class="grid" id="grid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Connect or use Demo Mode to start</p>
+            </div>
+        </div>
+
+        <div class="log-panel" id="logPanel" style="display: none;">
+            <h3>📊 Recent Signals</h3>
+            <div class="log-list" id="logList"></div>
+        </div>
+
+        <div class="disclaimer">
+            <strong>⚠️ RISK DISCLAIMER</strong>
+            Educational purposes only. Not financial advice. Trading involves substantial risk. You are solely responsible for your decisions. This tool does NOT execute trades. Demo mode uses simulated data.
+        </div>
+    </div>
+
+    <script>
+        const CFG = {
+            APP_ID: 1089,
+            WS: 'wss://ws.derivws.com/websockets/v3',
+            PERIOD: 14, OVERSOLD: 30, OVERBOUGHT: 70,
+            CANDLES: 50, INTERVAL: 60
+        };
+
+        const ASSETS = {
+            'frxAUDUSD': { name: 'Gold', symbol: 'XAU/USD', dec: 2, deriv: 'frxAUDUSD' },
+            'frxEURUSD': { name: 'EUR/USD', symbol: 'EUR/USD', dec: 5, deriv: 'frxEURUSD' },
+            'frxGBPUSD': { name: 'GBP/USD', symbol: 'GBP/USD', dec: 5, deriv: 'frxGBPUSD' },
+            'BOOM1000': { name: 'NAS100', symbol: 'NAS100', dec: 2, deriv: 'BOOM1000' },
+            'BOOM500': { name: 'US30', symbol: 'US30', dec: 2, deriv: 'BOOM500' },
+            'cryBTCUSD': { name: 'Bitcoin', symbol: 'BTC/USD', dec: 2, deriv: 'cryBTCUSD' },
+            'R_10': { name: 'Volatility 10', symbol: 'R_10', dec: 3, deriv: 'R_10' },
+            'R_25': { name: 'Volatility 25', symbol: 'R_25', dec: 3, deriv: 'R_25' },
+            'R_50': { name: 'Volatility 50', symbol: 'R_50', dec: 2, deriv: 'R_50' },
+            'R_75': { name: 'Volatility 75', symbol: 'R_75', dec: 2, deriv: 'R_75' },
+            'R_100': { name: 'Volatility 100', symbol: 'R_100', dec: 2, deriv: 'R_100' }
+        };
+
+        let ws, mode = 'disconnected', data = new Map(), signals = new Map(), logs = [];
+        let currentAsset = 'frxAUDUSD', demoInterval;
+
+        function debug(msg) {
+            const box = document.getElementById('debugBox');
+            box.style.display = 'block';
+            const time = new Date().toLocaleTimeString();
+            box.innerHTML += `[${time}] ${msg}<br>`;
+            box.scrollTop = box.scrollHeight;
+            console.log(msg);
+        }
+
+        function connect() {
+            const token = document.getElementById('token').value.trim();
+            
+            try {
+                debug('Attempting connection to Deriv...');
+                const url = `${CFG.WS}?app_id=${CFG.APP_ID}`;
+                debug(`WebSocket URL: ${url}`);
+                
+                ws = new WebSocket(url);
+                
+                ws.onopen = () => {
+                    debug('✅ WebSocket connected!');
+                    mode = 'live';
+                    updateStatus('Connected - Live Data', true);
+                    document.getElementById('apiPanel').style.display = 'none';
+                    document.getElementById('controls').style.display = 'block';
+                    document.getElementById('logPanel').style.display = 'block';
+                    document.getElementById('demoMode').style.display = 'none';
+                    
+                    if (token) {
+                        debug('Authorizing with token...');
+                        send({ authorize: token });
+                    } else {
+                        debug('No token provided, using public access');
+                    }
+                    
+                    loadAsset();
+                };
+
+                ws.onmessage = (e) => {
+                    const msg = JSON.parse(e.data);
+                    debug(`Received: ${msg.msg_type}`);
+                    handle(msg);
+                };
+
+                ws.onerror = (err) => {
+                    debug(`❌ WebSocket error: ${err}`);
+                    console.error('WS Error:', err);
+                };
+
+                ws.onclose = (e) => {
+                    debug(`WebSocket closed: ${e.code} - ${e.reason}`);
+                    updateStatus('Disconnected', false);
+                    mode = 'disconnected';
+                };
+                
+            } catch (err) {
+                debug(`❌ Connection failed: ${err.message}`);
+                alert('Connection failed. Try Demo Mode instead.');
+            }
+        }
+
+        function startDemo() {
+            debug('Starting Demo Mode...');
+            mode = 'demo';
+            updateStatus('Demo Mode - Simulated Data', true);
+            document.getElementById('apiPanel').style.display = 'none';
+            document.getElementById('controls').style.display = 'block';
+            document.getElementById('logPanel').style.display = 'block';
+            document.getElementById('demoMode').style.display = 'block';
+            
+            initDemoData();
+            demoInterval = setInterval(updateDemo, 2000);
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            if (demoInterval) {
+                clearInterval(demoInterval);
+                demoInterval = null;
+            }
+            data.clear();
+            signals.clear();
+            mode = 'disconnected';
+            document.getElementById('apiPanel').style.display = 'block';
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('logPanel').style.display = 'none';
+            document.getElementById('demoMode').style.display = 'none';
+            document.getElementById('grid').innerHTML = '<div class="loading"><div class="spinner"></div><p>Disconnected</p></div>';
+            updateStatus('Disconnected', false);
+            debug('Disconnected');
+        }
+
+        function updateStatus(text, connected) {
+            document.getElementById('status').textContent = text;
+            const dot = document.getElementById('dot');
+            if (connected) dot.classList.add('on');
+            else dot.classList.remove('on');
+        }
+
+        function send(obj) {
+            if (ws && ws.readyState === 1) {
+                ws.send(JSON.stringify(obj));
+                debug(`Sent: ${JSON.stringify(obj)}`);
+            }
+        }
+
+        function loadAsset() {
+            const sym = currentAsset;
+            const asset = ASSETS[sym];
+            
+            debug(`Loading asset: ${asset.name} (${sym})`);
+            
+            const grid = document.getElementById('grid');
+            grid.innerHTML = '';
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = `card-${sym}`;
+            card.innerHTML = `
+                <div class="badge neutral">WAIT</div>
+                <div class="card-top">
+                    <div>
+                        <div class="asset-name">${asset.name}</div>
+                        <div class="asset-symbol">${asset.symbol}</div>
+                    </div>
+                    <div class="price-box">
+                        <div class="price" id="price-${sym}">--</div>
+                        <div class="change" id="change-${sym}">0.00%</div>
+                    </div>
+                </div>
+                <div class="chart-box" id="chart-${sym}"></div>
+                <div class="rsi-box">
+                    <div class="rsi-top">
+                        <span class="rsi-label">RSI</span>
+                        <span class="rsi-val" id="rsi-${sym}">--</span>
+                    </div>
+                    <div class="rsi-bar-bg">
+                        <div class="rsi-bar mid" id="bar-${sym}" style="width: 50%"></div>
+                    </div>
+                    <div class="rsi-marks">
+                        <span>0</span><span>30</span><span>50</span><span>70</span><span>100</span>
+                    </div>
+                </div>
+                <div class="card-foot">
+                    <span id="time-${sym}">Loading...</span>
+                    <span id="sig-${sym}">--</span>
+                </div>
+            `;
+            grid.appendChild(card);
+
+            if (mode === 'live') {
+                send({
+                    ticks_history: sym,
+                    count: CFG.CANDLES,
+                    end: 'latest',
+                    start: 1,
+                    style: 'candles',
+                    granularity: CFG.INTERVAL,
+                    subscribe: 1
+                });
+            }
+        }
+
+        function handle(msg) {
+            if (msg.error) {
+                debug(`API Error: ${msg.error.message}`);
+                return;
+            }
+
+            if (msg.msg_type === 'authorize') {
+                debug(`Authorized: ${msg.authorize.loginid}`);
+            }
+
+            if (msg.msg_type === 'history') {
+                const sym = msg.echo_req.ticks_history;
+                debug(`Received history for ${sym}: ${msg.history.times.length} candles`);
+                
+                const candles = [];
+                for (let i = 0; i < msg.history.times.length; i++) {
+                    const price = parseFloat(msg.history.prices[i]);
+                    candles.push({
+                        t: msg.history.times[i],
+                        o: price, h: price, l: price, c: price
+                    });
+                }
+                data.set(sym, { candles, first: candles[0].c });
+                analyze(sym);
+                updateCard(sym);
+            }
+
+            if (msg.msg_type === 'ohlc') {
+                const sym = msg.ohlc.symbol;
+                const d = data.get(sym);
+                if (!d) return;
+
+                const candle = {
+                    t: msg.ohlc.epoch,
+                    o: parseFloat(msg.ohlc.open),
+                    h: parseFloat(msg.ohlc.high),
+                    l: parseFloat(msg.ohlc.low),
+                    c: parseFloat(msg.ohlc.close)
+                };
+
+                d.candles.push(candle);
+                if (d.candles.length > CFG.CANDLES) d.candles.shift();
+                
+                debug(`New candle for ${sym}: ${candle.c}`);
+                analyze(sym);
+                updateCard(sym);
+            }
+
+            if (msg.msg_type === 'tick') {
+                debug(`Tick: ${msg.tick.symbol} = ${msg.tick.quote}`);
+            }
+        }
+
+        function initDemoData() {
+            const sym = currentAsset;
+            const asset = ASSETS[sym];
+            
+            const basePrices = {
+                'frxAUDUSD': 2050, 'frxEURUSD': 1.0950, 'frxGBPUSD': 1.2650,
+                'BOOM1000': 16250, 'BOOM500': 37500, 'cryBTCUSD': 43500,
+                'R_10': 1500, 'R_25': 2500, 'R_50': 3500, 'R_75': 4500, 'R_100': 5500
+            };
+            
+            const candles = [];
+            let price = basePrices[sym] || 1000;
+            const now = Math.floor(Date.now() / 1000);
+            
+            for (let i = CFG.CANDLES - 1; i >= 0; i--) {
+                const volatility = price * 0.002;
+                const change = (Math.random() - 0.5) * volatility;
+                price += change;
+                
+                candles.push({
+                    t: now - (i * 60),
+                    o: price,
+                    h: price + Math.random() * volatility * 0.5,
+                    l: price - Math.random() * volatility * 0.5,
+                    c: price
+                });
+            }
+            
+            data.set(sym, { candles, first: candles[0].c });
+            analyze(sym);
+            updateCard(sym);
+        }
+
+        function updateDemo() {
+            const sym = currentAsset;
+            const d = data.get(sym);
+            if (!d) return;
+
+            const lastPrice = d.candles[d.candles.length - 1].c;
+            const volatility = lastPrice * 0.002;
+            const change = (Math.random() - 0.5) * volatility;
+            const newPrice = lastPrice + change;
+
+            const candle = {
+                t: Math.floor(Date.now() / 1000),
+                o: lastPrice,
+                h: Math.max(lastPrice, newPrice) + Math.random() * volatility * 0.3,
+                l: Math.min(lastPrice, newPrice) - Math.random() * volatility * 0.3,
+                c: newPrice
+            };
+
+            d.candles.push(candle);
+            if (d.candles.length > CFG.CANDLES) d.candles.shift();
+
+            analyze(sym);
+            updateCard(sym);
+        }
+
+        function calcRSI(prices, n = CFG.PERIOD) {
+            if (prices.length < n + 1) return null;
+
+            let gains = 0, losses = 0;
+            for (let i = 1; i <= n; i++) {
+                const diff = prices[i] - prices[i-1];
+                if (diff > 0) gains += diff;
+                else losses -= diff;
+            }
+
+            let ag = gains / n, al = losses / n;
+            for (let i = n + 1; i < prices.length; i++) {
+                const diff = prices[i] - prices[i-1];
+                if (diff > 0) {
+                    ag = (ag * (n-1) + diff) / n;
+                    al = (al * (n-1)) / n;
+                } else {
+                    ag = (ag * (n-1)) / n;
+                    al = (al * (n-1) - diff) / n;
+                }
+            }
+
+            return al === 0 ? 100 : 100 - (100 / (1 + ag / al));
+        }
+
         function analyze(sym) {
             const d = data.get(sym);
             if (!d || d.candles.length < CFG.PERIOD + 5) return;
