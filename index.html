@@ -160,9 +160,9 @@
             font-size: 0.7rem; font-weight: bold;
         }
         
-        .badge.buy { background: var(--buy); }
-        .badge.sell { background: var(--sell); }
-        .badge.neutral { background: var(--neutral); }
+        .badge.buy { background: var(--buy); color: white; }
+        .badge.sell { background: var(--sell); color: white; }
+        .badge.neutral { background: var(--neutral); color: white; }
         
         .card-top {
             display: flex; justify-content: space-between;
@@ -182,6 +182,7 @@
             height: 100px; margin: 10px 0;
             background: rgba(15, 23, 42, 0.5);
             border-radius: 6px; overflow: hidden;
+            position: relative;
         }
         
         .chart-box canvas { width: 100%; height: 100%; }
@@ -199,10 +200,14 @@
         .rsi-bar-bg {
             height: 14px; background: #334155;
             border-radius: 7px; overflow: hidden;
+            position: relative;
         }
         
         .rsi-bar {
             height: 100%; transition: width 0.5s, background 0.3s;
+            position: absolute;
+            left: 0;
+            top: 0;
         }
         
         .rsi-bar.low { background: var(--buy); }
@@ -213,6 +218,23 @@
             display: flex; justify-content: space-between;
             font-size: 0.65rem; color: var(--text-dim);
             margin-top: 2px;
+        }
+        
+        .rsi-levels {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .rsi-level {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.2);
         }
         
         .card-foot {
@@ -295,6 +317,15 @@
             .api-input { flex-direction: column; }
             .api-input input { min-width: 100%; }
             .control select { min-width: 100%; }
+        }
+        
+        .signal-animation {
+            animation: signalFlash 0.5s ease-in-out;
+        }
+        
+        @keyframes signalFlash {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
@@ -407,6 +438,7 @@
 
         let ws, mode = 'disconnected', data = new Map(), signals = new Map(), logs = [];
         let currentAsset = 'frxAUDUSD', demoInterval;
+        let prevRSI = new Map(); // Track previous RSI values
 
         function debug(msg) {
             const box = document.getElementById('debugBox');
@@ -493,6 +525,7 @@
             }
             data.clear();
             signals.clear();
+            prevRSI.clear();
             mode = 'disconnected';
             document.getElementById('apiPanel').style.display = 'block';
             document.getElementById('controls').style.display = 'none';
@@ -541,17 +574,23 @@
                         <div class="change" id="change-${sym}">0.00%</div>
                     </div>
                 </div>
-                <div class="chart-box" id="chart-${sym}"></div>
+                <div class="chart-box" id="chart-${sym}">
+                    <canvas></canvas>
+                </div>
                 <div class="rsi-box">
                     <div class="rsi-top">
                         <span class="rsi-label">RSI</span>
                         <span class="rsi-val" id="rsi-${sym}">--</span>
                     </div>
-                    <div class="rsi-bar-bg">
+                    <div class="rsi-bar-bg" id="rsi-bar-bg-${sym}">
                         <div class="rsi-bar mid" id="bar-${sym}" style="width: 50%"></div>
+                        <div class="rsi-levels">
+                            <div class="rsi-level" style="left: 30%"></div>
+                            <div class="rsi-level" style="left: 70%"></div>
+                        </div>
                     </div>
                     <div class="rsi-marks">
-                        <span>0</span><span>30</span><span>50</span><span>70</span><span>100</span>
+                        <span>0</span><span id="oversold-mark-${sym}">30</span><span>50</span><span id="overbought-mark-${sym}">70</span><span>100</span>
                     </div>
                 </div>
                 <div class="card-foot">
@@ -560,6 +599,10 @@
                 </div>
             `;
             grid.appendChild(card);
+
+            // Update RSI level markers
+            document.getElementById(`oversold-mark-${sym}`).textContent = CFG.OVERSOLD;
+            document.getElementById(`overbought-mark-${sym}`).textContent = CFG.OVERBOUGHT;
 
             if (mode === 'live') {
                 send({
@@ -596,7 +639,12 @@
                         o: price, h: price, l: price, c: price
                     });
                 }
-                data.set(sym, { candles, first: candles[0].c });
+                data.set(sym, { 
+                    candles, 
+                    first: candles[0]?.c || 0,
+                    prevRSI: 50,
+                    currentRSI: 50
+                });
                 analyze(sym);
                 updateCard(sym);
             }
@@ -655,7 +703,12 @@
                 });
             }
             
-            data.set(sym, { candles, first: candles[0].c });
+            data.set(sym, { 
+                candles, 
+                first: candles[0]?.c || price,
+                prevRSI: 50,
+                currentRSI: 50
+            });
             analyze(sym);
             updateCard(sym);
         }
@@ -665,7 +718,7 @@
             const d = data.get(sym);
             if (!d) return;
 
-            const lastPrice = d.candles[d.candles.length - 1].c;
+            const lastPrice = d.candles[d.candles.length - 1]?.c || 1000;
             const volatility = lastPrice * 0.002;
             const change = (Math.random() - 0.5) * volatility;
             const newPrice = lastPrice + change;
@@ -696,18 +749,20 @@
             }
 
             let ag = gains / n, al = losses / n;
+            
+            // Wilder's smoothing method
             for (let i = n + 1; i < prices.length; i++) {
                 const diff = prices[i] - prices[i-1];
-                if (diff > 0) {
-                    ag = (ag * (n-1) + diff) / n;
-                    al = (al * (n-1)) / n;
-                } else {
-                    ag = (ag * (n-1)) / n;
-                    al = (al * (n-1) - diff) / n;
-                }
+                const gain = diff > 0 ? diff : 0;
+                const loss = diff < 0 ? -diff : 0;
+                
+                ag = (ag * (n-1) + gain) / n;
+                al = (al * (n-1) + loss) / n;
             }
 
-            return al === 0 ? 100 : 100 - (100 / (1 + ag / al));
+            if (al === 0) return 100;
+            const rs = ag / al;
+            return 100 - (100 / (1 + rs));
         }
 
         function analyze(sym) {
@@ -722,23 +777,59 @@
             const first = d.first || last;
             const change = ((last - first) / first * 100).toFixed(2);
 
-            d.rsi = rsi;
+            // Store RSI values
+            d.prevRSI = d.currentRSI || 50;
+            d.currentRSI = rsi;
             d.price = last;
             d.change = parseFloat(change);
             d.time = Date.now();
 
-            const oldSig = signals.get(sym);
+            // Generate signal based on RSI crossover
             let signal = 'neutral';
+            let signalGenerated = false;
 
-            if (rsi <= CFG.OVERSOLD) signal = 'buy';
-            else if (rsi >= CFG.OVERBOUGHT) signal = 'sell';
+            // BUY Signal: RSI crosses above oversold (rising from below 30)
+            if (d.prevRSI <= CFG.OVERSOLD && d.currentRSI > CFG.OVERSOLD) {
+                signal = 'buy';
+                signalGenerated = true;
+                debug(`${ASSETS[sym].name}: BUY signal (RSI crossed above ${CFG.OVERSOLD} from ${d.prevRSI.toFixed(1)} to ${d.currentRSI.toFixed(1)})`);
+            }
+            // SELL Signal: RSI crosses below overbought (falling from above 70)
+            else if (d.prevRSI >= CFG.OVERBOUGHT && d.currentRSI < CFG.OVERBOUGHT) {
+                signal = 'sell';
+                signalGenerated = true;
+                debug(`${ASSETS[sym].name}: SELL signal (RSI crossed below ${CFG.OVERBOUGHT} from ${d.prevRSI.toFixed(1)} to ${d.currentRSI.toFixed(1)})`);
+            }
+            // Strong BUY: RSI < 20
+            else if (d.currentRSI < 20) {
+                signal = 'buy';
+                signalGenerated = true;
+                debug(`${ASSETS[sym].name}: STRONG BUY signal (RSI: ${d.currentRSI.toFixed(1)} < 20)`);
+            }
+            // Strong SELL: RSI > 80
+            else if (d.currentRSI > 80) {
+                signal = 'sell';
+                signalGenerated = true;
+                debug(`${ASSETS[sym].name}: STRONG SELL signal (RSI: ${d.currentRSI.toFixed(1)} > 80)`);
+            }
 
-            if (oldSig !== signal) {
-                signals.set(sym, signal);
-                const asset = ASSETS[sym];
-                addLog(sym, signal, last);
-                playSound(signal);
-                debug(`${asset.name}: ${signal.toUpperCase()} signal (RSI: ${rsi.toFixed(1)})`);
+            // Update signal if generated
+            if (signalGenerated) {
+                const oldSig = signals.get(sym);
+                if (oldSig !== signal) {
+                    signals.set(sym, signal);
+                    addLog(sym, signal, last);
+                    playSound(signal);
+                    
+                    // Trigger visual feedback
+                    const card = document.getElementById(`card-${sym}`);
+                    if (card) {
+                        card.classList.add('signal-animation');
+                        setTimeout(() => {
+                            card.classList.remove('signal-animation');
+                        }, 500);
+                    }
+                }
             }
         }
 
@@ -748,6 +839,8 @@
 
             const asset = ASSETS[sym];
             const card = document.getElementById(`card-${sym}`);
+            if (!card) return;
+
             const priceElem = document.getElementById(`price-${sym}`);
             const changeElem = document.getElementById(`change-${sym}`);
             const rsiElem = document.getElementById(`rsi-${sym}`);
@@ -756,25 +849,40 @@
             const sigElem = document.getElementById(`sig-${sym}`);
             const badge = card.querySelector('.badge');
 
-            if (priceElem) {
+            // Update price
+            if (priceElem && d.price) {
                 priceElem.textContent = d.price.toFixed(asset.dec);
-                const changePct = ((d.price - (d.first || d.price)) / (d.first || d.price) * 100);
+                const changePct = d.change || 0;
                 const changeVal = changePct.toFixed(2);
                 changeElem.textContent = `${changePct >= 0 ? '+' : ''}${changeVal}%`;
                 changeElem.className = `change ${changePct >= 0 ? 'up' : 'down'}`;
             }
 
-            if (rsiElem && d.rsi) {
-                rsiElem.textContent = d.rsi.toFixed(1);
+            // Update RSI
+            if (rsiElem && d.currentRSI) {
+                rsiElem.textContent = d.currentRSI.toFixed(1);
                 
+                // Update RSI bar
                 let barClass = 'mid';
-                if (d.rsi <= CFG.OVERSOLD) barClass = 'low';
-                else if (d.rsi >= CFG.OVERBOUGHT) barClass = 'high';
+                if (d.currentRSI <= CFG.OVERSOLD) barClass = 'low';
+                else if (d.currentRSI >= CFG.OVERBOUGHT) barClass = 'high';
                 
                 barElem.className = `rsi-bar ${barClass}`;
-                barElem.style.width = `${Math.min(Math.max(d.rsi, 0), 100)}%`;
+                barElem.style.width = `${Math.min(Math.max(d.currentRSI, 0), 100)}%`;
+                
+                // Update bar color based on RSI
+                if (d.currentRSI < 30) {
+                    barElem.style.background = 'var(--buy)';
+                } else if (d.currentRSI > 70) {
+                    barElem.style.background = 'var(--sell)';
+                } else if (d.currentRSI > 60) {
+                    barElem.style.background = 'var(--warning)';
+                } else {
+                    barElem.style.background = '#f59e0b';
+                }
             }
 
+            // Update time
             if (timeElem) {
                 const now = new Date();
                 timeElem.textContent = now.toLocaleTimeString('en-US', {
@@ -784,6 +892,7 @@
                 });
             }
 
+            // Update signal
             if (sigElem) {
                 const sig = signals.get(sym) || 'neutral';
                 sigElem.textContent = sig.toUpperCase();
@@ -791,6 +900,7 @@
                                      sig === 'sell' ? 'var(--sell)' : 'var(--neutral)';
             }
 
+            // Update card styling and badge
             const sig = signals.get(sym) || 'neutral';
             card.className = `card ${sig}`;
             
@@ -798,8 +908,17 @@
                 badge.className = `badge ${sig}`;
                 badge.textContent = sig === 'buy' ? 'BUY' : 
                                    sig === 'sell' ? 'SELL' : 'NEUTRAL';
+                
+                // Flash animation for active signals
+                if (sig !== 'neutral') {
+                    badge.classList.add('signal-animation');
+                    setTimeout(() => {
+                        badge.classList.remove('signal-animation');
+                    }, 500);
+                }
             }
 
+            // Update chart
             updateChart(sym);
         }
 
@@ -816,7 +935,6 @@
                 container.innerHTML = '';
                 container.appendChild(canvas);
                 
-                const style = getComputedStyle(document.documentElement);
                 canvas.width = container.clientWidth;
                 canvas.height = container.clientHeight;
                 
@@ -843,7 +961,7 @@
                 max = Math.max(max, c.h);
             });
 
-            const range = max - min;
+            const range = max - min || 1;
             const chartHeight = height - padding * 2;
             const barWidth = (width - padding * 2) / recent.length * 0.7;
 
@@ -858,17 +976,20 @@
                 ctx.strokeStyle = isUp ? 'var(--buy)' : 'var(--sell)';
                 ctx.fillStyle = isUp ? 'var(--buy)' : 'var(--sell)';
 
+                // Draw wick
                 ctx.beginPath();
                 ctx.moveTo(x, highY);
                 ctx.lineTo(x, lowY);
                 ctx.stroke();
 
+                // Draw body
                 const top = Math.min(openY, closeY);
                 const barHeight = Math.abs(openY - closeY);
                 
                 if (barHeight > 0) {
                     ctx.fillRect(x - barWidth/2, top, barWidth, barHeight);
                 } else {
+                    // Draw line for doji
                     ctx.beginPath();
                     ctx.moveTo(x - barWidth/2, top);
                     ctx.lineTo(x + barWidth/2, top);
@@ -973,6 +1094,7 @@
                 if (mode !== 'disconnected') {
                     data.clear();
                     signals.clear();
+                    prevRSI.clear();
                     loadAsset();
                 }
             });
@@ -986,14 +1108,20 @@
 
             document.getElementById('oversold').addEventListener('change', (e) => {
                 CFG.OVERSOLD = parseInt(e.target.value) || 30;
+                // Update RSI level markers
                 Object.keys(ASSETS).forEach(sym => {
+                    const mark = document.getElementById(`oversold-mark-${sym}`);
+                    if (mark) mark.textContent = CFG.OVERSOLD;
                     if (data.has(sym)) analyze(sym);
                 });
             });
 
             document.getElementById('overbought').addEventListener('change', (e) => {
                 CFG.OVERBOUGHT = parseInt(e.target.value) || 70;
+                // Update RSI level markers
                 Object.keys(ASSETS).forEach(sym => {
+                    const mark = document.getElementById(`overbought-mark-${sym}`);
+                    if (mark) mark.textContent = CFG.OVERBOUGHT;
                     if (data.has(sym)) analyze(sym);
                 });
             });
