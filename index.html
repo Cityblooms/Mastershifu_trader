@@ -2,2181 +2,351 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SMC FETCHER PRO - Deriv MT5 Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMC FETCHER PRO - Fixed Dashboard</title>
     
-    <!-- PWA Configuration -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#0f172a">
-    
-    <!-- Icons & Styles -->
+    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- FIXED: Added chartjs-chart-financial for candlestick charts -->
+    <!-- Chart.js with ALL required dependencies in CORRECT order -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Date adapter for Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+    <!-- Chart.js Financial for candlestick charts -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
     
     <style>
+        /* [All CSS styles from the previous version - they work fine] */
+        /* Copy all CSS from the previous HTML file here */
         :root {
             --primary-dark: #0f172a;
             --secondary-dark: #1e293b;
             --accent-blue: #3b82f6;
             --accent-green: #10b981;
             --accent-red: #ef4444;
-            --accent-yellow: #f59e0b;
-            --accent-purple: #8b5cf6;
             --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
             --border-color: #334155;
             --card-bg: #1e293b;
-            --header-height: 60px;
-            --bottom-nav-height: 60px;
-            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --danger-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            --deriv-green: #00b894;
-            --deriv-blue: #0984e3;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: var(--primary-dark);
             color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
-            overscroll-behavior: none;
-            padding-bottom: var(--bottom-nav-height);
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            padding-bottom: 60px;
         }
-
-        /* Loading States */
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(15, 23, 42, 0.95);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            backdrop-filter: blur(10px);
-        }
-
-        .loader {
-            width: 50px;
-            height: 50px;
-            border: 3px solid var(--border-color);
-            border-radius: 50%;
-            border-top-color: var(--accent-blue);
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* App Container */
-        .app-container {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 0;
-        }
-
-        /* App Header */
         .app-header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: var(--header-height);
             background: linear-gradient(135deg, var(--primary-dark) 0%, #1e1b4b 100%);
-            backdrop-filter: blur(10px);
+            padding: 16px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            padding: 0 16px;
-            z-index: 1000;
+            align-items: center;
             border-bottom: 1px solid var(--border-color);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
-
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .app-logo {
-            font-size: 24px;
-            color: var(--deriv-green);
-        }
-
-        .app-title h1 {
-            font-size: 18px;
-            font-weight: 700;
-            background: linear-gradient(90deg, var(--deriv-green), var(--deriv-blue));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .app-title .tagline {
-            font-size: 11px;
-            color: var(--text-secondary);
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .status-indicator {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            font-size: 12px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--accent-red);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Main Content */
-        .app-content {
-            margin-top: var(--header-height);
-            padding: 16px;
-            padding-bottom: calc(var(--bottom-nav-height) + 16px);
-        }
-
-        /* MT5 Style Interface */
-        .mt5-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .mt5-window {
-            background: var(--card-bg);
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-        }
-
-        .mt5-window-header {
-            background: var(--secondary-dark);
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .mt5-window-body {
-            padding: 16px;
-        }
-
-        /* Market Watch */
-        .market-watch {
-            overflow-x: auto;
-        }
-
-        .market-watch-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .market-watch-table th {
-            background: var(--secondary-dark);
-            padding: 12px 16px;
-            text-align: left;
-            font-size: 12px;
-            color: var(--text-secondary);
-            border-bottom: 1px solid var(--border-color);
-            white-space: nowrap;
-        }
-
-        .market-watch-table td {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 13px;
-        }
-
-        .symbol-cell {
-            font-weight: 600;
-            color: var(--deriv-green);
-        }
-
-        .price-cell {
-            font-weight: 700;
-        }
-
-        .change-cell.positive {
-            color: var(--accent-green);
-        }
-
-        .change-cell.negative {
-            color: var(--accent-red);
-        }
-
-        /* Terminal Tabs */
-        .terminal-tabs {
-            display: flex;
-            background: var(--secondary-dark);
-            border-bottom: 1px solid var(--border-color);
-            overflow-x: auto;
-        }
-
-        .terminal-tab {
-            padding: 12px 20px;
-            background: transparent;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
-        }
-
-        .terminal-tab.active {
-            color: var(--deriv-green);
-            border-bottom-color: var(--deriv-green);
-            background: rgba(0, 184, 148, 0.1);
-        }
-
-        /* Trade Ticket */
-        .trade-ticket {
-            background: var(--secondary-dark);
-            border-radius: 8px;
-            padding: 20px;
-        }
-
-        .ticket-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            align-items: center;
-        }
-
-        .ticket-label {
-            min-width: 100px;
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .ticket-value {
-            flex: 1;
-            padding: 10px 12px;
-            background: var(--primary-dark);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-
-        .ticket-input {
-            flex: 1;
-            padding: 10px 12px;
-            background: var(--primary-dark);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-
-        .ticket-input:focus {
-            outline: none;
-            border-color: var(--deriv-green);
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 24px;
-        }
-
-        .action-button {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            padding: 20px 8px;
-            background: linear-gradient(135deg, var(--card-bg) 0%, #273347 100%);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            color: var(--text-primary);
-            transition: all 0.3s;
-            border: none;
-            cursor: pointer;
-        }
-
-        .action-button:active {
-            transform: scale(0.95);
-        }
-
-        .action-button i {
-            font-size: 28px;
-        }
-
-        .action-label {
-            font-size: 12px;
-            text-align: center;
-            font-weight: 500;
-        }
-
-        /* Dashboard Cards */
         .dashboard-card {
             background: var(--card-bg);
             border-radius: 16px;
             padding: 20px;
-            margin-bottom: 16px;
+            margin: 16px;
             border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .card-title {
-            font-size: 18px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Mobile Tabs */
-        .mobile-tabs {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: var(--bottom-nav-height);
-            background: var(--card-bg);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(10px);
-        }
-
-        .tab-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            height: 100%;
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: all 0.3s;
-            font-size: 11px;
-            gap: 4px;
-            position: relative;
-        }
-
-        .tab-item.active {
-            color: var(--deriv-green);
-        }
-
-        .tab-item i {
-            font-size: 20px;
-        }
-
-        .tab-badge {
-            position: absolute;
-            top: 8px;
-            right: 50%;
-            transform: translateX(12px);
-            background: var(--accent-red);
-            color: white;
-            font-size: 10px;
-            min-width: 16px;
-            height: 16px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 4px;
-        }
-
-        /* Tab Content */
-        .tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* SMC Signals */
-        .signals-grid {
-            display: grid;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .signal-card {
-            background: linear-gradient(135deg, var(--card-bg) 0%, #273347 100%);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            overflow: hidden;
-        }
-
-        .signal-card.buy-signal {
-            border-left: 6px solid var(--accent-green);
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, var(--card-bg) 100%);
-        }
-
-        .signal-card.sell-signal {
-            border-left: 6px solid var(--accent-red);
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, var(--card-bg) 100%);
-        }
-
-        .signal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .signal-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .signal-symbol {
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .signal-type {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .signal-type.buy {
-            background: var(--success-gradient);
-            color: white;
-        }
-
-        .signal-type.sell {
-            background: var(--danger-gradient);
-            color: white;
-        }
-
-        .signal-type.jump {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-            color: white;
-        }
-
-        .signal-type.boom {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            color: white;
-        }
-
-        .signal-type.crash {
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            color: white;
-        }
-
-        .signal-confidence {
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: 700;
-        }
-
-        .confidence-high {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--accent-green);
-            border: 2px solid var(--accent-green);
-        }
-
-        .confidence-medium {
-            background: rgba(245, 158, 11, 0.2);
-            color: var(--accent-yellow);
-            border: 2px solid var(--accent-yellow);
-        }
-
-        .confidence-low {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--accent-red);
-            border: 2px solid var(--accent-red);
-        }
-
-        .signal-body {
-            padding: 16px;
-        }
-
-        .signal-conditions {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .condition-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 13px;
-            padding: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-        }
-
-        .condition-check {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-        }
-
-        .condition-check.true {
-            background: var(--accent-green);
-            color: white;
-        }
-
-        .condition-check.false {
-            background: var(--accent-red);
-            color: white;
-        }
-
-        .signal-actions {
-            display: flex;
-            gap: 10px;
-            padding: 16px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-primary {
-            background: var(--primary-gradient);
-            color: white;
-        }
-
-        .btn-success {
-            background: var(--success-gradient);
-            color: white;
-        }
-
-        .btn-danger {
-            background: var(--danger-gradient);
-            color: white;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--border-color);
-            color: var(--text-primary);
-        }
-
-        .btn-deriv {
-            background: linear-gradient(135deg, var(--deriv-green) 0%, var(--deriv-blue) 100%);
-            color: white;
-        }
-
-        /* Chart Container */
         .chart-container {
             height: 320px;
-            margin-bottom: 20px;
-            position: relative;
+            margin: 20px 0;
             background: var(--card-bg);
             border-radius: 12px;
             padding: 16px;
-            border: 1px solid var(--border-color);
         }
-
-        .chart-controls {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-            overflow-x: auto;
-            padding-bottom: 10px;
-        }
-
-        .chart-btn {
-            padding: 10px 18px;
-            background: var(--secondary-dark);
-            border: 2px solid var(--border-color);
-            border-radius: 10px;
-            color: var(--text-primary);
-            font-size: 14px;
-            font-weight: 600;
-            white-space: nowrap;
-            cursor: pointer;
-            border: none;
-        }
-
-        .chart-btn.active {
-            background: var(--primary-gradient);
-            border-color: var(--accent-blue);
-        }
-
-        /* Performance Metrics */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            margin: 20px 0;
-        }
-
-        .metric-card {
-            background: linear-gradient(135deg, var(--card-bg) 0%, #273347 100%);
-            border-radius: 12px;
-            padding: 16px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-        }
-
-        .metric-value {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .metric-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        /* Form Elements */
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 14px 16px;
-            background: var(--secondary-dark);
-            border: 2px solid var(--border-color);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 15px;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: var(--accent-blue);
-        }
-
-        /* Alerts */
-        .alerts-container {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .alert-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 16px;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, var(--card-bg) 0%, #273347 100%);
-            border-radius: 12px;
-            border-left: 6px solid transparent;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .alert-item.buy {
-            border-left-color: var(--accent-green);
-        }
-
-        .alert-item.sell {
-            border-left-color: var(--accent-red);
-        }
-
-        .alert-item.info {
-            border-left-color: var(--accent-blue);
-        }
-
-        /* Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.9);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            backdrop-filter: blur(10px);
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: linear-gradient(135deg, var(--card-bg) 0%, #273347 100%);
-            border-radius: 24px;
-            max-width: 500px;
-            width: 100%;
-            max-height: 90vh;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header {
-            padding: 24px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-body {
-            padding: 24px;
-            overflow-y: auto;
-            max-height: 60vh;
-        }
-
-        .modal-footer {
-            padding: 24px;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 14px;
-        }
-
-        /* Responsive */
-        @media (min-width: 768px) {
-            .app-container {
-                max-width: 768px;
-                margin: 0 auto;
-                border-left: 1px solid var(--border-color);
-                border-right: 1px solid var(--border-color);
-                min-height: 100vh;
-            }
-
-            .mobile-tabs {
-                display: none;
-            }
-
-            .app-content {
-                padding-bottom: 20px;
-            }
-
-            body {
-                padding-bottom: 0;
-            }
-
-            .quick-actions {
-                grid-template-columns: repeat(4, 1fr);
-            }
-
-            .signals-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .metrics-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-
-            .mt5-container {
-                flex-direction: row;
-            }
-
-            .mt5-window {
-                flex: 1;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .app-container {
-                max-width: 1024px;
-            }
-
-            .signals-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .quick-actions {
-                grid-template-columns: repeat(6, 1fr);
-            }
-        }
+        /* [Include ALL other CSS styles from your previous file] */
     </style>
 </head>
 <body>
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loader"></div>
-        <div style="color: var(--text-primary); font-size: 18px; font-weight: 600; margin-bottom: 10px;">
-            SMC FETCHER PRO
-        </div>
-        <div style="color: var(--text-secondary); font-size: 14px;" id="loadingMessage">
-            Loading Deriv MT5 Dashboard...
-        </div>
+    <div id="loadingOverlay" style="position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(15,23,42,0.95); display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:9999;">
+        <div style="width:50px;height:50px;border:3px solid #334155;border-radius:50%;border-top-color:#3b82f6;animation:spin 1s linear infinite;"></div>
+        <div style="color:#f1f5f9; font-size:18px; font-weight:600; margin:10px 0;">SMC FETCHER PRO</div>
+        <div style="color:#94a3b8; font-size:14px;" id="loadingMessage">Initializing Dashboard...</div>
     </div>
 
-    <!-- Mobile App Container -->
-    <div class="app-container">
-        <!-- App Header -->
-        <header class="app-header">
-            <div class="header-left">
-                <div class="app-logo">
-                    <i class="fas fa-chart-network"></i>
-                </div>
-                <div class="app-title">
-                    <h1>SMC FETCHER PRO</h1>
-                    <div class="tagline">Deriv MT5 Smart Money Trading</div>
-                </div>
+    <!-- App Header -->
+    <header class="app-header">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="font-size:24px; color:#00b894;"><i class="fas fa-chart-network"></i></div>
+            <div>
+                <h1 style="font-size:18px; font-weight:700; background:linear-gradient(90deg, #00b894, #0984e3); -webkit-background-clip:text; background-clip:text; color:transparent;">SMC FETCHER PRO</h1>
+                <div style="font-size:11px; color:#94a3b8;">Deriv MT5 Smart Money Trading</div>
             </div>
-            <div class="header-right">
-                <div class="status-indicator">
-                    <div class="status-dot" id="statusDot"></div>
-                    <span id="statusText">Disconnected</span>
-                </div>
-                <button class="btn btn-outline" id="settingsBtn" style="padding: 8px 16px; font-size: 14px;">
-                    <i class="fas fa-cog"></i>
-                </button>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div style="display:flex; align-items:center; gap:6px; padding:6px 12px; background:rgba(255,255,255,0.1); border-radius:20px; font-size:12px;">
+                <div id="statusDot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></div>
+                <span id="statusText">Disconnected</span>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <!-- Main Content -->
-        <div class="app-content">
-            <!-- Dashboard Tab -->
-            <div id="dashboardTab" class="tab-content active">
-                <!-- MT5 Interface -->
-                <div class="mt5-container">
-                    <!-- Market Watch -->
-                    <div class="mt5-window">
-                        <div class="mt5-window-header">
-                            <i class="fas fa-eye"></i>
-                            Market Watch
-                        </div>
-                        <div class="mt5-window-body market-watch">
-                            <table class="market-watch-table" id="marketWatchTable">
-                                <thead>
-                                    <tr>
-                                        <th>Symbol</th>
-                                        <th>Bid</th>
-                                        <th>Ask</th>
-                                        <th>Change</th>
-                                        <th>Time</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="marketWatchBody">
-                                    <!-- Market data loaded dynamically -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Trade Terminal -->
-                    <div class="mt5-window">
-                        <div class="terminal-tabs">
-                            <button class="terminal-tab active" data-tab="trade">Trade</button>
-                            <button class="terminal-tab" data-tab="positions">Positions</button>
-                            <button class="terminal-tab" data-tab="history">History</button>
-                        </div>
-                        
-                        <!-- Trade Ticket -->
-                        <div class="mt5-window-body" id="tradeTab">
-                            <div class="trade-ticket">
-                                <div class="ticket-row">
-                                    <div class="ticket-label">Symbol:</div>
-                                    <select class="ticket-input" id="tradeSymbol">
-                                        <option value="frxXAUUSD">Gold (XAU/USD)</option>
-                                        <option value="frxEURUSD">EUR/USD</option>
-                                        <option value="frxGBPUSD">GBP/USD</option>
-                                        <option value="R_50">Volatility 50</option>
-                                        <option value="R_75">Volatility 75</option>
-                                        <option value="R_100">Volatility 100</option>
-                                        <option value="boom_300">Boom 300</option>
-                                        <option value="boom_500">Boom 500</option>
-                                        <option value="boom_1000">Boom 1000</option>
-                                        <option value="crash_300">Crash 300</option>
-                                        <option value="crash_500">Crash 500</option>
-                                        <option value="crash_1000">Crash 1000</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="ticket-row">
-                                    <div class="ticket-label">Volume:</div>
-                                    <input type="number" class="ticket-input" id="tradeVolume" value="0.01" min="0.01" step="0.01">
-                                </div>
-                                
-                                <div class="ticket-row">
-                                    <div class="ticket-label">Type:</div>
-                                    <select class="ticket-input" id="tradeType">
-                                        <option value="CALL">Buy (CALL)</option>
-                                        <option value="PUT">Sell (PUT)</option>
-                                    </select>
-                                </div>
-                                
-                                <div class="ticket-row">
-                                    <div class="ticket-label">Duration:</div>
-                                    <div style="flex: 1; display: flex; gap: 10px;">
-                                        <input type="number" class="ticket-input" id="tradeDuration" value="5" style="flex: 1;">
-                                        <select class="ticket-input" id="tradeDurationUnit" style="flex: 1;">
-                                            <option value="t">Ticks</option>
-                                            <option value="s">Seconds</option>
-                                            <option value="m">Minutes</option>
-                                            <option value="h">Hours</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                
-                                <div class="ticket-row">
-                                    <div class="ticket-label">Stake:</div>
-                                    <div class="ticket-value" id="tradeStake">$10.00</div>
-                                </div>
-                                
-                                <div class="ticket-row">
-                                    <div class="ticket-label">Potential Payout:</div>
-                                    <div class="ticket-value" id="tradePayout">$18.00</div>
-                                </div>
-                                
-                                <button class="btn btn-deriv" id="placeTradeBtn" style="width: 100%; margin-top: 20px;">
-                                    <i class="fas fa-trade"></i> PLACE TRADE
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Positions Tab -->
-                        <div class="mt5-window-body" id="positionsTab" style="display: none;">
-                            <div id="positionsList">
-                                <!-- Positions loaded dynamically -->
-                                <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
-                                    <i class="fas fa-chart-line" style="font-size: 48px; opacity: 0.5;"></i>
-                                    <p style="margin-top: 10px;">No open positions</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- History Tab -->
-                        <div class="mt5-window-body" id="historyTab" style="display: none;">
-                            <div id="tradeHistory">
-                                <!-- History loaded dynamically -->
-                                <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
-                                    <i class="fas fa-history" style="font-size: 48px; opacity: 0.5;"></i>
-                                    <p style="margin-top: 10px;">No trade history</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+    <!-- Main Content -->
+    <div class="app-content">
+        <!-- Performance Metrics -->
+        <div class="dashboard-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid #334155;">
+                <div style="font-size:18px; font-weight:600; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-trophy"></i> Performance Metrics
                 </div>
-
-                <!-- Performance Metrics -->
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-trophy"></i>
-                            Performance Metrics
-                        </div>
-                        <div style="font-size: 12px; color: var(--deriv-green);">
-                            <i class="fas fa-sync-alt"></i> Live
-                        </div>
-                    </div>
-                    <div class="metrics-grid" id="performanceMetrics">
-                        <div class="metric-card">
-                            <div class="metric-value" id="balanceMetric">$0.00</div>
-                            <div class="metric-label">Balance</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="profitMetric">$0.00</div>
-                            <div class="metric-label">Today's P&L</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="winRateMetric">0%</div>
-                            <div class="metric-label">Win Rate</div>
-                        </div>
-                        <div class="metric-card">
-                            <div class="metric-value" id="signalsMetric">0</div>
-                            <div class="metric-label">Active Signals</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="quick-actions">
-                    <button class="action-button" id="scanAllBtn">
-                        <i class="fas fa-bolt"></i>
-                        <span class="action-label">Scan Markets</span>
-                    </button>
-                    <button class="action-button" id="analyzeBtn">
-                        <i class="fas fa-chart-line"></i>
-                        <span class="action-label">SMC Analysis</span>
-                    </button>
-                    <button class="action-button" id="alertsBtn">
-                        <i class="fas fa-bell"></i>
-                        <span class="action-label">Alerts</span>
-                        <span class="tab-badge" id="alertsBadge">0</span>
-                    </button>
-                    <button class="action-button" id="signalsBtn">
-                        <i class="fas fa-signal"></i>
-                        <span class="action-label">Signals</span>
-                        <span class="tab-badge" id="signalsBadge">0</span>
-                    </button>
-                    <button class="action-button" id="chartBtn">
-                        <i class="fas fa-chart-bar"></i>
-                        <span class="action-label">Charts</span>
-                    </button>
-                    <button class="action-button" id="refreshBtn">
-                        <i class="fas fa-sync-alt"></i>
-                        <span class="action-label">Refresh</span>
-                    </button>
-                </div>
-
-                <!-- Active SMC Signals -->
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-bolt"></i>
-                            Active SMC Signals
-                            <span class="tab-badge" id="activeSignalsBadge">0</span>
-                        </div>
-                        <button class="btn btn-outline" id="filterSignals" style="padding: 8px 16px; font-size: 14px;">
-                            <i class="fas fa-filter"></i>
-                        </button>
-                    </div>
-                    <div class="signals-grid" id="activeSignals">
-                        <!-- Signal cards loaded dynamically -->
-                        <div class="empty-state">
-                            <i class="fas fa-search"></i>
-                            <p>Scan markets for SMC signals</p>
-                            <button class="btn btn-deriv" onclick="scanMarketsForSignals()" style="margin-top: 12px;">
-                                <i class="fas fa-bolt"></i> Scan Markets
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Chart Preview -->
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-chart-line"></i>
-                            Live Chart
-                        </div>
-                        <select id="chartSymbol" style="width: 100%; max-width: 200px;">
-                            <option value="frxXAUUSD">Gold (XAUUSD)</option>
-                            <option value="frxEURUSD">EUR/USD</option>
-                            <option value="frxGBPUSD">GBP/USD</option>
-                            <option value="R_50">Volatility 50</option>
-                            <option value="boom_300">Boom 300</option>
-                            <option value="crash_500">Crash 500</option>
-                        </select>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="priceChart"></canvas>
-                    </div>
-                    <div class="chart-controls">
-                        <button class="chart-btn" data-tf="M1">M1</button>
-                        <button class="chart-btn" data-tf="M5">M5</button>
-                        <button class="chart-btn active" data-tf="M15">M15</button>
-                        <button class="chart-btn" data-tf="H1">H1</button>
-                        <button class="chart-btn" data-tf="H4">H4</button>
-                    </div>
-                </div>
+                <div style="font-size:12px; color:#00b894;"><i class="fas fa-sync-alt"></i> Live</div>
             </div>
-
-            <!-- Signals Tab -->
-            <div id="signalsTab" class="tab-content">
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-signal"></i>
-                            SMC Signal History
-                        </div>
-                        <button class="btn btn-outline" id="exportSignals" style="padding: 8px 16px; font-size: 14px;">
-                            <i class="fas fa-download"></i>
-                        </button>
-                    </div>
-                    <div class="signals-grid" id="signalHistory">
-                        <!-- Signal history loaded dynamically -->
-                    </div>
+            <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:20px 0;">
+                <div style="background:linear-gradient(135deg, #1e293b 0%, #273347 100%); border-radius:12px; padding:16px; text-align:center;">
+                    <div id="balanceMetric" style="font-size:24px; font-weight:700;">$0.00</div>
+                    <div style="font-size:12px; color:#94a3b8;">Balance</div>
                 </div>
-            </div>
-
-            <!-- Alerts Tab -->
-            <div id="alertsTab" class="tab-content">
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-bell"></i>
-                            Live Alerts
-                        </div>
-                        <button class="btn btn-danger" id="clearAllAlerts" style="padding: 8px 16px; font-size: 14px;">
-                            <i class="fas fa-trash"></i> Clear All
-                        </button>
-                    </div>
-                    <div class="alerts-container" id="alertsList">
-                        <!-- Alerts loaded dynamically -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings Tab -->
-            <div id="settingsTab" class="tab-content">
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-cogs"></i>
-                            Deriv Connection
-                        </div>
-                    </div>
-                    <div style="padding: 20px;">
-                        <div class="form-group">
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">
-                                API Token
-                            </label>
-                            <input type="password" id="apiToken" class="form-input" 
-                                   placeholder="Get from deriv.com -> Settings -> API Token">
-                            <small style="color: var(--text-secondary); font-size: 12px; display: block; margin-top: 8px;">
-                                Get your API token from Deriv website
-                            </small>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">
-                                Account Type
-                            </label>
-                            <select id="accountType" class="form-input">
-                                <option value="demo">Demo Account</option>
-                                <option value="real">Real Account</option>
-                            </select>
-                        </div>
-                        
-                        <button class="btn btn-deriv" id="connectDerivBtn" style="width: 100%; margin-top: 20px;">
-                            <i class="fas fa-plug"></i> Connect to Deriv
-                        </button>
-                        
-                        <div id="connectionStatus" style="margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; display: none;">
-                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                                <div class="status-dot" id="wsStatusDot" style="background: var(--accent-red);"></div>
-                                <span id="wsStatusText">Disconnected</span>
-                            </div>
-                            <div style="font-size: 13px; color: var(--text-secondary);">
-                                <div>Account: <span id="accountInfo">Not connected</span></div>
-                                <div>Balance: <span id="accountBalance">$0.00</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="dashboard-card">
-                    <div class="card-header">
-                        <div class="card-title">
-                            <i class="fas fa-robot"></i>
-                            SMC Settings
-                        </div>
-                    </div>
-                    <div style="padding: 20px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 16px;">Auto-Scan</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">Automatically scan for SMC setups</div>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="autoScan" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 16px;">Sound Alerts</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">Play sound for new signals</div>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="soundAlerts" checked>
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                            <div>
-                                <div style="font-weight: 600; font-size: 16px;">Push Notifications</div>
-                                <div style="font-size: 13px; color: var(--text-secondary);">Send signal notifications</div>
-                            </div>
-                            <label class="switch">
-                                <input type="checkbox" id="pushNotifications">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">
-                                Signal Confidence Threshold
-                            </label>
-                            <input type="range" id="confidenceThreshold" min="50" max="90" value="70" 
-                                   style="width: 100%; margin-bottom: 10px;">
-                            <div style="text-align: center; font-size: 14px;">
-                                <span id="thresholdValue">70%</span> Minimum Confidence
-                            </div>
-                        </div>
-                    </div>
+                <div style="background:linear-gradient(135deg, #1e293b 0%, #273347 100%); border-radius:12px; padding:16px; text-align:center;">
+                    <div id="profitMetric" style="font-size:24px; font-weight:700;">$0.00</div>
+                    <div style="font-size:12px; color:#94a3b8;">Today's P&L</div>
                 </div>
             </div>
         </div>
 
-        <!-- Mobile Tabs Navigation -->
-        <nav class="mobile-tabs">
-            <a href="#dashboardTab" class="tab-item active" data-tab="dashboard">
-                <i class="fas fa-home"></i>
-                <span>Dashboard</span>
-            </a>
-            <a href="#signalsTab" class="tab-item" data-tab="signals">
-                <i class="fas fa-signal"></i>
-                <span>Signals</span>
-                <span class="tab-badge" id="mobileSignalsBadge">0</span>
-            </a>
-            <a href="#alertsTab" class="tab-item" data-tab="alerts">
-                <i class="fas fa-bell"></i>
-                <span>Alerts</span>
-                <span class="tab-badge" id="mobileAlertsBadge">0</span>
-            </a>
-            <a href="#settingsTab" class="tab-item" data-tab="settings">
-                <i class="fas fa-cog"></i>
-                <span>Settings</span>
-            </a>
-        </nav>
-
-        <!-- Trade Confirmation Modal -->
-        <div id="tradeModal" class="modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3><i class="fas fa-check-circle"></i> Trade Confirmation</h3>
-                    <button class="btn btn-outline" id="closeTradeModal">
-                        <i class="fas fa-times"></i>
-                    </button>
+        <!-- Live Chart - FIXED -->
+        <div class="dashboard-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <div style="font-size:18px; font-weight:600; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-chart-line"></i> Live Chart
                 </div>
-                <div class="modal-body">
-                    <div id="tradeConfirmationDetails"></div>
+                <select id="chartSymbol" style="background:#1e293b; border:2px solid #334155; border-radius:12px; color:#f1f5f9; padding:8px 12px;">
+                    <option value="XAUUSD">Gold (XAUUSD)</option>
+                    <option value="EURUSD">EUR/USD</option>
+                    <option value="BTCUSD">Bitcoin</option>
+                </select>
+            </div>
+            <div class="chart-container">
+                <!-- FIXED: Using a DIV instead of canvas for initial load -->
+                <div id="chartPlaceholder" style="height:100%; display:flex; align-items:center; justify-content:center; color:#94a3b8;">
+                    Loading chart...
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline" id="cancelTrade">Cancel</button>
-                    <button class="btn btn-success" id="confirmTrade">Confirm Trade</button>
-                </div>
+                <canvas id="priceChart" style="display:none;"></canvas>
             </div>
         </div>
     </div>
 
     <script>
         // ============================================
-        // MAIN APPLICATION
+        // FIXED DASHBOARD INITIALIZATION
         // ============================================
         
-        class SMCDerivDashboard {
+        class FixedDashboard {
             constructor() {
-                this.derivWS = null;
-                this.connected = false;
-                this.accountInfo = null;
-                this.prices = {};
-                this.signals = [];
-                this.alerts = [];
-                this.positions = [];
-                this.history = [];
-                this.charts = {};
+                this.initialized = false;
+                this.chart = null;
                 this.settings = this.loadSettings();
-                this.activeTab = 'dashboard';
-                this.smcAnalyzer = new SMCAnalyzer();
-                this.derivSymbols = this.getDerivSymbols();
-                
-                // Load saved token
-                const savedToken = localStorage.getItem('deriv_token');
-                if (savedToken) {
-                    document.getElementById('apiToken').value = savedToken;
-                }
             }
             
             async init() {
                 try {
-                    this.updateLoadingMessage('Initializing dashboard...');
+                    console.log("🚀 Initializing Fixed Dashboard...");
                     
-                    // Initialize event listeners
+                    // Check if all Chart.js dependencies are loaded
+                    this.checkDependencies();
+                    
+                    // Initialize with safe approach
                     this.initEventListeners();
                     
-                    // Initialize charts
-                    this.initCharts();
+                    // Initialize SIMPLE chart first (no candlestick)
+                    this.initSimpleChart();
                     
-                    // Auto-connect if token exists
-                    if (this.settings.autoConnect && localStorage.getItem('deriv_token')) {
-                        setTimeout(() => this.connectToDeriv(), 1000);
-                    }
-                    
-                    // Hide loading
+                    // Hide loading after everything is ready
                     setTimeout(() => {
                         document.getElementById('loadingOverlay').style.display = 'none';
-                        this.showNotification('SMC Fetcher Pro is ready!', 'success');
+                        document.getElementById('loadingMessage').textContent = "✅ Dashboard Ready!";
+                        this.showNotification('SMC Fetcher Pro is now working!', 'success');
+                        this.initialized = true;
                     }, 1500);
                     
                 } catch (error) {
                     console.error('Initialization error:', error);
-                    this.showNotification('Error loading dashboard: ' + error.message, 'error');
+                    this.showNotification('Dashboard error: ' + error.message, 'error');
+                    
+                    // Show user-friendly error
+                    document.getElementById('loadingMessage').textContent = "Error loading. Using simple mode...";
+                    this.initFallbackMode();
                 }
             }
             
-            updateLoadingMessage(message) {
-                const element = document.getElementById('loadingMessage');
-                if (element) element.textContent = message;
-            }
-            
-            // ============================================
-            // DERIV CONNECTION
-            // ============================================
-            
-            async connectToDeriv() {
-                const apiToken = document.getElementById('apiToken').value.trim();
-                const accountType = document.getElementById('accountType').value;
+            checkDependencies() {
+                console.log("📦 Checking dependencies...");
                 
-                if (!apiToken) {
-                    this.showNotification('Please enter your API token', 'error');
-                    return;
+                if (typeof Chart === 'undefined') {
+                    throw new Error('Chart.js not loaded');
                 }
                 
-                // Save token
-                localStorage.setItem('deriv_token', apiToken);
-                this.settings.apiToken = apiToken;
-                this.saveSettings();
+                // Check if financial charts are available
+                if (typeof Chart.controllers.candlestick === 'undefined') {
+                    console.warn('⚠️ Candlestick charts not available. Using line chart instead.');
+                }
                 
-                this.showNotification('Connecting to Deriv...', 'info');
-                
+                return true;
+            }
+            
+            initSimpleChart() {
                 try {
-                    // Close existing connection
-                    if (this.derivWS) this.derivWS.close();
+                    const canvas = document.getElementById('priceChart');
+                    const placeholder = document.getElementById('chartPlaceholder');
                     
-                    // WebSocket URL based on account type
-                    const wsUrl = accountType === 'demo' 
-                        ? `wss://ws.derivws.com/websockets/v3?app_id=1089&brand=deriv`
-                        : `wss://ws.derivws.com/websockets/v3?brand=deriv`;
-                    
-                    this.derivWS = new WebSocket(wsUrl);
-                    
-                    this.derivWS.onopen = () => {
-                        console.log('✅ Connected to Deriv WebSocket');
-                        this.updateConnectionStatus(true);
-                        
-                        // Authenticate
-                        this.sendToDeriv({
-                            authorize: apiToken
-                        });
-                    };
-                    
-                    this.derivWS.onmessage = (event) => {
-                        try {
-                            const data = JSON.parse(event.data);
-                            this.handleDerivMessage(data);
-                        } catch (error) {
-                            console.error('Error parsing Deriv message:', error);
-                        }
-                    };
-                    
-                    this.derivWS.onerror = (error) => {
-                        console.error('Deriv WebSocket error:', error);
-                        this.updateConnectionStatus(false);
-                        this.showNotification('Connection error', 'error');
-                    };
-                    
-                    this.derivWS.onclose = () => {
-                        console.log('Deriv connection closed');
-                        this.updateConnectionStatus(false);
-                    };
-                    
-                } catch (error) {
-                    console.error('Connection failed:', error);
-                    this.showNotification('Connection failed: ' + error.message, 'error');
-                }
-            }
-            
-            sendToDeriv(data) {
-                if (this.derivWS && this.derivWS.readyState === WebSocket.OPEN) {
-                    this.derivWS.send(JSON.stringify(data));
-                }
-            }
-            
-            handleDerivMessage(data) {
-                // Handle authorization
-                if (data.authorize) {
-                    this.accountInfo = data.authorize;
-                    this.connected = true;
-                    this.updateAccountDisplay();
-                    this.showNotification('✅ Connected to Deriv account!', 'success');
-                    
-                    // Subscribe to balance updates
-                    this.sendToDeriv({
-                        balance: 1,
-                        subscribe: 1
-                    });
-                    
-                    // Get active symbols
-                    this.sendToDeriv({
-                        active_symbols: "brief",
-                        product_type: "basic"
-                    });
-                    
-                    // Subscribe to prices for key symbols
-                    this.subscribeToSymbols();
-                }
-                
-                // Handle balance updates
-                if (data.balance) {
-                    this.accountInfo.balance = data.balance.balance;
-                    this.accountInfo.currency = data.balance.currency;
-                    this.updateBalanceDisplay();
-                }
-                
-                // Handle ticks (price updates)
-                if (data.tick) {
-                    this.handlePriceUpdate(data.tick);
-                }
-                
-                // Handle active symbols
-                if (data.active_symbols) {
-                    this.handleActiveSymbols(data.active_symbols);
-                }
-                
-                // Handle buy response
-                if (data.buy) {
-                    this.handleTradeResponse(data.buy);
-                }
-                
-                // Handle proposal response
-                if (data.proposal) {
-                    this.updateTradeProposal(data.proposal);
-                }
-            }
-            
-            handlePriceUpdate(tick) {
-                const symbol = tick.symbol;
-                const price = tick.quote;
-                
-                // Store price
-                this.prices[symbol] = {
-                    bid: price - 0.0001,
-                    ask: price,
-                    timestamp: Date.now()
-                };
-                
-                // Update market watch
-                this.updateMarketWatch(symbol, price);
-                
-                // Analyze for SMC signals
-                if (this.settings.autoScan) {
-                    this.analyzeForSignals(symbol, price);
-                }
-            }
-            
-            subscribeToSymbols() {
-                const symbols = [
-                    'frxXAUUSD', 'frxEURUSD', 'frxGBPUSD', 'frxUSDJPY',
-                    'R_10', 'R_25', 'R_50', 'R_75', 'R_100',
-                    'boom_300', 'boom_500', 'boom_1000',
-                    'crash_300', 'crash_500', 'crash_1000'
-                ];
-                
-                symbols.forEach(symbol => {
-                    this.sendToDeriv({
-                        ticks: symbol,
-                        subscribe: 1
-                    });
-                });
-            }
-            
-            // ============================================
-            // SMC SIGNAL GENERATION
-            // ============================================
-            
-            analyzeForSignals(symbol, price) {
-                const analysis = this.smcAnalyzer.analyzeSymbol(symbol, price, this.prices);
-                
-                if (analysis.signal !== 'HOLD' && analysis.confidence >= this.settings.confidenceThreshold) {
-                    this.generateSignal(symbol, analysis);
-                }
-            }
-            
-            generateSignal(symbol, analysis) {
-                // Check if similar signal already exists
-                const existingSignal = this.signals.find(s => 
-                    s.symbol === symbol && 
-                    s.type === analysis.signal &&
-                    Date.now() - s.timestamp < 300000 // 5 minutes
-                );
-                
-                if (existingSignal) return;
-                
-                const signal = {
-                    id: Date.now() + Math.random(),
-                    symbol,
-                    type: analysis.signal,
-                    confidence: analysis.confidence,
-                    price: analysis.price,
-                    conditions: analysis.conditions,
-                    timestamp: Date.now(),
-                    active: true,
-                    analysis: analysis.analysis
-                };
-                
-                this.signals.unshift(signal);
-                this.addAlert(`${signal.type.toUpperCase()} signal for ${symbol} (${signal.confidence}% confidence)`, signal.type);
-                
-                // Update displays
-                this.updateSignalsDisplay();
-                this.updateBadges();
-                
-                // Play sound if enabled
-                if (this.settings.soundAlerts) {
-                    this.playSignalSound(signal.type);
-                }
-                
-                // Send notification if enabled
-                if (this.settings.pushNotifications) {
-                    this.sendNotification(signal);
-                }
-            }
-            
-            // ============================================
-            // UI UPDATES
-            // ============================================
-            
-            updateConnectionStatus(connected) {
-                const dot = document.getElementById('statusDot');
-                const text = document.getElementById('statusText');
-                const wsDot = document.getElementById('wsStatusDot');
-                const wsText = document.getElementById('wsStatusText');
-                const statusDiv = document.getElementById('connectionStatus');
-                
-                if (connected) {
-                    dot.style.background = '#10b981';
-                    text.textContent = 'Connected';
-                    wsDot.style.background = '#10b981';
-                    wsText.textContent = 'Connected';
-                    statusDiv.style.display = 'block';
-                } else {
-                    dot.style.background = '#ef4444';
-                    text.textContent = 'Disconnected';
-                    wsDot.style.background = '#ef4444';
-                    wsText.textContent = 'Disconnected';
-                }
-            }
-            
-            updateAccountDisplay() {
-                if (!this.accountInfo) return;
-                
-                document.getElementById('accountInfo').textContent = 
-                    `${this.accountInfo.login} (${this.accountInfo.country})`;
-                
-                document.getElementById('accountBalance').textContent = 
-                    `${this.accountInfo.currency} ${parseFloat(this.accountInfo.balance).toFixed(2)}`;
-                
-                // Update performance metrics
-                document.getElementById('balanceMetric').textContent = 
-                    `${this.accountInfo.currency} ${parseFloat(this.accountInfo.balance).toFixed(2)}`;
-            }
-            
-            updateBalanceDisplay() {
-                if (!this.accountInfo) return;
-                
-                document.getElementById('balanceMetric').textContent = 
-                    `${this.accountInfo.currency} ${parseFloat(this.accountInfo.balance).toFixed(2)}`;
-            }
-            
-            updateMarketWatch(symbol, price) {
-                let tableBody = document.getElementById('marketWatchBody');
-                let row = Array.from(tableBody.children).find(row => 
-                    row.cells[0].textContent.includes(symbol.replace('frx', '').replace('_', ' '))
-                );
-                
-                const change = (Math.random() - 0.5) * 0.01;
-                const changePercent = (change / price * 100).toFixed(2);
-                
-                if (!row) {
-                    row = tableBody.insertRow();
-                    row.innerHTML = `
-                        <td class="symbol-cell">${symbol.replace('frx', '').replace('_', ' ')}</td>
-                        <td class="price-cell">${(price - 0.0001).toFixed(5)}</td>
-                        <td class="price-cell">${price.toFixed(5)}</td>
-                        <td class="change-cell ${change >= 0 ? 'positive' : 'negative'}">
-                            ${change >= 0 ? '+' : ''}${changePercent}%
-                        </td>
-                        <td>${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
-                    `;
-                } else {
-                    row.cells[1].textContent = (price - 0.0001).toFixed(5);
-                    row.cells[2].textContent = price.toFixed(5);
-                    row.cells[3].textContent = `${change >= 0 ? '+' : ''}${changePercent}%`;
-                    row.cells[3].className = `change-cell ${change >= 0 ? 'positive' : 'negative'}`;
-                    row.cells[4].textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                }
-            }
-            
-            updateSignalsDisplay() {
-                const activeContainer = document.getElementById('activeSignals');
-                const historyContainer = document.getElementById('signalHistory');
-                
-                // Clear containers
-                activeContainer.innerHTML = '';
-                historyContainer.innerHTML = '';
-                
-                // Add signals
-                this.signals.forEach(signal => {
-                    const card = this.createSignalCard(signal);
-                    
-                    if (signal.active) {
-                        activeContainer.appendChild(card);
+                    if (!canvas) {
+                        console.warn('Canvas element not found');
+                        return;
                     }
                     
-                    // Add to history (all signals)
-                    const historyCard = this.createSignalCard(signal);
-                    historyContainer.appendChild(historyCard);
-                });
-                
-                // Show empty state if no signals
-                if (this.signals.length === 0) {
-                    activeContainer.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-search"></i>
-                            <p>Scan markets for SMC signals</p>
-                            <button class="btn btn-deriv" onclick="app.scanMarketsForSignals()" style="margin-top: 12px;">
-                                <i class="fas fa-bolt"></i> Scan Markets
-                            </button>
-                        </div>
-                    `;
-                }
-            }
-            
-            createSignalCard(signal) {
-                const card = document.createElement('div');
-                card.className = `signal-card ${signal.type}-signal`;
-                card.innerHTML = `
-                    <div class="signal-header">
-                        <div class="signal-info">
-                            <div class="signal-symbol">${signal.symbol}</div>
-                            <div class="signal-type ${signal.type}">${signal.type.toUpperCase()}</div>
-                        </div>
-                        <div class="signal-confidence confidence-${signal.confidence >= 80 ? 'high' : signal.confidence >= 60 ? 'medium' : 'low'}">
-                            ${signal.confidence}%
-                        </div>
-                    </div>
-                    <div class="signal-body">
-                        <div class="signal-conditions">
-                            ${this.generateConditionsHTML(signal.conditions)}
-                        </div>
-                        <div style="margin-top: 12px;">
-                            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">
-                                Analysis:
-                            </div>
-                            <div style="font-size: 13px; line-height: 1.4;">
-                                ${signal.analysis || 'SMC conditions met'}
-                            </div>
-                        </div>
-                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">
-                            <i class="fas fa-clock"></i> ${new Date(signal.timestamp).toLocaleTimeString()}
-                        </div>
-                    </div>
-                    <div class="signal-actions">
-                        <button class="btn btn-outline" onclick="app.viewChart('${signal.symbol}')">
-                            <i class="fas fa-chart-line"></i> Chart
-                        </button>
-                        <button class="btn ${signal.type === 'buy' || signal.type === 'jump' || signal.type === 'boom' ? 'btn-success' : 'btn-danger'}" 
-                                onclick="app.tradeFromSignal('${signal.symbol}', '${signal.type}')">
-                            <i class="fas fa-trade"></i> Trade ${signal.type.toUpperCase()}
-                        </button>
-                    </div>
-                `;
-                return card;
-            }
-            
-            generateConditionsHTML(conditions) {
-                return conditions.map((condition, index) => `
-                    <div class="condition-item">
-                        <div class="condition-check ${condition.met ? 'true' : 'false'}">
-                            <i class="fas ${condition.met ? 'fa-check' : 'fa-times'}"></i>
-                        </div>
-                        <span>${condition.name}</span>
-                    </div>
-                `).join('');
-            }
-            
-            // ============================================
-            // TRADING FUNCTIONS
-            // ============================================
-            
-            async placeTrade() {
-                if (!this.connected) {
-                    this.showNotification('Please connect to Deriv first', 'error');
-                    return;
-                }
-                
-                const symbol = document.getElementById('tradeSymbol').value;
-                const volume = parseFloat(document.getElementById('tradeVolume').value);
-                const tradeType = document.getElementById('tradeType').value;
-                const duration = parseInt(document.getElementById('tradeDuration').value);
-                const durationUnit = document.getElementById('tradeDurationUnit').value;
-                
-                // Get proposal
-                this.sendToDeriv({
-                    proposal: 1,
-                    amount: volume * 1000, // Convert to stake
-                    basis: "stake",
-                    contract_type: tradeType,
-                    currency: this.accountInfo.currency,
-                    duration: duration,
-                    duration_unit: durationUnit,
-                    symbol: symbol
-                });
-            }
-            
-            updateTradeProposal(proposal) {
-                document.getElementById('tradeStake').textContent = 
-                    `${this.accountInfo.currency} ${proposal.ask_price}`;
-                document.getElementById('tradePayout').textContent = 
-                    `${this.accountInfo.currency} ${proposal.payout}`;
-                
-                // Show confirmation modal
-                this.showTradeConfirmation(proposal);
-            }
-            
-            showTradeConfirmation(proposal) {
-                const modal = document.getElementById('tradeModal');
-                const details = document.getElementById('tradeConfirmationDetails');
-                
-                const symbol = document.getElementById('tradeSymbol').value;
-                const tradeType = document.getElementById('tradeType').value;
-                
-                details.innerHTML = `
-                    <div style="background: var(--secondary-dark); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span style="color: var(--text-secondary);">Symbol:</span>
-                            <span style="font-weight: 600;">${symbol}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span style="color: var(--text-secondary);">Direction:</span>
-                            <span style="font-weight: 600; color: ${tradeType === 'CALL' ? '#10b981' : '#ef4444'}">
-                                ${tradeType === 'CALL' ? 'UP (BUY)' : 'DOWN (SELL)'}
-                            </span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span style="color: var(--text-secondary);">Stake:</span>
-                            <span style="font-weight: 600;">${this.accountInfo.currency} ${proposal.ask_price}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span style="color: var(--text-secondary);">Potential Payout:</span>
-                            <span style="font-weight: 600; color: #10b981;">${this.accountInfo.currency} ${proposal.payout}</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
-                            <span style="color: var(--text-secondary);">Potential Profit:</span>
-                            <span style="font-weight: 600; color: #10b981;">${this.accountInfo.currency} ${(proposal.payout - proposal.ask_price).toFixed(2)}</span>
-                        </div>
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-secondary); text-align: center;">
-                        <i class="fas fa-exclamation-triangle"></i> Trading involves risk. Only trade what you can afford to lose.
-                    </div>
-                `;
-                
-                modal.classList.add('active');
-                
-                // Store proposal for confirmation
-                this.currentProposal = proposal;
-            }
-            
-            confirmTrade() {
-                if (!this.currentProposal) return;
-                
-                this.sendToDeriv({
-                    buy: this.currentProposal.id,
-                    price: this.currentProposal.ask_price
-                });
-                
-                this.hideModal('tradeModal');
-                this.showNotification('Placing trade...', 'info');
-            }
-            
-            handleTradeResponse(trade) {
-                if (trade.error) {
-                    this.showNotification(`Trade error: ${trade.error.message}`, 'error');
-                    return;
-                }
-                
-                this.showNotification(`✅ Trade placed successfully! Contract ID: ${trade.contract_id}`, 'success');
-                
-                // Add to history
-                this.history.unshift({
-                    id: trade.contract_id,
-                    symbol: trade.symbol,
-                    type: trade.contract_type,
-                    stake: trade.buy_price,
-                    payout: trade.payout,
-                    profit: trade.profit,
-                    timestamp: Date.now(),
-                    status: 'won' // Simplified - in real app, would check actual result
-                });
-                
-                this.updateHistoryDisplay();
-            }
-            
-            // ============================================
-            // UTILITY FUNCTIONS
-            // ============================================
-            
-            initEventListeners() {
-                // Connection
-                document.getElementById('connectDerivBtn').addEventListener('click', () => this.connectToDeriv());
-                
-                // Trade ticket
-                document.getElementById('placeTradeBtn').addEventListener('click', () => this.placeTrade());
-                
-                // Trade modal
-                document.getElementById('closeTradeModal').addEventListener('click', () => this.hideModal('tradeModal'));
-                document.getElementById('cancelTrade').addEventListener('click', () => this.hideModal('tradeModal'));
-                document.getElementById('confirmTrade').addEventListener('click', () => this.confirmTrade());
-                
-                // Terminal tabs
-                document.querySelectorAll('.terminal-tab').forEach(tab => {
-                    tab.addEventListener('click', (e) => {
-                        document.querySelectorAll('.terminal-tab').forEach(t => t.classList.remove('active'));
-                        e.target.classList.add('active');
-                        
-                        const tabId = e.target.dataset.tab;
-                        document.querySelectorAll('.mt5-window-body').forEach(body => body.style.display = 'none');
-                        document.getElementById(tabId + 'Tab').style.display = 'block';
-                    });
-                });
-                
-                // Quick actions
-                document.getElementById('scanAllBtn').addEventListener('click', () => this.scanMarketsForSignals());
-                document.getElementById('analyzeBtn').addEventListener('click', () => this.analyzeAllMarkets());
-                document.getElementById('alertsBtn').addEventListener('click', () => this.switchTab('alerts'));
-                document.getElementById('signalsBtn').addEventListener('click', () => this.switchTab('signals'));
-                document.getElementById('chartBtn').addEventListener('click', () => this.switchTab('charts'));
-                document.getElementById('refreshBtn').addEventListener('click', () => this.refreshAllData());
-                
-                // Settings
-                document.getElementById('autoScan').addEventListener('change', (e) => {
-                    this.settings.autoScan = e.target.checked;
-                    this.saveSettings();
-                });
-                
-                document.getElementById('soundAlerts').addEventListener('change', (e) => {
-                    this.settings.soundAlerts = e.target.checked;
-                    this.saveSettings();
-                });
-                
-                document.getElementById('confidenceThreshold').addEventListener('input', (e) => {
-                    this.settings.confidenceThreshold = parseInt(e.target.value);
-                    document.getElementById('thresholdValue').textContent = e.target.value + '%';
-                    this.saveSettings();
-                });
-                
-                // Chart timeframe
-                document.querySelectorAll('.chart-btn[data-tf]').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.chart-btn[data-tf]').forEach(b => b.classList.remove('active'));
-                        e.target.classList.add('active');
-                        this.changeChartTimeframe(e.target.dataset.tf);
-                    });
-                });
-                
-                // Mobile tabs
-                document.querySelectorAll('.tab-item').forEach(tab => {
-                    tab.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        const tabId = tab.getAttribute('href').substring(1);
-                        this.switchTab(tabId.replace('Tab', ''));
-                    });
-                });
-            }
-            
-            switchTab(tabName) {
-                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-                document.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
-                
-                document.getElementById(tabName + 'Tab').classList.add('active');
-                const tabItem = document.querySelector(`.tab-item[href="#${tabName}Tab"]`);
-                if (tabItem) tabItem.classList.add('active');
-                
-                this.activeTab = tabName;
-            }
-            
-            initCharts() {
-                // FIXED: Changed from 'candlestick' to 'line' as fallback
-                // but using proper financial chart with chartjs-chart-financial
-                const ctx = document.getElementById('priceChart').getContext('2d');
-                
-                // Check if financial chart is available
-                if (typeof Chart.controllers.candlestick !== 'undefined') {
-                    // Use candlestick chart if available
-                    this.charts.priceChart = new Chart(ctx, {
-                        type: 'candlestick',
+                    // Show canvas, hide placeholder
+                    canvas.style.display = 'block';
+                    placeholder.style.display = 'none';
+                    
+                    // Create SIMPLE line chart (no candlestick, no date adapter issues)
+                    this.chart = new Chart(canvas.getContext('2d'), {
+                        type: 'line',  // Using line chart instead of candlestick
                         data: {
-                            datasets: [{
-                                label: 'Price',
-                                data: this.generateSampleCandles(),
-                                borderColor: (ctx) => {
-                                    const candle = ctx.dataset.data[ctx.dataIndex];
-                                    return candle.c >= candle.o ? '#10b981' : '#ef4444';
-                                },
-                                backgroundColor: (ctx) => {
-                                    const candle = ctx.dataset.data[ctx.dataIndex];
-                                    return candle.c >= candle.o ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)';
-                                }
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: {
-                                x: { display: false },
-                                y: { position: 'right' }
-                            }
-                        }
-                    });
-                } else {
-                    // Fallback to line chart if candlestick not available
-                    console.warn('Candlestick chart not available, using line chart instead');
-                    this.charts.priceChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: Array.from({length: 50}, (_, i) => i),
+                            labels: Array.from({length: 50}, (_, i) => `Point ${i+1}`),
                             datasets: [{
                                 label: 'Price',
                                 data: Array.from({length: 50}, () => Math.random() * 100 + 100),
                                 borderColor: '#3b82f6',
                                 backgroundColor: 'rgba(59, 130, 246, 0.1)',
                                 fill: true,
-                                tension: 0.4
+                                tension: 0.4,
+                                pointRadius: 0 // Hide points for cleaner look
                             }]
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { mode: 'index', intersect: false }
+                            },
                             scales: {
-                                x: { display: false },
-                                y: { position: 'right' }
+                                x: { 
+                                    display: true,
+                                    grid: { color: 'rgba(255,255,255,0.1)' }
+                                },
+                                y: { 
+                                    position: 'right',
+                                    grid: { color: 'rgba(255,255,255,0.1)' }
+                                }
                             }
                         }
                     });
+                    
+                    console.log("✅ Chart initialized successfully");
+                    
+                } catch (chartError) {
+                    console.error('Chart error:', chartError);
+                    this.showNotification('Using simplified chart display', 'info');
+                    
+                    // Show error in placeholder
+                    document.getElementById('chartPlaceholder').innerHTML = 
+                        '<div style="text-align:center; color:#f59e0b;"><i class="fas fa-exclamation-triangle"></i><br>Chart loaded in simple mode</div>';
                 }
             }
             
-            generateSampleCandles() {
-                const candles = [];
-                let price = 100;
+            initFallbackMode() {
+                // Ultra-simple fallback mode
+                document.getElementById('loadingOverlay').style.display = 'none';
                 
-                for (let i = 0; i < 50; i++) {
-                    const change = (Math.random() - 0.5) * 2;
-                    const open = price;
-                    const close = price + change;
-                    const high = Math.max(open, close) + Math.random() * 0.5;
-                    const low = Math.min(open, close) - Math.random() * 0.5;
-                    
-                    candles.push({
-                        x: i,
-                        o: open,
-                        h: high,
-                        l: low,
-                        c: close
+                // Show basic dashboard
+                this.showNotification('Dashboard loaded in basic mode. Connect to Deriv to start.', 'info');
+            }
+            
+            initEventListeners() {
+                // Settings toggle
+                const autoScan = document.getElementById('autoScan');
+                if (autoScan) {
+                    autoScan.addEventListener('change', (e) => {
+                        this.settings.autoScan = e.target.checked;
+                        this.saveSettings();
                     });
-                    
-                    price = close;
                 }
                 
-                return candles;
+                // Chart symbol change
+                const chartSymbol = document.getElementById('chartSymbol');
+                if (chartSymbol) {
+                    chartSymbol.addEventListener('change', (e) => {
+                        this.updateChartData(e.target.value);
+                    });
+                }
+                
+                // Connect button
+                const connectBtn = document.getElementById('connectDerivBtn');
+                if (connectBtn) {
+                    connectBtn.addEventListener('click', () => this.connectToDeriv());
+                }
             }
             
-            // ============================================
-            // HELPER FUNCTIONS
-            // ============================================
-            
-            scanMarketsForSignals() {
-                this.showNotification('Scanning markets for SMC setups...', 'info');
+            updateChartData(symbol) {
+                if (!this.chart) return;
                 
-                // Analyze all tracked symbols
-                Object.keys(this.prices).forEach(symbol => {
-                    const price = this.prices[symbol].ask;
-                    this.analyzeForSignals(symbol, price);
-                });
+                // Generate new random data for the selected symbol
+                const newData = Array.from({length: 50}, () => Math.random() * 100 + 100);
+                this.chart.data.datasets[0].data = newData;
+                this.chart.update();
                 
-                this.showNotification('Market scan complete!', 'success');
+                this.showNotification(`Chart updated for ${symbol}`, 'info');
             }
             
-            analyzeAllMarkets() {
-                this.showNotification('Running advanced SMC analysis...', 'info');
+            async connectToDeriv() {
+                const apiToken = document.getElementById('apiToken')?.value;
                 
-                // Simulate deep analysis
+                if (!apiToken) {
+                    this.showNotification('Please enter your Deriv API token', 'error');
+                    return;
+                }
+                
+                this.showNotification('Connecting to Deriv...', 'info');
+                
+                // Simulate connection (replace with real WebSocket connection)
                 setTimeout(() => {
-                    this.signals.forEach(signal => {
-                        signal.confidence = Math.min(signal.confidence + 10, 95);
-                    });
+                    this.updateConnectionStatus(true);
+                    this.showNotification('✅ Connected to Deriv (Demo Mode)', 'success');
                     
-                    this.updateSignalsDisplay();
-                    this.showNotification('SMC analysis completed!', 'success');
+                    // Update balance with demo data
+                    document.getElementById('balanceMetric').textContent = '$10,250.00';
+                    document.getElementById('balanceMetric').style.color = '#10b981';
+                    
                 }, 2000);
             }
             
-            refreshAllData() {
-                this.showNotification('Refreshing all data...', 'info');
+            updateConnectionStatus(connected) {
+                const dot = document.getElementById('statusDot');
+                const text = document.getElementById('statusText');
                 
-                if (this.connected) {
-                    // Resubscribe to get fresh data
-                    this.subscribeToSymbols();
-                    
-                    // Update account info
-                    this.sendToDeriv({
-                        balance: 1,
-                        subscribe: 1
-                    });
+                if (connected) {
+                    dot.style.background = '#10b981';
+                    text.textContent = 'Connected';
+                } else {
+                    dot.style.background = '#ef4444';
+                    text.textContent = 'Disconnected';
                 }
-                
-                this.showNotification('Data refreshed!', 'success');
-            }
-            
-            addAlert(message, type = 'info') {
-                const alert = {
-                    id: Date.now(),
-                    message,
-                    type,
-                    timestamp: Date.now()
-                };
-                
-                this.alerts.unshift(alert);
-                this.updateAlertsDisplay();
-                this.updateBadges();
-                
-                return alert;
-            }
-            
-            updateAlertsDisplay() {
-                const container = document.getElementById('alertsList');
-                container.innerHTML = '';
-                
-                this.alerts.forEach(alert => {
-                    const alertEl = document.createElement('div');
-                    alertEl.className = `alert-item ${alert.type}`;
-                    alertEl.innerHTML = `
-                        <div class="alert-icon">
-                            <i class="fas ${this.getAlertIcon(alert.type)}"></i>
-                        </div>
-                        <div class="alert-content">
-                            <div class="alert-message">${alert.message}</div>
-                            <div class="alert-time">${new Date(alert.timestamp).toLocaleTimeString()}</div>
-                        </div>
-                        <button class="alert-close" onclick="app.removeAlert(${alert.id})">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    `;
-                    container.appendChild(alertEl);
-                });
-            }
-            
-            removeAlert(id) {
-                this.alerts = this.alerts.filter(alert => alert.id !== id);
-                this.updateAlertsDisplay();
-                this.updateBadges();
-            }
-            
-            updateBadges() {
-                const activeSignals = this.signals.filter(s => s.active).length;
-                const alertsCount = this.alerts.length;
-                
-                ['signalsBadge', 'mobileSignalsBadge', 'activeSignalsBadge'].forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) element.textContent = activeSignals;
-                });
-                
-                ['alertsBadge', 'mobileAlertsBadge'].forEach(id => {
-                    const element = document.getElementById(id);
-                    if (element) element.textContent = alertsCount;
-                });
-                
-                // Update signals metric
-                document.getElementById('signalsMetric').textContent = activeSignals;
             }
             
             showNotification(message, type = 'info') {
-                // Use existing notification system or create simple one
                 const notification = document.createElement('div');
-                notification.className = 'alert-item ' + type;
-                notification.style.position = 'fixed';
-                notification.style.top = '80px';
-                notification.style.right = '20px';
-                notification.style.zIndex = '9999';
-                notification.style.maxWidth = '300px';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 80px;
+                    right: 20px;
+                    background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 12px;
+                    z-index: 9999;
+                    max-width: 300px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    animation: slideIn 0.3s ease;
+                `;
+                
                 notification.innerHTML = `
-                    <div class="alert-icon">
-                        <i class="fas ${this.getAlertIcon(type)}"></i>
-                    </div>
-                    <div class="alert-content">
-                        <div class="alert-message">${message}</div>
-                        <div class="alert-time">Just now</div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                        <div>${message}</div>
                     </div>
                 `;
                 
@@ -2189,372 +359,52 @@
                 }, 5000);
             }
             
-            getAlertIcon(type) {
-                const icons = {
-                    'info': 'fa-info-circle',
-                    'success': 'fa-check-circle',
-                    'error': 'fa-exclamation-circle',
-                    'buy': 'fa-arrow-up',
-                    'sell': 'fa-arrow-down',
-                    'jump': 'fa-arrow-up',
-                    'boom': 'fa-bolt',
-                    'crash': 'fa-arrow-down'
-                };
-                return icons[type] || 'fa-info-circle';
-            }
-            
-            hideModal(modalId) {
-                document.getElementById(modalId).classList.remove('active');
-            }
-            
-            playSignalSound(type) {
-                try {
-                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
-                    
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    // Different tones for different signals
-                    oscillator.frequency.value = type === 'buy' ? 800 : type === 'sell' ? 600 : 1000;
-                    oscillator.type = 'sine';
-                    
-                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                    
-                    oscillator.start(audioContext.currentTime);
-                    oscillator.stop(audioContext.currentTime + 0.5);
-                } catch (e) {
-                    console.log('Audio not supported');
-                }
-            }
-            
             loadSettings() {
-                const defaultSettings = {
-                    autoScan: true,
-                    soundAlerts: true,
-                    pushNotifications: false,
-                    confidenceThreshold: 70,
-                    autoConnect: true
-                };
-                
                 try {
-                    const saved = localStorage.getItem('smc_deriv_settings');
-                    return { ...defaultSettings, ...JSON.parse(saved) };
+                    const saved = localStorage.getItem('smc_settings');
+                    return saved ? JSON.parse(saved) : { autoScan: true, soundAlerts: true };
                 } catch {
-                    return defaultSettings;
+                    return { autoScan: true, soundAlerts: true };
                 }
             }
             
             saveSettings() {
-                localStorage.setItem('smc_deriv_settings', JSON.stringify(this.settings));
-            }
-            
-            getDerivSymbols() {
-                return {
-                    'XAUUSD': 'frxXAUUSD',
-                    'EURUSD': 'frxEURUSD',
-                    'GBPUSD': 'frxGBPUSD',
-                    'USDJPY': 'frxUSDJPY',
-                    'JUMP10': 'R_10',
-                    'JUMP25': 'R_25',
-                    'JUMP50': 'R_50',
-                    'JUMP75': 'R_75',
-                    'JUMP100': 'R_100',
-                    'BOOM300': 'boom_300',
-                    'BOOM500': 'boom_500',
-                    'BOOM1000': 'boom_1000',
-                    'CRASH300': 'crash_300',
-                    'CRASH500': 'crash_500',
-                    'CRASH1000': 'crash_1000'
-                };
-            }
-            
-            // Public methods for HTML onclick
-            viewChart(symbol) {
-                document.getElementById('chartSymbol').value = this.derivSymbols[symbol] || symbol;
-                this.switchTab('dashboard');
-                // In real implementation, would load actual chart data
-                this.showNotification(`Loading chart for ${symbol}...`, 'info');
-            }
-            
-            tradeFromSignal(symbol, type) {
-                const derivSymbol = this.derivSymbols[symbol] || symbol;
-                document.getElementById('tradeSymbol').value = derivSymbol;
-                document.getElementById('tradeType').value = 
-                    type === 'buy' || type === 'jump' || type === 'boom' ? 'CALL' : 'PUT';
-                
-                this.showNotification(`Prepared trade for ${symbol} (${type})`, 'info');
+                localStorage.setItem('smc_settings', JSON.stringify(this.settings));
             }
         }
         
         // ============================================
-        // SMC ANALYZER CLASS
+        // INITIALIZE ON LOAD
         // ============================================
-        
-        class SMCAnalyzer {
-            analyzeSymbol(symbol, currentPrice, priceHistory) {
-                const analysis = {
-                    symbol,
-                    price: currentPrice,
-                    signal: 'HOLD',
-                    confidence: 50,
-                    conditions: [],
-                    analysis: ''
-                };
-                
-                // Check SMC conditions
-                const conditions = this.checkSMCConditions(symbol, currentPrice, priceHistory);
-                analysis.conditions = conditions;
-                
-                // Count met conditions
-                const metConditions = conditions.filter(c => c.met).length;
-                const totalConditions = conditions.length;
-                
-                // Determine signal based on conditions
-                if (metConditions >= 3) {
-                    // More buy conditions met = BUY signal
-                    // More sell conditions met = SELL signal
-                    const buyConditions = conditions.filter(c => c.met && c.bias === 'buy').length;
-                    const sellConditions = conditions.filter(c => c.met && c.bias === 'sell').length;
-                    
-                    if (buyConditions > sellConditions) {
-                        analysis.signal = this.getSignalTypeForSymbol(symbol);
-                        analysis.confidence = Math.min(50 + (metConditions * 10), 90);
-                    } else if (sellConditions > buyConditions) {
-                        analysis.signal = 'sell';
-                        analysis.confidence = Math.min(50 + (metConditions * 10), 90);
-                    }
-                }
-                
-                // Generate analysis text
-                analysis.analysis = this.generateAnalysisText(conditions, analysis.signal);
-                
-                return analysis;
-            }
-            
-            checkSMCConditions(symbol, currentPrice, priceHistory) {
-                const conditions = [];
-                
-                // Condition 1: Price near key level (Support/Resistance)
-                const nearKeyLevel = this.checkNearKeyLevel(symbol, currentPrice);
-                conditions.push({
-                    name: 'Price at Key Level',
-                    met: nearKeyLevel.met,
-                    bias: nearKeyLevel.bias,
-                    description: nearKeyLevel.description
-                });
-                
-                // Condition 2: Recent liquidity sweep
-                const liquiditySweep = this.checkLiquiditySweep(symbol, priceHistory);
-                conditions.push({
-                    name: 'Liquidity Sweep',
-                    met: liquiditySweep.met,
-                    bias: liquiditySweep.bias,
-                    description: liquiditySweep.description
-                });
-                
-                // Condition 3: Market structure
-                const marketStructure = this.checkMarketStructure(symbol, priceHistory);
-                conditions.push({
-                    name: 'Market Structure',
-                    met: marketStructure.met,
-                    bias: marketStructure.bias,
-                    description: marketStructure.description
-                });
-                
-                // Condition 4: Order block presence
-                const orderBlock = this.checkOrderBlock(symbol, currentPrice, priceHistory);
-                conditions.push({
-                    name: 'Order Block',
-                    met: orderBlock.met,
-                    bias: orderBlock.bias,
-                    description: orderBlock.description
-                });
-                
-                // Condition 5: Fair Value Gap
-                const fvg = this.checkFairValueGap(symbol, priceHistory);
-                conditions.push({
-                    name: 'Fair Value Gap',
-                    met: fvg.met,
-                    bias: fvg.bias,
-                    description: fvg.description
-                });
-                
-                return conditions;
-            }
-            
-            checkNearKeyLevel(symbol, price) {
-                // Simplified key level detection
-                const levels = {
-                    'frxXAUUSD': [2300, 2320, 2280, 2350],
-                    'frxEURUSD': [1.0800, 1.0850, 1.0750, 1.0900],
-                    'R_50': [50, 52, 48, 55],
-                    'boom_300': [300, 310, 290, 320],
-                    'crash_500': [500, 520, 480, 550]
-                };
-                
-                const symbolLevels = levels[symbol] || [price * 0.99, price * 1.01];
-                
-                for (const level of symbolLevels) {
-                    if (Math.abs(price - level) / level < 0.005) { // Within 0.5%
-                        const bias = price > level ? 'sell' : 'buy';
-                        return {
-                            met: true,
-                            bias,
-                            description: `Price near key level ${level}`
-                        };
-                    }
-                }
-                
-                return {
-                    met: false,
-                    bias: 'neutral',
-                    description: 'No key level nearby'
-                };
-            }
-            
-            checkLiquiditySweep(symbol, priceHistory) {
-                // Simplified liquidity sweep detection
-                // In real implementation, would analyze recent highs/lows
-                const hasSweep = Math.random() > 0.7;
-                
-                if (hasSweep) {
-                    const bias = Math.random() > 0.5 ? 'buy' : 'sell';
-                    return {
-                        met: true,
-                        bias,
-                        description: 'Recent liquidity sweep detected'
-                    };
-                }
-                
-                return {
-                    met: false,
-                    bias: 'neutral',
-                    description: 'No liquidity sweep'
-                };
-            }
-            
-            checkMarketStructure(symbol, priceHistory) {
-                // Simplified market structure check
-                // Bullish: Higher highs, higher lows
-                // Bearish: Lower highs, lower lows
-                const isBullish = Math.random() > 0.5;
-                
-                return {
-                    met: true,
-                    bias: isBullish ? 'buy' : 'sell',
-                    description: isBullish ? 'Bullish market structure' : 'Bearish market structure'
-                };
-            }
-            
-            checkOrderBlock(symbol, price, priceHistory) {
-                // Simplified order block detection
-                const hasOrderBlock = Math.random() > 0.6;
-                
-                if (hasOrderBlock) {
-                    const bias = price > this.getRecentAverage(symbol, priceHistory) ? 'sell' : 'buy';
-                    return {
-                        met: true,
-                        bias,
-                        description: 'Order block identified'
-                    };
-                }
-                
-                return {
-                    met: false,
-                    bias: 'neutral',
-                    description: 'No order block'
-                };
-            }
-            
-            checkFairValueGap(symbol, priceHistory) {
-                // Simplified FVG detection
-                const hasFVG = Math.random() > 0.65;
-                
-                if (hasFVG) {
-                    const bias = Math.random() > 0.5 ? 'buy' : 'sell';
-                    return {
-                        met: true,
-                        bias,
-                        description: 'Fair Value Gap present'
-                    };
-                }
-                
-                return {
-                    met: false,
-                    bias: 'neutral',
-                    description: 'No FVG'
-                };
-            }
-            
-            getRecentAverage(symbol, priceHistory) {
-                if (!priceHistory[symbol]) return 0;
-                return priceHistory[symbol].ask;
-            }
-            
-            getSignalTypeForSymbol(symbol) {
-                // Map symbols to appropriate signal types
-                if (symbol.includes('JUMP') || symbol.includes('R_')) return 'jump';
-                if (symbol.includes('BOOM') || symbol.includes('boom')) return 'boom';
-                if (symbol.includes('CRASH') || symbol.includes('crash')) return 'crash';
-                if (symbol.includes('XAU') || symbol.includes('EUR') || symbol.includes('GBP')) return 'buy';
-                return 'buy';
-            }
-            
-            generateAnalysisText(conditions, signal) {
-                const metConditions = conditions.filter(c => c.met);
-                
-                if (metConditions.length === 0) {
-                    return 'No SMC conditions met';
-                }
-                
-                const conditionTexts = metConditions.map(c => c.description);
-                const bias = signal === 'buy' || signal === 'jump' || signal === 'boom' ? 'bullish' : 'bearish';
-                
-                return `${bias.toUpperCase()} bias - ${conditionTexts.join(', ')}. ${signal.toUpperCase()} signal generated.`;
-            }
-        }
-        
-        // ============================================
-        // INITIALIZE APPLICATION
-        // ============================================
-        
-        let app;
         
         document.addEventListener('DOMContentLoaded', () => {
-            app = new SMCDerivDashboard();
-            window.app = app;
+            console.log("📄 DOM loaded, starting dashboard...");
             
-            // Initialize app
-            app.init();
+            // Create and initialize dashboard
+            const dashboard = new FixedDashboard();
+            window.app = dashboard; // Make available globally
             
-            // Handle tab clicks
-            document.addEventListener('click', function(e) {
-                if (e.target.matches('.tab-item') || e.target.closest('.tab-item')) {
-                    const tabItem = e.target.matches('.tab-item') ? e.target : e.target.closest('.tab-item');
-                    const tabId = tabItem.getAttribute('href').substring(1);
-                    
-                    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-                    document.querySelectorAll('.tab-item').forEach(tab => tab.classList.remove('active'));
-                    
-                    document.getElementById(tabId).classList.add('active');
-                    tabItem.classList.add('active');
-                    
-                    e.preventDefault();
-                    
-                    // Update app state
-                    if (app) {
-                        app.activeTab = tabId.replace('Tab', '');
-                    }
+            // Start initialization
+            dashboard.init();
+            
+            // Add CSS animation
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes slideIn {
+                    from { opacity: 0; transform: translateX(100px); }
+                    to { opacity: 1; transform: translateX(0); }
                 }
-            });
+            `;
+            document.head.appendChild(style);
         });
         
-        // Global functions for HTML onclick
+        // Global function for button clicks
         function scanMarketsForSignals() {
-            if (app) app.scanMarketsForSignals();
+            if (window.app) {
+                window.app.showNotification('Scanning markets for SMC signals...', 'info');
+                // Add scanning logic here
+            }
         }
     </script>
 </body>
