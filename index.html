@@ -13,8 +13,10 @@
     
     <!-- Icons & Styles -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- FIXED: Added chartjs-chart-financial for candlestick charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/technicalindicators/dist/technicalindicators.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
     
     <style>
         :root {
@@ -1963,30 +1965,66 @@
             }
             
             initCharts() {
+                // FIXED: Changed from 'candlestick' to 'line' as fallback
+                // but using proper financial chart with chartjs-chart-financial
                 const ctx = document.getElementById('priceChart').getContext('2d');
-                this.charts.priceChart = new Chart(ctx, {
-                    type: 'candlestick',
-                    data: {
-                        datasets: [{
-                            label: 'Price',
-                            data: this.generateSampleCandles(),
-                            borderColor: '#3b82f6',
-                            backgroundColor: (ctx) => {
-                                const candle = ctx.dataset.data[ctx.dataIndex];
-                                return candle.c >= candle.o ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)';
+                
+                // Check if financial chart is available
+                if (typeof Chart.controllers.candlestick !== 'undefined') {
+                    // Use candlestick chart if available
+                    this.charts.priceChart = new Chart(ctx, {
+                        type: 'candlestick',
+                        data: {
+                            datasets: [{
+                                label: 'Price',
+                                data: this.generateSampleCandles(),
+                                borderColor: (ctx) => {
+                                    const candle = ctx.dataset.data[ctx.dataIndex];
+                                    return candle.c >= candle.o ? '#10b981' : '#ef4444';
+                                },
+                                backgroundColor: (ctx) => {
+                                    const candle = ctx.dataset.data[ctx.dataIndex];
+                                    return candle.c >= candle.o ? 'rgba(16, 185, 129, 0.5)' : 'rgba(239, 68, 68, 0.5)';
+                                }
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { display: false },
+                                y: { position: 'right' }
                             }
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            x: { display: false },
-                            y: { position: 'right' }
                         }
-                    }
-                });
+                    });
+                } else {
+                    // Fallback to line chart if candlestick not available
+                    console.warn('Candlestick chart not available, using line chart instead');
+                    this.charts.priceChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: Array.from({length: 50}, (_, i) => i),
+                            datasets: [{
+                                label: 'Price',
+                                data: Array.from({length: 50}, () => Math.random() * 100 + 100),
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                fill: true,
+                                tension: 0.4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                                x: { display: false },
+                                y: { position: 'right' }
+                            }
+                        }
+                    });
+                }
             }
             
             generateSampleCandles() {
