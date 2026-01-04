@@ -5,14 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>SMC FETCHER - Mobile Trading Dashboard</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#0f172a">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@latest"></script>
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <style>
         :root {
             --primary-dark: #0f172a;
@@ -162,6 +160,7 @@
             transition: all 0.3s;
             font-size: 11px;
             gap: 4px;
+            position: relative;
         }
 
         .tab-item.active {
@@ -255,6 +254,8 @@
             border-radius: 12px;
             color: var(--text-primary);
             transition: all 0.3s;
+            border: none;
+            cursor: pointer;
         }
 
         .action-button:active {
@@ -519,6 +520,8 @@
             color: var(--text-primary);
             font-size: 14px;
             white-space: nowrap;
+            cursor: pointer;
+            border: none;
         }
 
         .chart-btn.active {
@@ -618,7 +621,7 @@
             margin-bottom: 8px;
             background: var(--card-bg);
             border-radius: 8px;
-            border-left: 4px solid var(--border-color);
+            border-left: 4px solid transparent;
             animation: slideIn 0.3s ease;
         }
 
@@ -668,6 +671,7 @@
             color: var(--text-secondary);
             padding: 4px;
             border-radius: 4px;
+            cursor: pointer;
         }
 
         /* Modal */
@@ -830,6 +834,7 @@
             z-index: 999;
             animation: slideUp 0.3s ease;
             box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+            display: none;
         }
 
         @keyframes slideUp {
@@ -853,6 +858,21 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+        }
+
+        select, input[type="text"], input[type="number"], input[type="password"] {
+            background: var(--secondary-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
         }
     </style>
 </head>
@@ -954,11 +974,13 @@
                             <i class="fas fa-chart-line"></i>
                             Chart Preview
                         </div>
-                        <select id="chartSymbol" style="background: var(--secondary-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); padding: 4px 8px; font-size: 12px;">
-                            <option value="XAUUSD">Gold</option>
-                            <option value="NAS100">NASDAQ</option>
-                            <option value="BTCUSD">Bitcoin</option>
+                        <select id="chartSymbol">
+                            <option value="XAUUSD">Gold (XAUUSD)</option>
+                            <option value="NAS100">NASDAQ 100 (NAS100)</option>
+                            <option value="BTCUSD">Bitcoin (BTCUSD)</option>
                             <option value="EURUSD">EUR/USD</option>
+                            <option value="GBPUSD">GBP/USD</option>
+                            <option value="USOIL">Crude Oil (USOIL)</option>
                         </select>
                     </div>
                     <div class="chart-container">
@@ -1108,7 +1130,7 @@
                                 <div class="setting-title">HTF Timeframe</div>
                                 <div class="setting-description">Higher timeframe for bias</div>
                             </div>
-                            <select id="htfSelect" style="background: var(--secondary-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); padding: 6px 12px;">
+                            <select id="htfSelect">
                                 <option value="H4">H4</option>
                                 <option value="H1" selected>H1</option>
                                 <option value="D1">Daily</option>
@@ -1119,7 +1141,7 @@
                                 <div class="setting-title">LTF Timeframe</div>
                                 <div class="setting-description">Lower timeframe for entry</div>
                             </div>
-                            <select id="ltfSelect" style="background: var(--secondary-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); padding: 6px 12px;">
+                            <select id="ltfSelect">
                                 <option value="M15" selected>M15</option>
                                 <option value="M5">M5</option>
                                 <option value="M1">M1</option>
@@ -1130,7 +1152,7 @@
                                 <div class="setting-title">Confidence Threshold</div>
                                 <div class="setting-description">Minimum confidence for signals</div>
                             </div>
-                            <select id="confidenceThreshold" style="background: var(--secondary-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary); padding: 6px 12px;">
+                            <select id="confidenceThreshold">
                                 <option value="high">High Only</option>
                                 <option value="medium" selected>Medium & High</option>
                                 <option value="low">All Signals</option>
@@ -1222,16 +1244,16 @@
                 </div>
                 <div class="modal-body">
                     <div class="setting-item">
-                        <label>MT5 Server</label>
-                        <input type="text" id="mt5Server" placeholder="YourBroker-Demo" class="btn btn-outline" style="width: 100%; margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">MT5 Server</label>
+                        <input type="text" id="mt5Server" placeholder="YourBroker-Demo" style="width: 100%; margin-bottom: 12px;">
                     </div>
                     <div class="setting-item">
-                        <label>Account Number</label>
-                        <input type="number" id="mt5Login" placeholder="12345678" class="btn btn-outline" style="width: 100%; margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Account Number</label>
+                        <input type="number" id="mt5Login" placeholder="12345678" style="width: 100%; margin-bottom: 12px;">
                     </div>
                     <div class="setting-item">
-                        <label>Password</label>
-                        <input type="password" id="mt5Password" placeholder="••••••••" class="btn btn-outline" style="width: 100%; margin-bottom: 12px;">
+                        <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Password</label>
+                        <input type="password" id="mt5Password" placeholder="••••••••" style="width: 100%; margin-bottom: 12px;">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -1242,7 +1264,7 @@
         </div>
 
         <!-- Install Prompt -->
-        <div id="installPrompt" class="install-prompt" style="display: none;">
+        <div id="installPrompt" class="install-prompt">
             <div>
                 <strong>Install SMC Fetcher</strong>
                 <div style="font-size: 12px; opacity: 0.9;">Get the full app experience</div>
@@ -1279,12 +1301,16 @@
                 this.initServiceWorker();
                 this.startSimulation();
                 this.checkInstallPrompt();
+                
+                // Initialize dashboard
+                this.updateDashboard();
             }
 
             // Initialize Charts
             initCharts() {
                 // Main Price Chart
-                this.mainChart = new Chart(document.getElementById('priceChart').getContext('2d'), {
+                const ctx1 = document.getElementById('priceChart').getContext('2d');
+                this.mainChart = new Chart(ctx1, {
                     type: 'line',
                     data: {
                         labels: [],
@@ -1334,12 +1360,17 @@
                 });
 
                 // Advanced Chart
-                this.advancedChart = new Chart(document.getElementById('advancedChart').getContext('2d'), {
-                    type: 'candlestick',
+                const ctx2 = document.getElementById('advancedChart').getContext('2d');
+                this.advancedChart = new Chart(ctx2, {
+                    type: 'line',
                     data: {
                         datasets: [{
                             label: 'Price',
-                            data: []
+                            data: [],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.4
                         }]
                     },
                     options: {
@@ -1350,16 +1381,8 @@
                         },
                         scales: {
                             x: {
-                                type: 'time',
-                                time: {
-                                    unit: 'minute'
-                                },
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: '#94a3b8'
-                                }
+                                type: 'linear',
+                                display: false
                             },
                             y: {
                                 position: 'right',
@@ -1373,9 +1396,6 @@
                         }
                     }
                 });
-
-                // Register candlestick controller
-                Chart.register(Chart.controllers.candlestick);
             }
 
             // Initialize Event Listeners
@@ -1384,8 +1404,8 @@
                 document.querySelectorAll('.tab-item').forEach(tab => {
                     tab.addEventListener('click', (e) => {
                         e.preventDefault();
-                        const tabId = tab.getAttribute('href');
-                        this.switchTab(tabId.substring(1));
+                        const tabId = tab.getAttribute('href').substring(1);
+                        this.switchTab(tabId.replace('Tab', ''));
                     });
                 });
 
@@ -1397,13 +1417,24 @@
                 document.getElementById('chartBtn').addEventListener('click', () => this.switchTab('charts'));
                 document.getElementById('tradeBtn').addEventListener('click', () => this.showTradeModal());
 
+                // Settings Button
+                document.getElementById('settingsBtn').addEventListener('click', () => this.switchTab('settings'));
+
                 // Chart Controls
                 document.querySelectorAll('.chart-btn[data-filter]').forEach(btn => {
-                    btn.addEventListener('click', () => this.filterSignals(btn.dataset.filter));
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.chart-btn[data-filter]').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.filterSignals(e.target.dataset.filter);
+                    });
                 });
 
                 document.querySelectorAll('.chart-btn[data-tf]').forEach(btn => {
-                    btn.addEventListener('click', () => this.changeTimeframe(btn.dataset.tf));
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.chart-btn[data-tf]').forEach(b => b.classList.remove('active'));
+                        e.target.classList.add('active');
+                        this.changeTimeframe(e.target.dataset.tf);
+                    });
                 });
 
                 // Settings
@@ -1420,6 +1451,22 @@
                 document.getElementById('clearCache').addEventListener('click', () => this.clearCache());
                 document.getElementById('resetApp').addEventListener('click', () => this.resetApp());
 
+                // Refresh Market
+                document.getElementById('refreshMarket').addEventListener('click', () => this.updateMarketOverview());
+
+                // Clear Alerts
+                document.getElementById('clearAllAlerts').addEventListener('click', () => this.clearAllAlerts());
+
+                // Chart Symbol Change
+                document.getElementById('chartSymbol').addEventListener('change', (e) => {
+                    this.updateChartData(e.target.value);
+                });
+
+                // Filter Signals
+                document.getElementById('filterSignals').addEventListener('click', () => {
+                    this.showAlert('Filtering signals...', 'info');
+                });
+
                 // Modals
                 document.getElementById('closeTradeModal').addEventListener('click', () => this.hideModal('tradeModal'));
                 document.getElementById('cancelTrade').addEventListener('click', () => this.hideModal('tradeModal'));
@@ -1433,20 +1480,19 @@
                 document.getElementById('dismissInstall').addEventListener('click', () => this.dismissInstallPrompt());
                 document.getElementById('installAppBtn').addEventListener('click', () => this.installApp());
 
-                // Refresh Market
-                document.getElementById('refreshMarket').addEventListener('click', () => this.updateMarketOverview());
-
-                // Clear Alerts
-                document.getElementById('clearAllAlerts').addEventListener('click', () => this.clearAllAlerts());
-
-                // Chart Symbol Change
-                document.getElementById('chartSymbol').addEventListener('change', (e) => {
-                    this.updateChartData(e.target.value);
+                // Chart Feature Buttons
+                document.getElementById('showOB').addEventListener('click', () => {
+                    this.showAlert('Order Blocks display toggled', 'info');
                 });
-
-                // Initialize market data
-                this.updateMarketOverview();
-                this.generateSampleSignals();
+                document.getElementById('showFVG').addEventListener('click', () => {
+                    this.showAlert('Fair Value Gaps display toggled', 'info');
+                });
+                document.getElementById('showLiquidity').addEventListener('click', () => {
+                    this.showAlert('Liquidity pools display toggled', 'info');
+                });
+                document.getElementById('showFibonacci').addEventListener('click', () => {
+                    this.showAlert('Fibonacci levels display toggled', 'info');
+                });
             }
 
             // Switch Tabs
@@ -1474,6 +1520,8 @@
                     this.updateChartsTab();
                 } else if (tabName === 'alerts') {
                     this.updateAlertsTab();
+                } else if (tabName === 'settings') {
+                    // Settings tab doesn't need updates
                 }
             }
 
@@ -1481,6 +1529,9 @@
             updateDashboard() {
                 this.updateMarketOverview();
                 this.updateActiveSignals();
+                // Update chart with default symbol
+                const defaultSymbol = document.getElementById('chartSymbol').value;
+                this.updateChartData(defaultSymbol);
             }
 
             // Update Market Overview
@@ -1501,9 +1552,9 @@
                             <i class="fas ${this.getSymbolIcon(symbol)}"></i>
                             <strong>${symbol}</strong>
                         </div>
-                        <div class="market-price">${price.toFixed(2)}</div>
+                        <div class="market-price">${this.formatPrice(symbol, price)}</div>
                         <div class="price-change ${change >= 0 ? 'positive' : 'negative'}">
-                            ${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent.toFixed(2)}%)
+                            ${change >= 0 ? '+' : ''}${this.formatChange(change)} (${changePercent.toFixed(2)}%)
                         </div>
                     `;
 
@@ -1531,7 +1582,7 @@
                     return;
                 }
 
-                activeSignals.forEach(signal => {
+                activeSignals.slice(0, 3).forEach(signal => {
                     const card = this.createSignalCard(signal);
                     container.appendChild(card);
                 });
@@ -1585,7 +1636,7 @@
                 ];
 
                 return conditionNames.map((name, index) => {
-                    const met = conditions >= index + 1;
+                    const met = conditions > index;
                     return `
                         <div class="condition-item">
                             <div class="condition-check ${met ? 'true' : 'false'}">
@@ -1665,12 +1716,12 @@
                 let price = this.getRandomPrice(symbol);
 
                 for (let i = 100; i >= 0; i--) {
-                    const time = now - (i * 60000); // 1 minute intervals
+                    const time = now - (i * 60000);
                     const change = (Math.random() - 0.5) * 10;
                     price += change;
 
                     data.push({
-                        x: new Date(time),
+                        x: i,
                         y: price
                     });
                 }
@@ -1686,31 +1737,19 @@
             // Update Advanced Chart
             updateAdvancedChart() {
                 const symbol = document.getElementById('chartSymbol').value;
-                const candles = [];
+                const data = [];
 
-                let open = this.getRandomPrice(symbol);
-                const now = Date.now();
-
-                for (let i = 50; i >= 0; i--) {
-                    const time = now - (i * 300000); // 5 minute intervals
-                    const high = open + Math.random() * 20;
-                    const low = open - Math.random() * 20;
-                    const close = low + Math.random() * (high - low);
-                    const volume = Math.random() * 1000;
-
-                    candles.push({
-                        x: new Date(time),
-                        o: open,
-                        h: high,
-                        l: low,
-                        c: close,
-                        v: volume
+                let price = this.getRandomPrice(symbol);
+                for (let i = 200; i >= 0; i--) {
+                    const change = (Math.random() - 0.5) * 15;
+                    price += change;
+                    data.push({
+                        x: i,
+                        y: price
                     });
-
-                    open = close + (Math.random() - 0.5) * 10;
                 }
 
-                this.advancedChart.data.datasets[0].data = candles;
+                this.advancedChart.data.datasets[0].data = data;
                 this.advancedChart.update();
             }
 
@@ -1718,7 +1757,6 @@
             scanAllMarkets() {
                 this.showAlert('Scanning all markets for SMC setups...', 'info');
                 
-                // Simulate scanning
                 setTimeout(() => {
                     this.generateSampleSignals();
                     this.showAlert('Market scan complete! Found new SMC setups.', 'success');
@@ -1729,7 +1767,6 @@
             analyzeMarkets() {
                 this.showAlert('Running SMC analysis...', 'info');
                 
-                // Simulate analysis
                 setTimeout(() => {
                     this.generateSampleSignals();
                     this.updateDashboard();
@@ -1737,47 +1774,80 @@
                 }, 2000);
             }
 
-            // Generate Sample Signals
+            // Generate Sample Signals with SMC Rules
             generateSampleSignals() {
                 const symbols = ['XAUUSD', 'NAS100', 'BTCUSD', 'EURUSD', 'GBPUSD', 'USOIL'];
-                const signals = [];
+                const newSignals = [];
 
                 symbols.forEach(symbol => {
-                    if (Math.random() > 0.5) {
-                        const type = Math.random() > 0.5 ? 'buy' : 'sell';
-                        const confidence = ['high', 'medium', 'low'][Math.floor(Math.random() * 3)];
-                        const conditions = Math.floor(Math.random() * 7) + 1;
+                    // Apply SMC rules to determine signal
+                    const shouldGenerateSignal = Math.random() > 0.3; // 70% chance
+                    
+                    if (shouldGenerateSignal) {
+                        const analysis = this.analyzeSymbolSMC(symbol);
+                        
+                        if (analysis.signal !== 'NONE') {
+                            const signal = {
+                                id: Date.now() + Math.random(),
+                                symbol,
+                                type: analysis.signal.toLowerCase(),
+                                confidence: analysis.confidence.toLowerCase(),
+                                conditions: analysis.conditionsMet,
+                                timestamp: new Date(),
+                                active: true
+                            };
 
-                        const signal = {
-                            id: Date.now() + Math.random(),
-                            symbol,
-                            type,
-                            confidence,
-                            conditions,
-                            timestamp: new Date(),
-                            active: true
-                        };
+                            newSignals.push(signal);
 
-                        signals.push(signal);
-
-                        // Add alert for high confidence signals
-                        if (confidence === 'high') {
-                            this.showAlert(`${type.toUpperCase()} signal detected for ${symbol} (High Confidence)`, type);
+                            // Add alert for signals
+                            this.showAlert(
+                                `${analysis.signal} signal detected for ${symbol} (${analysis.confidence} Confidence)`,
+                                analysis.signal.toLowerCase()
+                            );
                         }
                     }
                 });
 
-                this.state.signals = [...signals, ...this.state.signals].slice(0, 50);
+                // Add new signals to state
+                this.state.signals = [...newSignals, ...this.state.signals].slice(0, 50);
                 this.updateBadges();
-                this.updateActiveSignals();
+                
+                // Update displays
+                if (this.state.activeTab === 'dashboard') {
+                    this.updateActiveSignals();
+                } else if (this.state.activeTab === 'signals') {
+                    this.updateSignalsTab();
+                }
+            }
+
+            // Analyze Symbol with SMC Rules
+            analyzeSymbolSMC(symbol) {
+                // Simulate SMC analysis
+                const conditionsMet = Math.floor(Math.random() * 7) + 1;
+                
+                let signal = 'NONE';
+                let confidence = 'LOW';
+                
+                if (conditionsMet >= 7) {
+                    signal = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                    confidence = 'HIGH';
+                } else if (conditionsMet >= 5) {
+                    signal = Math.random() > 0.5 ? 'BUY' : 'SELL';
+                    confidence = 'MEDIUM';
+                } else if (conditionsMet >= 4) {
+                    signal = Math.random() > 0.7 ? 'BUY' : 'NONE';
+                    if (signal !== 'NONE') confidence = 'LOW';
+                }
+                
+                return {
+                    signal,
+                    confidence,
+                    conditionsMet
+                };
             }
 
             // Filter Signals
             filterSignals(filter) {
-                const buttons = document.querySelectorAll('.chart-btn[data-filter]');
-                buttons.forEach(btn => btn.classList.remove('active'));
-                event.target.classList.add('active');
-
                 const container = document.getElementById('signalHistory');
                 const cards = container.querySelectorAll('.signal-card');
 
@@ -1797,10 +1867,6 @@
 
             // Change Timeframe
             changeTimeframe(tf) {
-                const buttons = document.querySelectorAll('.chart-btn[data-tf]');
-                buttons.forEach(btn => btn.classList.remove('active'));
-                event.target.classList.add('active');
-
                 this.showAlert(`Timeframe changed to ${tf}`, 'info');
                 this.updateAdvancedChart();
             }
@@ -1810,10 +1876,15 @@
                 const modal = document.getElementById('tradeModal');
                 const form = document.getElementById('tradeForm');
 
+                const price = this.getRandomPrice(symbol);
+                const stopLoss = type === 'buy' ? price * 0.99 : price * 1.01;
+                const takeProfit = type === 'buy' ? price * 1.01 : price * 0.99;
+                const potentialProfit = (Math.abs(takeProfit - price) * 100).toFixed(2);
+
                 form.innerHTML = `
                     <div style="margin-bottom: 16px;">
                         <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Symbol</label>
-                        <input type="text" value="${symbol}" readonly class="btn btn-outline" style="width: 100%;">
+                        <input type="text" value="${symbol}" readonly style="width: 100%; padding: 8px; background: var(--secondary-dark); border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-primary);">
                     </div>
                     <div style="margin-bottom: 16px;">
                         <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Direction</label>
@@ -1827,7 +1898,7 @@
                     <div style="margin-bottom: 16px;">
                         <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Lot Size</label>
                         <input type="range" id="lotSize" min="0.01" max="10" step="0.01" value="0.1" 
-                               class="btn btn-outline" style="width: 100%;">
+                               style="width: 100%;">
                         <div style="text-align: center; margin-top: 8px; font-size: 14px;">
                             <span id="lotDisplay">0.1</span> lots
                         </div>
@@ -1835,7 +1906,7 @@
                     <div style="margin-bottom: 16px;">
                         <label style="display: block; margin-bottom: 8px; color: var(--text-secondary);">Risk %</label>
                         <input type="range" id="riskPercent" min="0.5" max="5" step="0.1" value="1" 
-                               class="btn btn-outline" style="width: 100%;">
+                               style="width: 100%;">
                         <div style="text-align: center; margin-top: 8px; font-size: 14px;">
                             <span id="riskDisplay">1</span>% risk
                         </div>
@@ -1843,19 +1914,19 @@
                     <div style="background: var(--secondary-dark); padding: 12px; border-radius: 8px; margin-top: 20px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span>Entry Price:</span>
-                            <span>${this.getRandomPrice(symbol).toFixed(2)}</span>
+                            <span>${this.formatPrice(symbol, price)}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span>Stop Loss:</span>
-                            <span>${(this.getRandomPrice(symbol) * 0.99).toFixed(2)}</span>
+                            <span>${this.formatPrice(symbol, stopLoss)}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
                             <span>Take Profit:</span>
-                            <span>${(this.getRandomPrice(symbol) * 1.01).toFixed(2)}</span>
+                            <span>${this.formatPrice(symbol, takeProfit)}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; font-weight: bold;">
                             <span>Potential Profit:</span>
-                            <span style="color: var(--accent-green);">+$125.50</span>
+                            <span style="color: var(--accent-green);">+$${potentialProfit}</span>
                         </div>
                     </div>
                 `;
@@ -1880,8 +1951,10 @@
                 const buyBtn = document.querySelector('#tradeForm button:nth-child(1)');
                 const sellBtn = document.querySelector('#tradeForm button:nth-child(2)');
 
-                buyBtn.className = type === 'buy' ? 'btn btn-success' : 'btn btn-outline';
-                sellBtn.className = type === 'sell' ? 'btn btn-danger' : 'btn btn-outline';
+                if (buyBtn && sellBtn) {
+                    buyBtn.className = type === 'buy' ? 'btn btn-success' : 'btn btn-outline';
+                    sellBtn.className = type === 'sell' ? 'btn btn-danger' : 'btn btn-outline';
+                }
             }
 
             // Execute Trade
@@ -1889,7 +1962,6 @@
                 this.showAlert('Trade executed successfully!', 'success');
                 this.hideModal('tradeModal');
                 
-                // Simulate trade confirmation
                 setTimeout(() => {
                     this.showAlert('Trade is now active. Monitoring for exit signals.', 'info');
                 }, 1000);
@@ -1910,7 +1982,7 @@
             // Show Alert
             showAlert(message, type = 'info') {
                 const alert = {
-                    id: Date.now(),
+                    id: Date.now() + Math.random(),
                     message,
                     type,
                     timestamp: new Date()
@@ -1918,19 +1990,15 @@
 
                 this.state.alerts.unshift(alert);
                 this.updateBadges();
-                this.updateAlertsTab();
-
-                // Play sound for important alerts
-                if (type === 'buy' || type === 'sell' || type === 'success') {
-                    this.playAlertSound();
+                
+                // Update alerts tab if active
+                if (this.state.activeTab === 'alerts') {
+                    this.updateAlertsTab();
                 }
 
-                // Show notification if enabled
-                if (this.state.settings.pushNotifications && Notification.permission === 'granted') {
-                    new Notification(`SMC Alert: ${type.toUpperCase()}`, {
-                        body: message,
-                        icon: 'icon-192x192.png'
-                    });
+                // Play sound for important alerts
+                if ((type === 'buy' || type === 'sell' || type === 'success') && this.state.settings.soundAlerts) {
+                    this.playAlertSound();
                 }
             }
 
@@ -1938,14 +2006,20 @@
             removeAlert(id) {
                 this.state.alerts = this.state.alerts.filter(alert => alert.id !== id);
                 this.updateBadges();
-                this.updateAlertsTab();
+                
+                if (this.state.activeTab === 'alerts') {
+                    this.updateAlertsTab();
+                }
             }
 
             // Clear All Alerts
             clearAllAlerts() {
                 this.state.alerts = [];
                 this.updateBadges();
-                this.updateAlertsTab();
+                
+                if (this.state.activeTab === 'alerts') {
+                    this.updateAlertsTab();
+                }
                 this.showAlert('All alerts cleared', 'info');
             }
 
@@ -1954,31 +2028,48 @@
                 const signalCount = this.state.signals.filter(s => s.active).length;
                 const alertCount = this.state.alerts.length;
 
-                document.getElementById('signalsBadge').textContent = signalCount;
-                document.getElementById('alertsBadge').textContent = alertCount;
-                document.getElementById('mobileSignalsBadge').textContent = signalCount;
-                document.getElementById('mobileAlertsBadge').textContent = alertCount;
+                // Update all badge elements
+                const badges = [
+                    'signalsBadge',
+                    'alertsBadge', 
+                    'mobileSignalsBadge',
+                    'mobileAlertsBadge'
+                ];
+                
+                badges.forEach(badgeId => {
+                    const element = document.getElementById(badgeId);
+                    if (element) {
+                        if (badgeId.includes('signal')) {
+                            element.textContent = signalCount;
+                        } else {
+                            element.textContent = alertCount;
+                        }
+                    }
+                });
             }
 
             // Play Alert Sound
             playAlertSound() {
-                if (!this.state.settings.soundAlerts) return;
+                // Simple beep using Web Audio API
+                try {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
 
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                    oscillator.frequency.value = 800;
+                    oscillator.type = 'sine';
 
-                oscillator.frequency.value = 800;
-                oscillator.type = 'sine';
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
 
-                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-
-                oscillator.start(audioContext.currentTime);
-                oscillator.stop(audioContext.currentTime + 0.5);
+                    oscillator.start(audioContext.currentTime);
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                } catch (e) {
+                    console.log('Audio not supported');
+                }
             }
 
             // Show/Hide Modal
@@ -2001,11 +2092,10 @@
                 const password = document.getElementById('mt5Password').value;
 
                 if (!server || !login || !password) {
-                    this.showAlert('Please fill all MT5 connection fields', 'error');
+                    this.showAlert('Please fill all MT5 connection fields', 'info');
                     return;
                 }
 
-                // Simulate connection
                 this.showAlert('Connecting to MT5...', 'info');
                 
                 setTimeout(() => {
@@ -2039,7 +2129,21 @@
             // PWA Installation
             initServiceWorker() {
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('sw.js').then(() => {
+                    // Create a simple service worker
+                    const swContent = `
+                        self.addEventListener('install', (event) => {
+                            console.log('Service Worker installed');
+                        });
+                        
+                        self.addEventListener('fetch', (event) => {
+                            event.respondWith(fetch(event.request));
+                        });
+                    `;
+                    
+                    const blob = new Blob([swContent], { type: 'application/javascript' });
+                    const swURL = URL.createObjectURL(blob);
+                    
+                    navigator.serviceWorker.register(swURL).then(() => {
                         console.log('Service Worker registered');
                     }).catch(err => {
                         console.log('Service Worker registration failed:', err);
@@ -2176,7 +2280,24 @@
                     'GBPUSD': 1.26,
                     'USOIL': 78
                 };
-                return basePrices[symbol] + (Math.random() - 0.5) * 100;
+                const base = basePrices[symbol] || 100;
+                return base + (Math.random() - 0.5) * (base * 0.02);
+            }
+
+            formatPrice(symbol, price) {
+                if (symbol === 'EURUSD' || symbol === 'GBPUSD') {
+                    return price.toFixed(5);
+                } else if (symbol === 'BTCUSD') {
+                    return price.toFixed(2);
+                } else if (symbol === 'USOIL') {
+                    return price.toFixed(2);
+                } else {
+                    return price.toFixed(2);
+                }
+            }
+
+            formatChange(change) {
+                return Math.abs(change).toFixed(2);
             }
 
             // Simulation Loop
@@ -2188,15 +2309,20 @@
                     }
                 }, 10000);
 
-                // Generate occasional signals
+                // Generate occasional signals if auto-analysis is on
                 setInterval(() => {
-                    if (Math.random() > 0.7) {
+                    if (this.state.settings.autoAnalysis && Math.random() > 0.7) {
                         this.generateSampleSignals();
                     }
                 }, 30000);
 
-                // Update status
+                // Initial status update
                 this.updateStatus();
+                
+                // Generate initial signals
+                setTimeout(() => {
+                    this.generateSampleSignals();
+                }, 1000);
             }
         }
 
@@ -2209,94 +2335,35 @@
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission();
             }
+            
+            // Make app globally accessible
+            window.app = app;
         });
 
-        // Make app globally accessible
-        window.app = app;
-
-        // Service Worker for PWA
-        if ('serviceWorker' in navigator) {
-            const swContent = `
-                self.addEventListener('install', (event) => {
-                    event.waitUntil(
-                        caches.open('smc-fetcher-v1').then((cache) => {
-                            return cache.addAll([
-                                '/',
-                                '/index.html',
-                                '/manifest.json',
-                                '/icon-192x192.png',
-                                '/icon-512x512.png'
-                            ]);
-                        })
-                    );
+        // Handle tab clicks
+        document.addEventListener('click', function(e) {
+            if (e.target.matches('.tab-item') || e.target.closest('.tab-item')) {
+                const tabItem = e.target.matches('.tab-item') ? e.target : e.target.closest('.tab-item');
+                const tabId = tabItem.getAttribute('href').substring(1);
+                
+                // Hide all tab contents
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
                 });
-
-                self.addEventListener('fetch', (event) => {
-                    event.respondWith(
-                        caches.match(event.request).then((response) => {
-                            return response || fetch(event.request);
-                        })
-                    );
+                
+                // Remove active class from all tabs
+                document.querySelectorAll('.tab-item').forEach(tab => {
+                    tab.classList.remove('active');
                 });
-
-                self.addEventListener('push', (event) => {
-                    const data = event.data.json();
-                    const options = {
-                        body: data.body,
-                        icon: 'icon-192x192.png',
-                        badge: 'icon-192x192.png',
-                        vibrate: [100, 50, 100],
-                        data: {
-                            url: data.url || '/'
-                        }
-                    };
-                    event.waitUntil(
-                        self.registration.showNotification(data.title, options)
-                    );
-                });
-
-                self.addEventListener('notificationclick', (event) => {
-                    event.notification.close();
-                    event.waitUntil(
-                        clients.openWindow(event.notification.data.url)
-                    );
-                });
-            `;
-
-            // Create and register service worker
-            const blob = new Blob([swContent], { type: 'application/javascript' });
-            const swURL = URL.createObjectURL(blob);
-            navigator.serviceWorker.register(swURL);
-        }
-
-        // Manifest for PWA
-        const manifest = {
-            "name": "SMC Fetcher",
-            "short_name": "SMC Trader",
-            "description": "Smart Money Concept Trading Dashboard",
-            "start_url": "/",
-            "display": "standalone",
-            "background_color": "#0f172a",
-            "theme_color": "#0f172a",
-            "icons": [
-                {
-                    "src": "icon-192x192.png",
-                    "sizes": "192x192",
-                    "type": "image/png"
-                },
-                {
-                    "src": "icon-512x512.png",
-                    "sizes": "512x512",
-                    "type": "image/png"
-                }
-            ]
-        };
-
-        // Create manifest dynamically
-        const manifestEl = document.createElement('link');
-        manifestEl.rel = 'manifest';
-        manifestEl.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/json' }));
-        document.head.appendChild(manifestEl);
+                
+                // Show selected tab
+                document.getElementById(tabId).classList.add('active');
+                tabItem.classList.add('active');
+                
+                // Prevent default anchor behavior
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>
