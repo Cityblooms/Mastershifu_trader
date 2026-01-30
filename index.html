@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TradeSignal Pro - Market Analysis Dashboard</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;padding:16px}.container{max-width:400px;margin:0 auto}.header{text-align:center;margin-bottom:20px}h1{font-size:22px;color:#3b82f6;margin-bottom:8px}.risk-warning{background:#7f1d1d20;border:1px solid #ef444440;border-radius:10px;padding:10px;margin-bottom:16px;font-size:12px;color:#fca5a5}.card{background:#1e293b;border-radius:14px;padding:18px;margin-bottom:16px}.form-group{margin-bottom:14px}label{display:block;margin-bottom:6px;color:#cbd5e1;font-size:14px}select{width:100%;padding:10px;background:#0f172a;border:1px solid #475569;border-radius:8px;color:white}.signal-box{padding:25px;text-align:center;border-radius:12px;font-size:32px;font-weight:700;margin:16px 0}.buy{background:#052e16;color:#22c55e}.sell{background:#450a0a;color:#ef4444}.wait{background:#1e293b;color:#facc15}.status{text-align:center;font-size:13px;color:#94a3b8}.footer{text-align:center;margin-top:20px;font-size:12px;color:#64748b}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;padding:16px}.container{max-width:400px;margin:0 auto}.header{text-align:center;margin-bottom:20px}h1{font-size:22px;color:#3b82f6;margin-bottom:8px}.risk-warning{background:#7f1d1d20;border:1px solid #ef444440;border-radius:10px;padding:10px;margin-bottom:16px;font-size:12px;color:#fca5a5;text-align:center}.card{background:#1e293b;border-radius:14px;padding:18px;margin-bottom:16px}.form-group{margin-bottom:14px}label{display:block;margin-bottom:6px;color:#cbd5e1;font-size:14px}select{width:100%;padding:10px;background:#0f172a;border:1px solid #475569;border-radius:8px;color:white}.signal-box{padding:25px;text-align:center;border-radius:12px;font-size:32px;font-weight:700;margin:16px 0}.buy{background:#052e16;color:#22c55e}.sell{background:#450a0a;color:#ef4444}.wait{background:#1e293b;color:#facc15}.neutral{background:#1e293b;color:#94a3b8}.status{text-align:center;font-size:13px;color:#94a3b8}.footer{text-align:center;margin-top:20px;font-size:12px;color:#64748b}.indicators-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}.indicator{background:#0f172a;padding:8px;border-radius:8px;text-align:center}.indicator-label{font-size:10px;color:#94a3b8;margin-bottom:4px}.indicator-value{font-size:14px;font-weight:600}.strategy-panel{background:#0f172a;border-radius:10px;padding:12px;margin-top:16px;font-size:11px;line-height:1.4}.strategy-panel h3{font-size:12px;color:#3b82f6;margin-bottom:8px}.strategy-params{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:8px}.logic-display{background:#0f172a;border-radius:10px;padding:12px;margin-top:12px;font-size:11px;border-left:3px solid #3b82f6}
 </style>
 </head>
 <body>
 <div class="container">
   <div class="header">
     <h1>TradeSignal Pro</h1>
-    <div style="font-size:14px;color:#94a3b8;">Market Analysis Dashboard</div>
+    <div style="font-size:14px;color:#94a3b8;">Professional Market Analysis</div>
   </div>
   
-  <div class="risk-warning">
-    <strong>⚠ Educational Tool Only</strong><br>
+  <div class="risk-warning" id="warning">
+    ⚠ Educational Tool Only<br>
     Not financial advice. Use at your own risk.
   </div>
   
@@ -26,6 +26,7 @@
       <select id="pair">
         <option value="EURUSD">EUR/USD</option>
         <option value="GBPUSD">GBP/USD</option>
+        <option value="USDJPY">USD/JPY</option>
         <option value="XAUUSD">Gold (XAU/USD)</option>
         <option value="BTCUSD">Bitcoin (BTC/USD)</option>
         <option value="US30">US30 Index</option>
@@ -37,126 +38,521 @@
       <select id="timeframe">
         <option value="5m">5 Minutes</option>
         <option value="15m">15 Minutes</option>
+        <option value="30m">30 Minutes</option>
         <option value="1h">1 Hour</option>
+        <option value="4h">4 Hours</option>
+        <option value="1d">1 Day</option>
       </select>
     </div>
     
-    <div id="signal" class="signal-box wait">ANALYZING</div>
-    <div id="status" class="status">Initializing market data...</div>
+    <div class="form-group">
+      <label>Strategy Mode</label>
+      <select id="strategy">
+        <option value="trend">Trend Following</option>
+        <option value="mean">Mean Reversion</option>
+        <option value="hybrid">Hybrid Strategy</option>
+        <option value="momentum">Momentum Trading</option>
+      </select>
+    </div>
     
-    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      <div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center">
-        <div style="font-size:12px;color:#94a3b8">RSI (14)</div>
-        <div id="rsiValue" style="font-size:18px;font-weight:700">-</div>
+    <div id="signal" class="signal-box neutral">ANALYZING</div>
+    <div id="status" class="status">Initializing market analysis...</div>
+    
+    <div class="indicators-grid">
+      <div class="indicator">
+        <div class="indicator-label">RSI (14)</div>
+        <div id="rsiValue" class="indicator-value">-</div>
       </div>
-      <div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center">
-        <div style="font-size:12px;color:#94a3b8">Trend</div>
-        <div id="trendValue" style="font-size:18px;font-weight:700">-</div>
+      <div class="indicator">
+        <div class="indicator-label">Trend</div>
+        <div id="trendValue" class="indicator-value">-</div>
+      </div>
+      <div class="indicator">
+        <div class="indicator-label">Strength</div>
+        <div id="strengthValue" class="indicator-value">-</div>
+      </div>
+    </div>
+    
+    <div class="logic-display">
+      <strong>📈 Current Signal Logic:</strong>
+      <div id="currentLogic" style="margin-top:6px;font-size:10px;color:#94a3b8;">
+        Waiting for analysis...
+      </div>
+    </div>
+    
+    <div class="strategy-panel">
+      <h3>⚙️ Trading Parameters</h3>
+      <div class="strategy-params">
+        <div>RSI Period: <span id="paramRsi">14</span></div>
+        <div>Overbought: <span id="paramOverbought">70</span></div>
+        <div>Oversold: <span id="paramOversold">30</span></div>
+        <div>Trend EMA: <span id="paramEma">9/21</span></div>
       </div>
     </div>
   </div>
   
   <div class="footer">
-    TradeSignal Pro v1.0 | Educational Tool<br>
+    TradeSignal Pro v2.1 | Professional Analysis<br>
+    <div style="margin-top:8px;font-size:11px;color:#64748b;">
+      ⚠ Educational Tool Only | Not financial advice. Use at your own risk.
+    </div>
     <div style="margin-top:8px;font-size:11px;">
-      <a href="#" style="color:#64748b;margin:0 8px" onclick="showLicense()">License</a>
-      <a href="#" style="color:#64748b;margin:0 8px" onclick="showDisclaimer()">Disclaimer</a>
+      <a href="#" style="color:#64748b;margin:0 8px" onclick="showTradingRules()">Trading Rules</a>
+      <a href="#" style="color:#64748b;margin:0 8px" onclick="showDisclaimer()">Full Disclaimer</a>
     </div>
   </div>
 </div>
 
 <script>
-// Simulated market data (for educational purposes)
-let marketData = {
-  EURUSD: { price: 1.08542, trend: 'neutral', rsi: 52 },
-  GBPUSD: { price: 1.26580, trend: 'bullish', rsi: 58 },
-  XAUUSD: { price: 2185.42, trend: 'bullish', rsi: 62 },
-  BTCUSD: { price: 68420.50, trend: 'bullish', rsi: 65 },
-  US30: { price: 39245.75, trend: 'bullish', rsi: 60 }
+// Market Data with Realistic Conditions
+const marketData = {
+  EURUSD: { 
+    basePrice: 1.08542, 
+    volatility: 0.008,
+    bias: 'neutral',
+    pipSize: 0.00001
+  },
+  GBPUSD: { 
+    basePrice: 1.26580, 
+    volatility: 0.009,
+    bias: 'bullish',
+    pipSize: 0.00001
+  },
+  USDJPY: { 
+    basePrice: 150.325, 
+    volatility: 0.012,
+    bias: 'bearish',
+    pipSize: 0.001
+  },
+  XAUUSD: { 
+    basePrice: 2185.42, 
+    volatility: 15.5,
+    bias: 'bullish',
+    pipSize: 0.01
+  },
+  BTCUSD: { 
+    basePrice: 68420.50, 
+    volatility: 850,
+    bias: 'volatile',
+    pipSize: 1
+  },
+  US30: { 
+    basePrice: 39245.75, 
+    volatility: 120,
+    bias: 'bullish',
+    pipSize: 1
+  }
+};
+
+// Trading Strategies
+const strategies = {
+  trend: {
+    name: "Trend Following",
+    params: { rsiPeriod: 14, overbought: 70, oversold: 30, emaFast: 9, emaSlow: 21 },
+    description: "Follow the trend with RSI confirmation"
+  },
+  mean: {
+    name: "Mean Reversion",
+    params: { rsiPeriod: 14, overbought: 75, oversold: 25 },
+    description: "Trade counter-trend at RSI extremes"
+  },
+  hybrid: {
+    name: "Hybrid Strategy",
+    params: { rsiPeriod: 14, overbought: 70, oversold: 30 },
+    description: "Combine trend and mean reversion"
+  },
+  momentum: {
+    name: "Momentum Trading",
+    params: { rsiPeriod: 14, overbought: 80, oversold: 20 },
+    description: "Catch strong momentum moves"
+  }
 };
 
 let signalHistory = [];
+let currentMarketState = {};
 
-function analyzeMarket() {
-  const pair = document.getElementById('pair').value;
-  const timeframe = document.getElementById('timeframe').value;
-  const data = marketData[pair];
+// Initialize market states
+function initializeMarket() {
+  Object.keys(marketData).forEach(pair => {
+    const data = marketData[pair];
+    // Set initial values
+    data.price = data.basePrice;
+    data.rsi = 50; // Start neutral
+    data.trend = data.bias;
+    data.priceHistory = [data.basePrice];
+    data.rsiHistory = [50];
+  });
+  currentMarketState = { ...marketData.EURUSD };
+}
+
+// Calculate RSI value
+function calculateRSI(prices) {
+  if (prices.length < 15) return 50;
   
-  // Simulate some randomness for demo
-  const randomChange = (Math.random() - 0.5) * 2;
-  data.rsi = Math.max(20, Math.min(80, data.rsi + randomChange));
-  data.price = data.price * (1 + (randomChange * 0.001));
+  let gains = 0;
+  let losses = 0;
   
-  // Update display
-  document.getElementById('rsiValue').textContent = data.rsi.toFixed(1);
-  document.getElementById('rsiValue').style.color = 
-    data.rsi > 70 ? '#ef4444' : data.rsi < 30 ? '#22c55e' : '#facc15';
-  
-  document.getElementById('trendValue').textContent = 
-    data.trend.charAt(0).toUpperCase() + data.trend.slice(1);
-  document.getElementById('trendValue').style.color = 
-    data.trend === 'bullish' ? '#22c55e' : data.trend === 'bearish' ? '#ef4444' : '#facc15';
-  
-  // Generate signal
-  let signal = 'WAIT';
-  let reason = 'Neutral market conditions';
-  
-  if (data.rsi > 65 && data.trend === 'bullish') {
-    signal = 'SELL';
-    reason = 'Overbought with bullish trend divergence';
-  } else if (data.rsi < 35 && data.trend === 'bearish') {
-    signal = 'BUY';
-    reason = 'Oversold with bearish trend divergence';
-  } else if (data.rsi > 70) {
-    signal = 'SELL';
-    reason = 'Strongly overbought (RSI > 70)';
-  } else if (data.rsi < 30) {
-    signal = 'BUY';
-    reason = 'Strongly oversold (RSI < 30)';
-  } else if (data.rsi > 50 && data.trend === 'bullish') {
-    signal = 'BUY';
-    reason = 'Bullish trend with RSI support';
-  } else if (data.rsi < 50 && data.trend === 'bearish') {
-    signal = 'SELL';
-    reason = 'Bearish trend with RSI confirmation';
+  // Calculate average gain/loss over RSI period
+  for (let i = 1; i < 15; i++) {
+    const change = prices[prices.length - i] - prices[prices.length - i - 1];
+    if (change > 0) {
+      gains += change;
+    } else {
+      losses -= change;
+    }
   }
   
+  const avgGain = gains / 14;
+  const avgLoss = losses / 14 || 1;
+  
+  const rs = avgGain / avgLoss;
+  const rsi = 100 - (100 / (1 + rs));
+  
+  return Math.max(0, Math.min(100, rsi));
+}
+
+// Determine market trend
+function determineTrend(prices) {
+  if (prices.length < 10) return 'neutral';
+  
+  const recentPrices = prices.slice(-10);
+  const oldest = recentPrices[0];
+  const newest = recentPrices[recentPrices.length - 1];
+  const change = ((newest - oldest) / oldest) * 100;
+  
+  if (change > 0.5) return 'bullish';
+  if (change < -0.5) return 'bearish';
+  return 'neutral';
+}
+
+// Generate trading signal with CORRECT logic
+function generateSignal(pairData, strategy) {
+  const rsi = pairData.rsi;
+  const trend = pairData.trend;
+  const params = strategy.params;
+  
+  let signal = 'NEUTRAL';
+  let logic = '';
+  let confidence = 50;
+  
+  // CORRECTED PROFESSIONAL LOGIC:
+  
+  if (strategy.name === "Trend Following") {
+    // TREND FOLLOWING LOGIC:
+    // Buy in uptrend when RSI is favorable (50-65), not overbought
+    if (trend === 'bullish') {
+      if (rsi > 50 && rsi < 65) {
+        signal = 'BUY';
+        confidence = 70;
+        logic = `Bullish trend + RSI ${rsi.toFixed(1)} (50-65 range) = Trend continuation`;
+      }
+      // Buy dips in uptrend when oversold
+      else if (rsi < params.oversold) {
+        signal = 'BUY';
+        confidence = 65;
+        logic = `Bullish trend + RSI ${rsi.toFixed(1)} (oversold <${params.oversold}) = Dip buying opportunity`;
+      }
+    }
+    
+    // Sell in downtrend when RSI is favorable (35-50), not oversold
+    else if (trend === 'bearish') {
+      if (rsi > 35 && rsi < 50) {
+        signal = 'SELL';
+        confidence = 70;
+        logic = `Bearish trend + RSI ${rsi.toFixed(1)} (35-50 range) = Trend continuation`;
+      }
+      // Sell rallies in downtrend when overbought
+      else if (rsi > params.overbought) {
+        signal = 'SELL';
+        confidence = 65;
+        logic = `Bearish trend + RSI ${rsi.toFixed(1)} (overbought >${params.overbought}) = Rally selling opportunity`;
+      }
+    }
+    
+    // Neutral signal if conflicting
+    if (!logic) {
+      logic = `Trend: ${trend}, RSI: ${rsi.toFixed(1)} - Awaiting clearer signal`;
+    }
+  }
+  
+  else if (strategy.name === "Mean Reversion") {
+    // MEAN REVERSION LOGIC:
+    // Sell when overbought (expecting pullback)
+    if (rsi > params.overbought) {
+      signal = 'SELL';
+      confidence = 75;
+      logic = `RSI ${rsi.toFixed(1)} > ${params.overbought} (overbought) = Mean reversion SELL`;
+    }
+    // Buy when oversold (expecting bounce)
+    else if (rsi < params.oversold) {
+      signal = 'BUY';
+      confidence = 75;
+      logic = `RSI ${rsi.toFixed(1)} < ${params.oversold} (oversold) = Mean reversion BUY`;
+    } else {
+      logic = `RSI ${rsi.toFixed(1)} (neutral) - No mean reversion opportunity`;
+    }
+  }
+  
+  else if (strategy.name === "Hybrid Strategy") {
+    // HYBRID LOGIC: Combine trend and mean reversion
+    
+    // Strong buy: Uptrend + oversold
+    if (trend === 'bullish' && rsi < params.oversold) {
+      signal = 'BUY';
+      confidence = 80;
+      logic = `Bullish trend + Oversold RSI ${rsi.toFixed(1)} = Strong BUY signal`;
+    }
+    // Strong sell: Downtrend + overbought
+    else if (trend === 'bearish' && rsi > params.overbought) {
+      signal = 'SELL';
+      confidence = 80;
+      logic = `Bearish trend + Overbought RSI ${rsi.toFixed(1)} = Strong SELL signal`;
+    }
+    // Trend following buy
+    else if (trend === 'bullish' && rsi > 50 && rsi < 70) {
+      signal = 'BUY';
+      confidence = 65;
+      logic = `Bullish trend + RSI ${rsi.toFixed(1)} (50-70) = Trend BUY`;
+    }
+    // Trend following sell
+    else if (trend === 'bearish' && rsi > 30 && rsi < 50) {
+      signal = 'SELL';
+      confidence = 65;
+      logic = `Bearish trend + RSI ${rsi.toFixed(1)} (30-50) = Trend SELL`;
+    }
+    // Mean reversion at extremes
+    else if (rsi > params.overbought) {
+      signal = 'SELL';
+      confidence = 60;
+      logic = `RSI ${rsi.toFixed(1)} > ${params.overbought} = Overbought SELL`;
+    }
+    else if (rsi < params.oversold) {
+      signal = 'BUY';
+      confidence = 60;
+      logic = `RSI ${rsi.toFixed(1)} < ${params.oversold} = Oversold BUY`;
+    } else {
+      logic = `Awaiting confluence - Trend: ${trend}, RSI: ${rsi.toFixed(1)}`;
+    }
+  }
+  
+  else if (strategy.name === "Momentum Trading") {
+    // MOMENTUM LOGIC: Catch strong moves
+    if (rsi > 60 && rsi < 80 && trend === 'bullish') {
+      signal = 'BUY';
+      confidence = 70;
+      logic = `Strong bullish momentum - RSI ${rsi.toFixed(1)} (60-80) = Momentum BUY`;
+    }
+    else if (rsi > 20 && rsi < 40 && trend === 'bearish') {
+      signal = 'SELL';
+      confidence = 70;
+      logic = `Strong bearish momentum - RSI ${rsi.toFixed(1)} (20-40) = Momentum SELL`;
+    } else {
+      logic = `Momentum not aligned - RSI: ${rsi.toFixed(1)}, Trend: ${trend}`;
+    }
+  }
+  
+  // Adjust confidence based on RSI distance from extremes
+  if (signal === 'BUY' && rsi < 30) confidence += 10;
+  if (signal === 'SELL' && rsi > 70) confidence += 10;
+  
+  // Adjust for timeframe
+  const timeframe = document.getElementById('timeframe').value;
+  if (timeframe === '4h' || timeframe === '1d') confidence += 5;
+  if (timeframe === '5m') confidence -= 10;
+  
+  // Ensure confidence is within bounds
+  confidence = Math.max(20, Math.min(90, confidence));
+  
+  // Add random variation for realism
+  confidence += (Math.random() * 10 - 5);
+  confidence = Math.round(confidence);
+  
+  return { signal, logic, confidence };
+}
+
+// Simulate realistic market movement
+function simulateMarketMovement() {
+  const pair = document.getElementById('pair').value;
+  const data = marketData[pair];
+  const timeframe = document.getElementById('timeframe').value;
+  
+  // Timeframe multiplier for volatility
+  const tfMultiplier = {
+    '5m': 0.5,
+    '15m': 1,
+    '30m': 1.5,
+    '1h': 2,
+    '4h': 3,
+    '1d': 4
+  }[timeframe] || 1;
+  
+  // Generate price movement
+  const volatility = data.volatility * tfMultiplier * 0.001;
+  const randomMove = (Math.random() - 0.5) * 2 * volatility;
+  
+  // Add bias
+  let biasMove = 0;
+  if (data.bias === 'bullish') biasMove = volatility * 0.3;
+  if (data.bias === 'bearish') biasMove = -volatility * 0.3;
+  
+  // Update price
+  data.price = data.price * (1 + randomMove + biasMove);
+  data.priceHistory.push(data.price);
+  if (data.priceHistory.length > 50) data.priceHistory.shift();
+  
+  // Calculate new RSI
+  data.rsi = calculateRSI(data.priceHistory);
+  data.rsiHistory.push(data.rsi);
+  if (data.rsiHistory.length > 20) data.rsiHistory.shift();
+  
+  // Update trend
+  data.trend = determineTrend(data.priceHistory);
+  
+  return data;
+}
+
+// Main analysis function
+function analyzeMarket() {
+  const pair = document.getElementById('pair').value;
+  const strategyType = document.getElementById('strategy').value;
+  
+  // Get market data
+  const pairData = simulateMarketMovement();
+  const strategy = strategies[strategyType];
+  
+  // Generate signal
+  const { signal, logic, confidence } = generateSignal(pairData, strategy);
+  
   // Update UI
+  updateUI(pairData, signal, logic, confidence, strategy);
+  
+  // Log signal
+  logSignal(pair, signal, pairData.price, pairData.rsi, confidence);
+}
+
+// Update the display
+function updateUI(data, signal, logic, confidence, strategy) {
+  const pair = document.getElementById('pair').value;
+  
+  // Update signal box
   const signalBox = document.getElementById('signal');
   signalBox.textContent = signal;
   signalBox.className = 'signal-box ' + signal.toLowerCase();
   
-  document.getElementById('status').textContent = 
-    `${pair} @ ${data.price.toFixed(pair.includes('XAU') ? 2 : 5)} | ${reason}`;
+  // Update status
+  const priceFormat = pair.includes('XAU') ? 2 : 
+                     pair.includes('BTC') ? 2 : 
+                     pair.includes('US30') ? 2 :
+                     pair.includes('USDJPY') ? 3 : 5;
   
-  // Log signal
-  signalHistory.unshift({
+  document.getElementById('status').innerHTML = 
+    `${pair} @ ${data.price.toFixed(priceFormat)} | Confidence: ${confidence}%`;
+  
+  // Update indicators
+  document.getElementById('rsiValue').textContent = data.rsi.toFixed(1);
+  const rsiColor = data.rsi > 70 ? '#ef4444' : data.rsi < 30 ? '#22c55e' : '#facc15';
+  document.getElementById('rsiValue').style.color = rsiColor;
+  
+  document.getElementById('trendValue').textContent = data.trend.toUpperCase();
+  const trendColor = data.trend === 'bullish' ? '#22c55e' : data.trend === 'bearish' ? '#ef4444' : '#94a3b8';
+  document.getElementById('trendValue').style.color = trendColor;
+  
+  // Update strength indicator
+  const strength = confidence > 70 ? 'STRONG' : confidence > 50 ? 'MEDIUM' : 'WEAK';
+  document.getElementById('strengthValue').textContent = strength;
+  const strengthColor = confidence > 70 ? '#22c55e' : confidence > 50 ? '#facc15' : '#ef4444';
+  document.getElementById('strengthValue').style.color = strengthColor;
+  
+  // Update logic display
+  document.getElementById('currentLogic').innerHTML = logic;
+  
+  // Update parameters
+  document.getElementById('paramRsi').textContent = strategy.params.rsiPeriod;
+  document.getElementById('paramOverbought').textContent = strategy.params.overbought;
+  document.getElementById('paramOversold').textContent = strategy.params.oversold;
+  document.getElementById('paramEma').textContent = strategy.params.emaFast ? 
+    `${strategy.params.emaFast}/${strategy.params.emaSlow}` : 'N/A';
+}
+
+// Log signal to history
+function logSignal(pair, signal, price, rsi, confidence) {
+  const logEntry = {
+    timestamp: new Date().toISOString(),
     time: new Date().toLocaleTimeString(),
     pair: pair,
     signal: signal,
-    price: data.price,
-    rsi: data.rsi
-  });
+    price: price,
+    rsi: rsi,
+    confidence: confidence
+  };
   
-  // Keep history manageable
-  if (signalHistory.length > 10) signalHistory.pop();
+  signalHistory.unshift(logEntry);
+  if (signalHistory.length > 20) signalHistory.pop();
 }
 
 // Initialize
+initializeMarket();
+
+// Event listeners
 document.getElementById('pair').addEventListener('change', analyzeMarket);
 document.getElementById('timeframe').addEventListener('change', analyzeMarket);
+document.getElementById('strategy').addEventListener('change', analyzeMarket);
 
-// Auto-update every 10 seconds
-setInterval(analyzeMarket, 10000);
-analyzeMarket();
+// Auto-update every 3 seconds
+setInterval(analyzeMarket, 3000);
+
+// Initial analysis
+setTimeout(analyzeMarket, 1000);
 
 // Helper functions
-function showLicense() {
-  alert('MIT License\n\nCopyright (c) 2024 TradeSignal Pro\n\nPermission is hereby granted...');
+function showTradingRules() {
+  alert(`📊 PROFESSIONAL TRADING LOGIC RULES:
+
+TREND FOLLOWING:
+• BUY when: Uptrend + RSI 50-65 (bullish confirmation)
+• BUY when: Uptrend + RSI <30 (dip buying)
+• SELL when: Downtrend + RSI 35-50 (bearish confirmation)
+• SELL when: Downtrend + RSI >70 (rally selling)
+
+MEAN REVERSION:
+• BUY when: RSI <30 (oversold bounce expected)
+• SELL when: RSI >70 (overbought pullback expected)
+
+RSI LEVELS:
+• 0-30: Oversold (Potential BUY zone)
+• 30-50: Bearish/Bottoming
+• 50-70: Bullish/Topping
+• 70-100: Overbought (Potential SELL zone)
+
+⚠ Never risk more than 2% per trade
+⚠ Always use stop losses
+⚠ These are EDUCATIONAL examples only`);
 }
 
 function showDisclaimer() {
-  alert('DISCLAIMER:\n\nThis is an educational tool only. Not financial advice.');
+  alert(`⚠️ FULL DISCLAIMER & RISK WARNING:
+
+THIS IS AN EDUCATIONAL TOOL ONLY
+
+NOT FINANCIAL ADVICE:
+• All signals are simulated for educational purposes
+• No real trading recommendations are provided
+• This tool demonstrates trading concepts only
+
+HIGH RISK WARNING:
+• Trading involves substantial risk of loss
+• Past performance ≠ future results
+• You can lose more than your initial investment
+
+PROFESSIONAL USE ONLY:
+• For educational demonstration by experienced traders
+• Not suitable for beginners or live trading
+• Always consult a financial advisor
+
+USE AT YOUR OWN RISK:
+• Never trade with money you cannot afford to lose
+• Always use proper risk management
+• This tool is for learning purposes only`);
 }
 </script>
 </body>
