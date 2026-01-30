@@ -1,1064 +1,163 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REAL SMC Signal Dashboard - Deriv Integration</title>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <style>
-        /* Real Trading Dashboard */
-        :root {
-            --bg-primary: #0f172a;
-            --bg-secondary: #1e293b;
-            --bg-card: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --border-color: #334155;
-            --accent-blue: #3b82f6;
-            --accent-green: #22c55e;
-            --accent-red: #ef4444;
-            --accent-purple: #a855f7;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
-        body {
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Header */
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .dashboard-header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 8px;
-        }
-
-        .connection-status {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: var(--accent-red);
-        }
-
-        .status-dot.connected {
-            background: var(--accent-green);
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        /* Main Layout */
-        .dashboard-main {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 20px;
-        }
-
-        @media (max-width: 1024px) {
-            .dashboard-main {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Connection Panel */
-        .connection-panel {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 20px;
-        }
-
-        .connection-form {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 10px;
-            margin: 15px 0;
-        }
-
-        .form-input {
-            padding: 12px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.3s;
-        }
-
-        .btn-connect {
-            background: var(--accent-green);
-            color: white;
-        }
-
-        .btn-disconnect {
-            background: var(--accent-red);
-            color: white;
-        }
-
-        /* Asset Selector */
-        .asset-section {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 20px;
-        }
-
-        .asset-selector {
-            width: 100%;
-            padding: 12px;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 16px;
-            margin-top: 10px;
-        }
-
-        /* Signal Display */
-        .signal-display {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 25px;
-            border: 1px solid var(--border-color);
-            min-height: 400px;
-        }
-
-        .signal-active {
-            text-align: center;
-        }
-
-        .signal-type {
-            font-size: 2rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .signal-type.buy {
-            background: rgba(34, 197, 94, 0.1);
-            color: var(--accent-green);
-            border: 2px solid var(--accent-green);
-        }
-
-        .signal-type.sell {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--accent-red);
-            border: 2px solid var(--accent-red);
-        }
-
-        .signal-details {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .signal-detail-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        .detail-label {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-bottom: 5px;
-        }
-
-        .detail-value {
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn-generate {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-            color: white;
-            flex: 1;
-        }
-
-        /* Side Panel */
-        .side-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        /* Recent Signals */
-        .recent-signals {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
-        }
-
-        .signal-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .signal-item.buy {
-            border-left: 4px solid var(--accent-green);
-        }
-
-        .signal-item.sell {
-            border-left: 4px solid var(--accent-red);
-        }
-
-        /* Price Ticker */
-        .price-ticker {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid var(--border-color);
-        }
-
-        .price-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 8px;
-            color: white;
-            z-index: 1000;
-            animation: slideIn 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .notification.success {
-            background: var(--accent-green);
-        }
-
-        .notification.error {
-            background: var(--accent-red);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradeSignal Pro - Market Analysis Dashboard</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#0f172a;color:#f1f5f9;padding:16px}.container{max-width:400px;margin:0 auto}.header{text-align:center;margin-bottom:20px}h1{font-size:22px;color:#3b82f6;margin-bottom:8px}.risk-warning{background:#7f1d1d20;border:1px solid #ef444440;border-radius:10px;padding:10px;margin-bottom:16px;font-size:12px;color:#fca5a5}.card{background:#1e293b;border-radius:14px;padding:18px;margin-bottom:16px}.form-group{margin-bottom:14px}label{display:block;margin-bottom:6px;color:#cbd5e1;font-size:14px}select{width:100%;padding:10px;background:#0f172a;border:1px solid #475569;border-radius:8px;color:white}.signal-box{padding:25px;text-align:center;border-radius:12px;font-size:32px;font-weight:700;margin:16px 0}.buy{background:#052e16;color:#22c55e}.sell{background:#450a0a;color:#ef4444}.wait{background:#1e293b;color:#facc15}.status{text-align:center;font-size:13px;color:#94a3b8}.footer{text-align:center;margin-top:20px;font-size:12px;color:#64748b}
+</style>
 </head>
 <body>
-    <div class="dashboard-container">
-        <!-- Header -->
-        <header class="dashboard-header">
-            <h1>REAL SMC Signal Dashboard</h1>
-            <div class="connection-status">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="statusText">Disconnected from Deriv</span>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <div class="dashboard-main">
-            <!-- Left Panel -->
-            <div>
-                <!-- Connection Panel -->
-                <div class="connection-panel">
-                    <h3><i class="fas fa-plug"></i> Deriv API Connection</h3>
-                    <div class="connection-form">
-                        <input type="password" class="form-input" id="apiToken" placeholder="Enter your Deriv API token">
-                        <button class="btn btn-connect" id="connectBtn">
-                            <i class="fas fa-link"></i> Connect
-                        </button>
-                    </div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">
-                        <i class="fas fa-info-circle"></i> Get token from: 
-                        <a href="https://app.deriv.com/account/api-token" target="_blank" style="color: var(--accent-blue);">
-                            Deriv Account Settings
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Asset Selector -->
-                <div class="asset-section">
-                    <h3><i class="fas fa-filter"></i> Select Asset for Analysis</h3>
-                    <select class="asset-selector" id="assetSelector">
-                        <optgroup label="Forex Pairs">
-                            <option value="frxEURUSD">EUR/USD</option>
-                            <option value="frxGBPUSD">GBP/USD</option>
-                            <option value="frxUSDJPY">USD/JPY</option>
-                        </optgroup>
-                        <optgroup label="Volatility Indices">
-                            <option value="R_50">Volatility 50</option>
-                            <option value="R_75">Volatility 75</option>
-                            <option value="R_100">Volatility 100</option>
-                        </optgroup>
-                    </select>
-                </div>
-
-                <!-- Signal Display -->
-                <div class="signal-display" id="signalDisplay">
-                    <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
-                        <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 15px;"></i>
-                        <h3>Connect to Deriv to Generate Signals</h3>
-                        <p>Real-time SMC analysis using live market data</p>
-                    </div>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="action-buttons">
-                    <button class="btn btn-generate" id="generateSignalBtn" disabled>
-                        <i class="fas fa-bolt"></i> GENERATE REAL SMC SIGNAL
-                    </button>
-                    <button class="btn btn-disconnect" id="disconnectBtn" disabled>
-                        <i class="fas fa-unlink"></i> Disconnect
-                    </button>
-                </div>
-            </div>
-
-            <!-- Right Panel -->
-            <div class="side-panel">
-                <!-- Recent Signals -->
-                <div class="recent-signals">
-                    <h3><i class="fas fa-history"></i> Recent Signals</h3>
-                    <div id="recentSignalsList">
-                        <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
-                            <i class="fas fa-clock"></i>
-                            <p>No signals yet</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Live Prices -->
-                <div class="price-ticker">
-                    <h3><i class="fas fa-chart-line"></i> Live Prices</h3>
-                    <div id="livePrices">
-                        <div class="price-item">
-                            <span>EUR/USD</span>
-                            <span style="color: var(--accent-green);">1.0843</span>
-                        </div>
-                        <div class="price-item">
-                            <span>GBP/USD</span>
-                            <span style="color: var(--accent-red);">1.2651</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="container">
+  <div class="header">
+    <h1>TradeSignal Pro</h1>
+    <div style="font-size:14px;color:#94a3b8;">Market Analysis Dashboard</div>
+  </div>
+  
+  <div class="risk-warning">
+    <strong>⚠ Educational Tool Only</strong><br>
+    Not financial advice. Use at your own risk.
+  </div>
+  
+  <div class="card">
+    <div class="form-group">
+      <label>Market Pair</label>
+      <select id="pair">
+        <option value="EURUSD">EUR/USD</option>
+        <option value="GBPUSD">GBP/USD</option>
+        <option value="XAUUSD">Gold (XAU/USD)</option>
+        <option value="BTCUSD">Bitcoin (BTC/USD)</option>
+        <option value="US30">US30 Index</option>
+      </select>
     </div>
+    
+    <div class="form-group">
+      <label>Timeframe</label>
+      <select id="timeframe">
+        <option value="5m">5 Minutes</option>
+        <option value="15m">15 Minutes</option>
+        <option value="1h">1 Hour</option>
+      </select>
+    </div>
+    
+    <div id="signal" class="signal-box wait">ANALYZING</div>
+    <div id="status" class="status">Initializing market data...</div>
+    
+    <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:12px;color:#94a3b8">RSI (14)</div>
+        <div id="rsiValue" style="font-size:18px;font-weight:700">-</div>
+      </div>
+      <div style="background:#0f172a;padding:10px;border-radius:8px;text-align:center">
+        <div style="font-size:12px;color:#94a3b8">Trend</div>
+        <div id="trendValue" style="font-size:18px;font-weight:700">-</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    TradeSignal Pro v1.0 | Educational Tool<br>
+    <div style="margin-top:8px;font-size:11px;">
+      <a href="#" style="color:#64748b;margin:0 8px" onclick="showLicense()">License</a>
+      <a href="#" style="color:#64748b;margin:0 8px" onclick="showDisclaimer()">Disclaimer</a>
+    </div>
+  </div>
+</div>
 
-    <script>
-        // ============================================
-        // REAL SMC SIGNAL DASHBOARD
-        // Using ACTUAL Deriv WebSocket API
-        // ============================================
-        
-        class RealSMCDashboard {
-            constructor() {
-                this.connected = false;
-                this.ws = null;
-                this.apiToken = null;
-                this.accountInfo = null;
-                this.currentAsset = 'frxEURUSD';
-                this.currentSignal = null;
-                this.recentSignals = [];
-                this.livePrices = {};
-                this.priceSubscriptionId = null;
-                
-                // Deriv API endpoints
-                this.config = {
-                    websocketUrl: 'wss://ws.binaryws.com/websockets/v3?app_id=1089',
-                    appId: '1089'
-                };
-                
-                this.init();
-            }
-            
-            init() {
-                this.initEventListeners();
-                this.loadSavedToken();
-            }
-            
-            loadSavedToken() {
-                const savedToken = localStorage.getItem('deriv_api_token');
-                if (savedToken) {
-                    document.getElementById('apiToken').value = savedToken;
-                }
-            }
-            
-            // REAL DERIV CONNECTION
-            async connectToDeriv() {
-                const apiToken = document.getElementById('apiToken').value.trim();
-                
-                if (!apiToken) {
-                    this.showNotification('Please enter your Deriv API token', 'error');
-                    return;
-                }
-                
-                this.apiToken = apiToken;
-                localStorage.setItem('deriv_api_token', apiToken);
-                
-                this.showNotification('Connecting to Deriv API...', 'info');
-                this.updateStatus('Connecting...');
-                
-                try {
-                    // Step 1: Connect WebSocket
-                    await this.connectWebSocket();
-                    
-                    // Step 2: Authorize with token
-                    await this.authorize(apiToken);
-                    
-                    // Step 3: Get account info
-                    await this.getAccountInfo();
-                    
-                    // Step 4: Get available symbols
-                    await this.getActiveSymbols();
-                    
-                    // Step 5: Subscribe to initial price
-                    this.subscribeToPrice(this.currentAsset);
-                    
-                    // Update UI
-                    this.connected = true;
-                    this.updateStatus('Connected');
-                    document.getElementById('generateSignalBtn').disabled = false;
-                    document.getElementById('disconnectBtn').disabled = false;
-                    document.getElementById('connectBtn').disabled = true;
-                    
-                    this.showNotification('Successfully connected to Deriv!', 'success');
-                    
-                } catch (error) {
-                    console.error('Connection error:', error);
-                    this.showNotification(`Connection failed: ${error.message}`, 'error');
-                    this.updateStatus('Disconnected');
-                    this.connected = false;
-                }
-            }
-            
-            connectWebSocket() {
-                return new Promise((resolve, reject) => {
-                    try {
-                        this.ws = new WebSocket(this.config.websocketUrl);
-                        
-                        this.ws.onopen = () => {
-                            console.log('REAL: WebSocket connected to Deriv');
-                            resolve();
-                        };
-                        
-                        this.ws.onmessage = (event) => {
-                            this.handleRealMessage(JSON.parse(event.data));
-                        };
-                        
-                        this.ws.onerror = (error) => {
-                            reject(new Error('WebSocket connection failed'));
-                        };
-                        
-                        this.ws.onclose = () => {
-                            this.connected = false;
-                            this.updateStatus('Disconnected');
-                            document.getElementById('generateSignalBtn').disabled = true;
-                            document.getElementById('disconnectBtn').disabled = true;
-                            document.getElementById('connectBtn').disabled = false;
-                            this.showNotification('Disconnected from Deriv', 'info');
-                        };
-                        
-                    } catch (error) {
-                        reject(error);
-                    }
-                });
-            }
-            
-            authorize(token) {
-                return new Promise((resolve, reject) => {
-                    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-                        reject(new Error('WebSocket not connected'));
-                        return;
-                    }
-                    
-                    const authMsg = {
-                        authorize: token
-                    };
-                    
-                    this.ws.send(JSON.stringify(authMsg));
-                    
-                    const responseHandler = (event) => {
-                        const data = JSON.parse(event.data);
-                        
-                        if (data.error) {
-                            this.ws.removeEventListener('message', responseHandler);
-                            reject(new Error(data.error.message));
-                        } else if (data.authorize) {
-                            this.ws.removeEventListener('message', responseHandler);
-                            this.accountInfo = data.authorize;
-                            console.log('REAL: Authorized as', this.accountInfo.loginid);
-                            resolve(true);
-                        }
-                    };
-                    
-                    this.ws.addEventListener('message', responseHandler);
-                    
-                    setTimeout(() => {
-                        this.ws.removeEventListener('message', responseHandler);
-                        reject(new Error('Authorization timeout'));
-                    }, 10000);
-                });
-            }
-            
-            getAccountInfo() {
-                return new Promise((resolve) => {
-                    if (!this.ws || !this.connected) return;
-                    
-                    const request = {
-                        statement: 1,
-                        limit: 1
-                    };
-                    
-                    this.ws.send(JSON.stringify(request));
-                    
-                    const handler = (event) => {
-                        const data = JSON.parse(event.data);
-                        if (data.statement) {
-                            this.ws.removeEventListener('message', handler);
-                            resolve(data.statement);
-                        }
-                    };
-                    
-                    this.ws.addEventListener('message', handler);
-                });
-            }
-            
-            getActiveSymbols() {
-                return new Promise((resolve) => {
-                    if (!this.ws || !this.connected) return;
-                    
-                    const request = {
-                        active_symbols: 'brief',
-                        product_type: 'basic'
-                    };
-                    
-                    this.ws.send(JSON.stringify(request));
-                    
-                    const handler = (event) => {
-                        const data = JSON.parse(event.data);
-                        if (data.active_symbols) {
-                            this.ws.removeEventListener('message', handler);
-                            resolve(data.active_symbols);
-                        }
-                    };
-                    
-                    this.ws.addEventListener('message', handler);
-                });
-            }
-            
-            subscribeToPrice(symbol) {
-                if (!this.ws || !this.connected) return;
-                
-                // Unsubscribe from previous
-                if (this.priceSubscriptionId) {
-                    this.ws.send(JSON.stringify({
-                        forget: this.priceSubscriptionId
-                    }));
-                }
-                
-                // Subscribe to new symbol
-                const request = {
-                    ticks: symbol,
-                    subscribe: 1
-                };
-                
-                this.ws.send(JSON.stringify(request));
-                
-                // Store subscription ID
-                const handler = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.tick) {
-                        this.handleRealPriceUpdate(data.tick);
-                    } else if (data.subscription && data.subscription.id) {
-                        this.priceSubscriptionId = data.subscription.id;
-                        this.ws.removeEventListener('message', handler);
-                    }
-                };
-                
-                this.ws.addEventListener('message', handler);
-            }
-            
-            handleRealPriceUpdate(tickData) {
-                const { quote, symbol } = tickData;
-                
-                // Store real price
-                this.livePrices[symbol] = parseFloat(quote);
-                
-                // Update live price display
-                this.updateLivePrices();
-                
-                // If this is the selected asset, update signal display if exists
-                if (symbol === this.currentAsset && this.currentSignal) {
-                    this.updateSignalWithRealPrice(quote);
-                }
-            }
-            
-            // REAL SMC SIGNAL GENERATION
-            async generateRealSignal() {
-                if (!this.connected || !this.ws) {
-                    this.showNotification('Please connect to Deriv first', 'error');
-                    return;
-                }
-                
-                const assetSymbol = document.getElementById('assetSelector').value;
-                this.currentAsset = assetSymbol;
-                
-                // Get real current price
-                const currentPrice = this.livePrices[assetSymbol];
-                
-                if (!currentPrice) {
-                    this.showNotification('Waiting for price data...', 'info');
-                    
-                    // Subscribe to price and retry
-                    this.subscribeToPrice(assetSymbol);
-                    
-                    // Wait for price update
-                    setTimeout(() => {
-                        if (this.livePrices[assetSymbol]) {
-                            this.generateRealSignal();
-                        } else {
-                            this.showNotification('Price data not available', 'error');
-                        }
-                    }, 2000);
-                    
-                    return;
-                }
-                
-                // Show analyzing state
-                const display = document.getElementById('signalDisplay');
-                display.innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px;">
-                        <i class="fas fa-cog fa-spin" style="font-size: 3rem; color: var(--accent-blue); margin-bottom: 20px;"></i>
-                        <h3>Analyzing REAL Market Data</h3>
-                        <p>${assetSymbol} • ${this.formatPrice(currentPrice)}</p>
-                        <div style="margin-top: 15px; font-size: 12px; color: var(--text-secondary);">
-                            <i class="fas fa-database"></i> Processing live Deriv data...
-                        </div>
-                    </div>
-                `;
-                
-                // Generate REAL signal based on actual price data
-                setTimeout(() => {
-                    const signal = this.analyzeWithRealData(assetSymbol, currentPrice);
-                    
-                    this.currentSignal = signal;
-                    this.displayRealSignal(signal);
-                    this.addToRecentSignals(signal);
-                    
-                    // Subscribe to price updates for this asset
-                    this.subscribeToPrice(assetSymbol);
-                    
-                    this.showNotification(`REAL ${signal.type} signal for ${assetSymbol}`, 'success');
-                    
-                }, 1500);
-            }
-            
-            analyzeWithRealData(symbol, currentPrice) {
-                // REAL SMC ANALYSIS BASED ON ACTUAL PRICE DATA
-                
-                // Calculate price momentum from recent price history
-                const priceHistory = this.getPriceHistory(symbol);
-                const momentum = this.calculateMomentum(priceHistory);
-                
-                // Determine signal based on REAL price action
-                let signalType = 'NEUTRAL';
-                let confidence = 50;
-                
-                if (momentum > 0.001) { // Bullish momentum
-                    signalType = 'BUY';
-                    confidence = Math.min(70 + (momentum * 10000), 95);
-                } else if (momentum < -0.001) { // Bearish momentum
-                    signalType = 'SELL';
-                    confidence = Math.min(70 + (Math.abs(momentum) * 10000), 95);
-                }
-                
-                // Generate SMC conditions based on price action
-                const conditions = this.generateRealSMCConditions(symbol, currentPrice, momentum);
-                const metConditions = conditions.filter(c => c.met).length;
-                
-                // Adjust confidence based on conditions met
-                confidence = Math.min(confidence + (metConditions * 3), 98);
-                
-                return {
-                    symbol: symbol,
-                    type: signalType,
-                    confidence: Math.round(confidence),
-                    price: currentPrice,
-                    timestamp: new Date(),
-                    conditions: conditions,
-                    metConditions: metConditions,
-                    totalConditions: conditions.length,
-                    source: 'Deriv Live Data'
-                };
-            }
-            
-            getPriceHistory(symbol) {
-                // Simulating price history - IN REAL USE, GET FROM DERIV TICK HISTORY
-                const currentPrice = this.livePrices[symbol] || 100;
-                const prices = [];
-                
-                for (let i = 0; i < 20; i++) {
-                    const change = (Math.random() - 0.5) * 0.002 * currentPrice;
-                    prices.push(currentPrice + change);
-                }
-                
-                return prices;
-            }
-            
-            calculateMomentum(prices) {
-                if (prices.length < 2) return 0;
-                const firstPrice = prices[0];
-                const lastPrice = prices[prices.length - 1];
-                return (lastPrice - firstPrice) / firstPrice;
-            }
-            
-            generateRealSMCConditions(symbol, currentPrice, momentum) {
-                // REAL SMC conditions based on actual price analysis
-                const conditions = [
-                    { name: 'Market Structure', met: Math.abs(momentum) > 0.0005 },
-                    { name: 'Order Blocks', met: currentPrice % 10 < 2 },
-                    { name: 'Fair Value Gap', met: Math.random() > 0.4 },
-                    { name: 'Liquidity Pool', met: Math.random() > 0.3 },
-                    { name: 'Volume Confirmation', met: momentum !== 0 },
-                    { name: 'Price Action', met: true },
-                    { name: 'Support/Resistance', met: Math.random() > 0.5 },
-                    { name: 'Trend Alignment', met: Math.abs(momentum) > 0.0002 }
-                ];
-                
-                return conditions;
-            }
-            
-            displayRealSignal(signal) {
-                const display = document.getElementById('signalDisplay');
-                const isBuy = signal.type === 'BUY';
-                
-                display.innerHTML = `
-                    <div class="signal-active">
-                        <div class="signal-type ${isBuy ? 'buy' : 'sell'}">
-                            <i class="fas ${isBuy ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
-                            ${signal.type} SIGNAL
-                            <span style="font-size: 14px; background: rgba(255,255,255,0.1); padding: 4px 8px; border-radius: 6px; margin-left: 10px;">
-                                <i class="fas fa-satellite-dish"></i> LIVE
-                            </span>
-                        </div>
-                        
-                        <div style="margin: 20px 0;">
-                            <h2 style="font-size: 28px;">${signal.symbol}</h2>
-                            <div style="display: inline-block; padding: 6px 12px; background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); border-radius: 20px; font-size: 12px; font-weight: 600; margin-top: 10px;">
-                                <i class="fas fa-database"></i> Real Deriv Data
-                            </div>
-                        </div>
-                        
-                        <div class="signal-details">
-                            <div class="signal-detail-item">
-                                <div class="detail-label">Current Price</div>
-                                <div class="detail-value">${this.formatPrice(signal.price)}</div>
-                            </div>
-                            <div class="signal-detail-item">
-                                <div class="detail-label">Signal Strength</div>
-                                <div class="detail-value" style="color: ${signal.confidence >= 80 ? 'var(--accent-green)' : signal.confidence >= 60 ? 'var(--accent-blue)' : 'var(--accent-red)'}">
-                                    ${signal.confidence}%
-                                </div>
-                            </div>
-                            <div class="signal-detail-item">
-                                <div class="detail-label">SMC Conditions</div>
-                                <div class="detail-value">${signal.metConditions}/${signal.totalConditions}</div>
-                            </div>
-                            <div class="signal-detail-item">
-                                <div class="detail-label">Generated</div>
-                                <div class="detail-value">${new Date(signal.timestamp).toLocaleTimeString()}</div>
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 25px; background: rgba(255, 255, 255, 0.03); padding: 20px; border-radius: 10px; border-left: 4px solid ${isBuy ? 'var(--accent-green)' : 'var(--accent-red)'};">
-                            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 10px;">
-                                <i class="fas fa-analysis"></i> Real SMC Analysis:
-                            </div>
-                            <div style="font-size: 14px; line-height: 1.6;">
-                                ${this.getRealAnalysisText(signal)}
-                            </div>
-                        </div>
-                        
-                        <div style="margin-top: 20px; font-size: 12px; color: var(--text-secondary);">
-                            <i class="fas fa-satellite-dish"></i> Connected to Deriv API • Live market data
-                        </div>
-                    </div>
-                `;
-            }
-            
-            getRealAnalysisText(signal) {
-                if (signal.type === 'BUY') {
-                    return `Bullish momentum detected on ${signal.symbol}. ${signal.metConditions}/${signal.totalConditions} SMC conditions met. Price action shows accumulation pattern. Confidence level: ${signal.confidence}%.`;
-                } else {
-                    return `Bearish pressure identified on ${signal.symbol}. ${signal.metConditions}/${signal.totalConditions} SMC conditions met. Market structure indicating distribution. Confidence level: ${signal.confidence}%.`;
-                }
-            }
-            
-            updateSignalWithRealPrice(newPrice) {
-                if (!this.currentSignal) return;
-                
-                // Update signal price and recalculate
-                this.currentSignal.price = newPrice;
-                
-                // You could add logic to update signal based on new price
-                // For now, just update the display
-                const priceElement = document.querySelector('.detail-value');
-                if (priceElement) {
-                    priceElement.textContent = this.formatPrice(newPrice);
-                }
-            }
-            
-            addToRecentSignals(signal) {
-                const signalData = {
-                    symbol: signal.symbol,
-                    type: signal.type,
-                    price: signal.price,
-                    confidence: signal.confidence,
-                    time: new Date(signal.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-                };
-                
-                this.recentSignals.unshift(signalData);
-                
-                // Keep only last 10
-                if (this.recentSignals.length > 10) {
-                    this.recentSignals.pop();
-                }
-                
-                this.updateRecentSignalsDisplay();
-            }
-            
-            updateRecentSignalsDisplay() {
-                const list = document.getElementById('recentSignalsList');
-                
-                if (this.recentSignals.length === 0) {
-                    list.innerHTML = `
-                        <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
-                            <i class="fas fa-clock"></i>
-                            <p>No signals yet</p>
-                        </div>
-                    `;
-                    return;
-                }
-                
-                let html = '';
-                this.recentSignals.forEach(signal => {
-                    html += `
-                        <div class="signal-item ${signal.type.toLowerCase()}">
-                            <div>
-                                <div style="font-weight: 600; font-size: 16px;">${signal.symbol}</div>
-                                <div style="font-size: 12px; color: var(--text-secondary);">${signal.time}</div>
-                                <div style="font-size: 11px; padding: 2px 6px; background: ${signal.type === 'BUY' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)'}; color: ${signal.type === 'BUY' ? 'var(--accent-green)' : 'var(--accent-red)'}; border-radius: 10px; display: inline-block; margin-top: 5px;">
-                                    ${signal.type}
-                                </div>
-                            </div>
-                            <div style="text-align: right;">
-                                <div style="font-size: 18px; font-weight: 600;">${this.formatPrice(signal.price)}</div>
-                                <div style="font-size: 12px; color: ${signal.confidence >= 80 ? 'var(--accent-green)' : signal.confidence >= 60 ? 'var(--accent-blue)' : 'var(--accent-red)'}">
-                                    ${signal.confidence}%
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                list.innerHTML = html;
-            }
-            
-            updateLivePrices() {
-                const container = document.getElementById('livePrices');
-                let html = '';
-                
-                Object.entries(this.livePrices).forEach(([symbol, price]) => {
-                    // Simple color based on random change for demo
-                    const isUp = Math.random() > 0.5;
-                    html += `
-                        <div class="price-item">
-                            <span>${symbol.replace('frx', '')}</span>
-                            <span style="color: ${isUp ? 'var(--accent-green)' : 'var(--accent-red)'}">
-                                ${this.formatPrice(price)}
-                            </span>
-                        </div>
-                    `;
-                });
-                
-                if (html) {
-                    container.innerHTML = html;
-                }
-            }
-            
-            disconnect() {
-                if (this.ws) {
-                    this.ws.close();
-                    this.ws = null;
-                }
-                
-                this.connected = false;
-                this.updateStatus('Disconnected');
-                document.getElementById('generateSignalBtn').disabled = true;
-                document.getElementById('disconnectBtn').disabled = true;
-                document.getElementById('connectBtn').disabled = false;
-                
-                // Reset signal display
-                document.getElementById('signalDisplay').innerHTML = `
-                    <div style="text-align: center; padding: 60px 20px; color: var(--text-secondary);">
-                        <i class="fas fa-chart-line" style="font-size: 3rem; margin-bottom: 15px;"></i>
-                        <h3>Connect to Deriv to Generate Signals</h3>
-                        <p>Real-time SMC analysis using live market data</p>
-                    </div>
-                `;
-                
-                this.showNotification('Disconnected from Deriv', 'info');
-            }
-            
-            updateStatus(status) {
-                const statusDot = document.getElementById('statusDot');
-                const statusText = document.getElementById('statusText');
-                
-                if (status === 'Connected') {
-                    statusDot.className = 'status-dot connected';
-                    statusText.textContent = 'Connected to Deriv';
-                } else {
-                    statusDot.className = 'status-dot';
-                    statusText.textContent = status;
-                }
-            }
-            
-            formatPrice(price) {
-                return typeof price === 'number' ? price.toFixed(4) : '--.--';
-            }
-            
-            showNotification(message, type = 'info') {
-                const notification = document.createElement('div');
-                notification.className = `notification ${type}`;
-                notification.innerHTML = `
-                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
-                    <div>${message}</div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove();
-                    }
-                }, 5000);
-            }
-            
-            handleRealMessage(data) {
-                // Handle different message types from Deriv
-                if (data.error) {
-                    console.error('Deriv API error:', data.error);
-                }
-                
-                // You can add more specific handlers here
-            }
-            
-            initEventListeners() {
-                // Connection
-                document.getElementById('connectBtn').addEventListener('click', () => this.connectToDeriv());
-                document.getElementById('disconnectBtn').addEventListener('click', () => this.disconnect());
-                
-                // Signal generation
-                document.getElementById('generateSignalBtn').addEventListener('click', () => this.generateRealSignal());
-                
-                // Asset selection
-                document.getElementById('assetSelector').addEventListener('change', (e) => {
-                    this.currentAsset = e.target.value;
-                    if (this.connected) {
-                        this.subscribeToPrice(this.currentAsset);
-                    }
-                });
-                
-                // Enter key in token field
-                document.getElementById('apiToken').addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        this.connectToDeriv();
-                    }
-                });
-            }
-        }
-        
-        // Initialize dashboard
-        let dashboard;
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Initializing REAL SMC Signal Dashboard...');
-            dashboard = new RealSMCDashboard();
-            window.dashboard = dashboard;
-        });
-    </script>
+<script>
+// Simulated market data (for educational purposes)
+let marketData = {
+  EURUSD: { price: 1.08542, trend: 'neutral', rsi: 52 },
+  GBPUSD: { price: 1.26580, trend: 'bullish', rsi: 58 },
+  XAUUSD: { price: 2185.42, trend: 'bullish', rsi: 62 },
+  BTCUSD: { price: 68420.50, trend: 'bullish', rsi: 65 },
+  US30: { price: 39245.75, trend: 'bullish', rsi: 60 }
+};
+
+let signalHistory = [];
+
+function analyzeMarket() {
+  const pair = document.getElementById('pair').value;
+  const timeframe = document.getElementById('timeframe').value;
+  const data = marketData[pair];
+  
+  // Simulate some randomness for demo
+  const randomChange = (Math.random() - 0.5) * 2;
+  data.rsi = Math.max(20, Math.min(80, data.rsi + randomChange));
+  data.price = data.price * (1 + (randomChange * 0.001));
+  
+  // Update display
+  document.getElementById('rsiValue').textContent = data.rsi.toFixed(1);
+  document.getElementById('rsiValue').style.color = 
+    data.rsi > 70 ? '#ef4444' : data.rsi < 30 ? '#22c55e' : '#facc15';
+  
+  document.getElementById('trendValue').textContent = 
+    data.trend.charAt(0).toUpperCase() + data.trend.slice(1);
+  document.getElementById('trendValue').style.color = 
+    data.trend === 'bullish' ? '#22c55e' : data.trend === 'bearish' ? '#ef4444' : '#facc15';
+  
+  // Generate signal
+  let signal = 'WAIT';
+  let reason = 'Neutral market conditions';
+  
+  if (data.rsi > 65 && data.trend === 'bullish') {
+    signal = 'SELL';
+    reason = 'Overbought with bullish trend divergence';
+  } else if (data.rsi < 35 && data.trend === 'bearish') {
+    signal = 'BUY';
+    reason = 'Oversold with bearish trend divergence';
+  } else if (data.rsi > 70) {
+    signal = 'SELL';
+    reason = 'Strongly overbought (RSI > 70)';
+  } else if (data.rsi < 30) {
+    signal = 'BUY';
+    reason = 'Strongly oversold (RSI < 30)';
+  } else if (data.rsi > 50 && data.trend === 'bullish') {
+    signal = 'BUY';
+    reason = 'Bullish trend with RSI support';
+  } else if (data.rsi < 50 && data.trend === 'bearish') {
+    signal = 'SELL';
+    reason = 'Bearish trend with RSI confirmation';
+  }
+  
+  // Update UI
+  const signalBox = document.getElementById('signal');
+  signalBox.textContent = signal;
+  signalBox.className = 'signal-box ' + signal.toLowerCase();
+  
+  document.getElementById('status').textContent = 
+    `${pair} @ ${data.price.toFixed(pair.includes('XAU') ? 2 : 5)} | ${reason}`;
+  
+  // Log signal
+  signalHistory.unshift({
+    time: new Date().toLocaleTimeString(),
+    pair: pair,
+    signal: signal,
+    price: data.price,
+    rsi: data.rsi
+  });
+  
+  // Keep history manageable
+  if (signalHistory.length > 10) signalHistory.pop();
+}
+
+// Initialize
+document.getElementById('pair').addEventListener('change', analyzeMarket);
+document.getElementById('timeframe').addEventListener('change', analyzeMarket);
+
+// Auto-update every 10 seconds
+setInterval(analyzeMarket, 10000);
+analyzeMarket();
+
+// Helper functions
+function showLicense() {
+  alert('MIT License\n\nCopyright (c) 2024 TradeSignal Pro\n\nPermission is hereby granted...');
+}
+
+function showDisclaimer() {
+  alert('DISCLAIMER:\n\nThis is an educational tool only. Not financial advice.');
+}
+</script>
 </body>
 </html>
