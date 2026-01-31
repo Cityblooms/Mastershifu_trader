@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrendIQ Indicator Dashboard</title>
+    <title>TrendIQ Pro Indicator Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -15,14 +16,14 @@
         }
         
         body {
-            background-color: #0f172a;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             color: #e2e8f0;
             padding: 20px;
             min-height: 100vh;
         }
         
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             display: flex;
             flex-direction: column;
@@ -33,41 +34,104 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #334155;
+            padding: 20px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header-left {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         
         h1 {
             color: #ebfc02;
-            font-size: 28px;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
         
         .tagline {
             color: #94a3b8;
             font-size: 16px;
+            max-width: 600px;
+        }
+        
+        .pair-selector {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .pair-selector label {
+            font-weight: 600;
+            color: #ebfc02;
+        }
+        
+        select {
+            background: #0f172a;
+            color: #e2e8f0;
+            border: 2px solid #334155;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 200px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        select:hover {
+            border-color: #ebfc02;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #ebfc02;
+            box-shadow: 0 0 0 3px rgba(235, 252, 2, 0.2);
         }
         
         .main-content {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 25px;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
         }
         
         .chart-container {
-            flex: 1;
-            min-width: 300px;
-            background: #1e293b;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            height: 600px;
+            position: relative;
         }
         
         .controls-panel {
-            width: 320px;
-            background: #1e293b;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .panel-section {
+            background: rgba(15, 23, 42, 0.6);
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
         .panel-title {
@@ -87,34 +151,47 @@
             margin-bottom: 25px;
         }
         
-        .control-label {
+        .control-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            font-weight: 500;
+            font-weight: 600;
         }
         
         .control-value {
             color: #ebfc02;
-            font-weight: 600;
+            font-weight: 700;
         }
         
         input[type="range"] {
             width: 100%;
             height: 8px;
             border-radius: 4px;
-            background: #334155;
+            background: linear-gradient(90deg, #334155 0%, #ebfc02 100%);
             outline: none;
             -webkit-appearance: none;
         }
         
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: #ebfc02;
             cursor: pointer;
+            border: 3px solid #0f172a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .toggle-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-label {
+            font-weight: 600;
         }
         
         .toggle-switch {
@@ -162,79 +239,93 @@
             transform: translateX(30px);
         }
         
-        .toggle-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .toggle-label {
-            font-weight: 500;
-        }
-        
         .buttons-container {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
         }
         
         button {
-            flex: 1;
-            padding: 12px;
+            padding: 14px;
             border: none;
-            border-radius: 8px;
-            font-weight: 600;
+            border-radius: 10px;
+            font-weight: 700;
             font-size: 16px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         
         .btn-primary {
-            background-color: #ebfc02;
+            background: linear-gradient(135deg, #ebfc02 0%, #d4e502 100%);
             color: #0f172a;
         }
         
         .btn-primary:hover {
-            background-color: #d4e502;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(235, 252, 2, 0.3);
         }
         
         .btn-secondary {
-            background-color: #334155;
+            background: rgba(51, 65, 85, 0.8);
             color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .btn-secondary:hover {
-            background-color: #475569;
+            background: rgba(71, 85, 105, 0.8);
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f70000 0%, #d60000 100%);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(247, 0, 0, 0.3);
         }
         
         .signals-container {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 15px;
-            margin-top: 25px;
+            margin-top: 10px;
         }
         
         .signal-box {
-            flex: 1;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 12px;
             text-align: center;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .signal-box.active {
+            transform: scale(1.05);
+            border-color: currentColor;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
         }
         
         .signal-buy {
-            background-color: rgba(235, 252, 2, 0.15);
-            border: 1px solid #ebfc02;
+            background: linear-gradient(135deg, rgba(235, 252, 2, 0.15) 0%, rgba(212, 229, 2, 0.1) 100%);
+            border: 2px solid #ebfc02;
         }
         
         .signal-sell {
-            background-color: rgba(247, 0, 0, 0.15);
-            border: 1px solid #f70000;
+            background: linear-gradient(135deg, rgba(247, 0, 0, 0.15) 0%, rgba(214, 0, 0, 0.1) 100%);
+            border: 2px solid #f70000;
         }
         
         .signal-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
         
         .signal-buy .signal-title {
@@ -246,141 +337,303 @@
         }
         
         .signal-value {
-            font-size: 24px;
-            font-weight: 700;
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+        
+        .signal-price {
+            font-size: 14px;
+            color: #94a3b8;
         }
         
         .status-container {
-            margin-top: 25px;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: rgba(30, 41, 59, 0.7);
-            border-left: 4px solid #ebfc02;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .status-box {
+            padding: 20px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
         .status-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: #ebfc02;
+            margin-bottom: 10px;
+            color: #94a3b8;
         }
         
-        .status-text {
-            color: #94a3b8;
+        .status-value {
+            font-size: 24px;
+            font-weight: 800;
+            color: #ebfc02;
         }
         
         .trend-direction {
             display: inline-block;
-            padding: 4px 12px;
+            padding: 8px 16px;
             border-radius: 20px;
-            font-weight: 600;
-            margin-left: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
         }
         
         .trend-up {
-            background-color: rgba(235, 252, 2, 0.2);
+            background: linear-gradient(135deg, rgba(235, 252, 2, 0.2) 0%, rgba(212, 229, 2, 0.1) 100%);
             color: #ebfc02;
+            border: 2px solid #ebfc02;
         }
         
         .trend-down {
-            background-color: rgba(247, 0, 0, 0.2);
+            background: linear-gradient(135deg, rgba(247, 0, 0, 0.2) 0%, rgba(214, 0, 0, 0.1) 100%);
             color: #f70000;
+            border: 2px solid #f70000;
         }
         
         .trend-neutral {
-            background-color: rgba(148, 163, 184, 0.2);
+            background: rgba(148, 163, 184, 0.2);
             color: #94a3b8;
+            border: 2px solid #94a3b8;
         }
         
-        @media (max-width: 1024px) {
-            .main-content {
-                flex-direction: column;
-            }
-            
-            .controls-panel {
-                width: 100%;
-            }
+        .timeframe-selector {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            z-index: 100;
+        }
+        
+        .timeframe-buttons {
+            display: flex;
+            gap: 8px;
+            background: rgba(15, 23, 42, 0.8);
+            padding: 8px;
+            border-radius: 10px;
+        }
+        
+        .timeframe-btn {
+            padding: 8px 16px;
+            background: rgba(51, 65, 85, 0.6);
+            color: #94a3b8;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .timeframe-btn.active {
+            background: #ebfc02;
+            color: #0f172a;
+        }
+        
+        .timeframe-btn:hover {
+            background: rgba(235, 252, 2, 0.3);
+            color: #ebfc02;
+        }
+        
+        .alert-banner {
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 10px;
+            text-align: center;
+            font-weight: 600;
+            animation: pulse 2s infinite;
+            display: none;
+        }
+        
+        .alert-buy {
+            background: rgba(235, 252, 2, 0.2);
+            border: 2px solid #ebfc02;
+            color: #ebfc02;
+        }
+        
+        .alert-sell {
+            background: rgba(247, 0, 0, 0.2);
+            border: 2px solid #f70000;
+            color: #f70000;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .loading {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #ebfc02;
+        }
+        
+        .spinner {
+            border: 5px solid rgba(235, 252, 2, 0.1);
+            border-top: 5px solid #ebfc02;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <div>
-                <h1><i class="fas fa-chart-line"></i> TrendIQ Indicator</h1>
-                <p class="tagline">Advanced trend detection using Bollinger Bands and ATR filter</p>
+            <div class="header-left">
+                <h1><i class="fas fa-brain"></i> TrendIQ Pro</h1>
+                <p class="tagline">Advanced multi-pair trend detection using Bollinger Bands + ATR filter. Real-time signals for Gold, Forex, and Indices.</p>
             </div>
-            <div class="status-container">
-                <div class="status-title">Current Status <span id="trendDirection" class="trend-direction trend-neutral">NEUTRAL</span></div>
-                <p class="status-text" id="statusText">Awaiting signal generation...</p>
+            
+            <div class="pair-selector">
+                <label for="pairSelect"><i class="fas fa-chart-line"></i> Trading Pair:</label>
+                <select id="pairSelect">
+                    <option value="gold">Gold (XAU/USD)</option>
+                    <option value="eurusd">EUR/USD</option>
+                    <option value="us30">US30 (Dow Jones)</option>
+                    <option value="jump25">Jump 25 (High Volatility)</option>
+                    <option value="jump10">Jump 10 (Medium Volatility)</option>
+                    <option value="jump50">Jump 50 (Extreme Volatility)</option>
+                </select>
             </div>
         </header>
         
         <div class="main-content">
             <div class="chart-container">
+                <div class="timeframe-selector">
+                    <div class="timeframe-buttons">
+                        <button class="timeframe-btn active" data-timeframe="1H">1H</button>
+                        <button class="timeframe-btn" data-timeframe="4H">4H</button>
+                        <button class="timeframe-btn" data-timeframe="1D">1D</button>
+                        <button class="timeframe-btn" data-timeframe="1W">1W</button>
+                    </div>
+                </div>
+                
+                <div class="loading" id="chartLoading">
+                    <div class="spinner"></div>
+                    <p>Loading chart data...</p>
+                </div>
+                
                 <canvas id="priceChart"></canvas>
+                
+                <div class="alert-banner" id="alertBanner"></div>
             </div>
             
             <div class="controls-panel">
-                <div class="panel-title"><i class="fas fa-sliders-h"></i> Indicator Settings</div>
-                
-                <div class="control-group">
-                    <div class="control-label">
-                        <span>ATR Period</span>
-                        <span class="control-value" id="atrValue">200</span>
+                <div class="panel-section">
+                    <div class="panel-title"><i class="fas fa-sliders-h"></i> Indicator Settings</div>
+                    
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>ATR Period</span>
+                            <span class="control-value" id="atrValue">200</span>
+                        </div>
+                        <input type="range" id="atrSlider" min="10" max="500" value="200" step="1">
                     </div>
-                    <input type="range" id="atrSlider" min="1" max="500" value="200" step="1">
-                </div>
-                
-                <div class="control-group">
-                    <div class="control-label">
-                        <span>Bollinger Bands Period</span>
-                        <span class="control-value" id="bbPeriodValue">22</span>
+                    
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Bollinger Bands Period</span>
+                            <span class="control-value" id="bbPeriodValue">22</span>
+                        </div>
+                        <input type="range" id="bbPeriodSlider" min="5" max="100" value="22" step="1">
                     </div>
-                    <input type="range" id="bbPeriodSlider" min="1" max="100" value="22" step="1">
-                </div>
-                
-                <div class="control-group">
-                    <div class="control-label">
-                        <span>Bollinger Bands Deviation</span>
-                        <span class="control-value" id="bbDeviationValue">2.40</span>
+                    
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Bollinger Bands Deviation</span>
+                            <span class="control-value" id="bbDeviationValue">2.40</span>
+                        </div>
+                        <input type="range" id="bbDeviationSlider" min="0.1" max="5" value="2.4" step="0.1">
                     </div>
-                    <input type="range" id="bbDeviationSlider" min="0.1" max="5" value="2.4" step="0.1">
-                </div>
-                
-                <div class="toggle-container">
-                    <span class="toggle-label">ATR Filter</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="atrFilterToggle" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="toggle-container">
-                    <span class="toggle-label">Show Signals</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="showSignalsToggle" checked>
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-                
-                <div class="buttons-container">
-                    <button class="btn-secondary" id="resetBtn">
-                        <i class="fas fa-redo"></i> Reset Defaults
-                    </button>
-                    <button class="btn-primary" id="applyBtn">
-                        <i class="fas fa-play"></i> Apply Settings
-                    </button>
-                </div>
-                
-                <div class="signals-container">
-                    <div class="signal-box signal-buy">
-                        <div class="signal-title">BUY SIGNALS</div>
-                        <div class="signal-value" id="buyCount">0</div>
+                    
+                    <div class="toggle-container">
+                        <span class="toggle-label">ATR Filter</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="atrFilterToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
                     </div>
-                    <div class="signal-box signal-sell">
-                        <div class="signal-title">SELL SIGNALS</div>
-                        <div class="signal-value" id="sellCount">0</div>
+                    
+                    <div class="toggle-container">
+                        <span class="toggle-label">Show Signals</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="showSignalsToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="buttons-container">
+                        <button class="btn-secondary" id="resetBtn">
+                            <i class="fas fa-redo"></i> Reset
+                        </button>
+                        <button class="btn-primary" id="applyBtn">
+                            <i class="fas fa-play"></i> Apply
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <div class="panel-title"><i class="fas fa-bell"></i> Live Signals</div>
+                    
+                    <div class="signals-container">
+                        <div class="signal-box signal-buy" id="buySignalBox">
+                            <div class="signal-title">BUY SIGNAL</div>
+                            <div class="signal-value" id="buyCount">0</div>
+                            <div class="signal-price" id="buyPrice">-</div>
+                        </div>
+                        
+                        <div class="signal-box signal-sell" id="sellSignalBox">
+                            <div class="signal-title">SELL SIGNAL</div>
+                            <div class="signal-value" id="sellCount">0</div>
+                            <div class="signal-price" id="sellPrice">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-container">
+                        <div class="status-box">
+                            <div class="status-title">Current Trend</div>
+                            <div class="trend-direction" id="trendDirection">NEUTRAL</div>
+                        </div>
+                        
+                        <div class="status-box">
+                            <div class="status-title">Signal Strength</div>
+                            <div class="status-value" id="signalStrength">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-container">
+                        <button class="btn-primary" id="testSignalBtn">
+                            <i class="fas fa-bolt"></i> Test Signal
+                        </button>
+                        <button class="btn-danger" id="clearSignalsBtn">
+                            <i class="fas fa-trash"></i> Clear Signals
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="panel-section">
+                    <div class="panel-title"><i class="fas fa-info-circle"></i> Pair Information</div>
+                    
+                    <div id="pairInfo">
+                        <p><strong>Current Pair:</strong> <span id="currentPairName">Gold (XAU/USD)</span></p>
+                        <p><strong>Volatility:</strong> <span id="pairVolatility">Medium-High</span></p>
+                        <p><strong>Recommended ATR:</strong> <span id="recommendedAtr">200</span></p>
+                        <p><strong>Recommended BB Deviation:</strong> <span id="recommendedBBDev">2.40</span></p>
                     </div>
                 </div>
             </div>
@@ -388,25 +641,77 @@
     </div>
 
     <script>
+        // Trading pairs configuration
+        const tradingPairs = {
+            'gold': {
+                name: 'Gold (XAU/USD)',
+                basePrice: 1950,
+                volatility: 0.015, // 1.5% daily volatility
+                atrMultiplier: 1.2,
+                bbDeviation: 2.4,
+                color: '#FFD700'
+            },
+            'eurusd': {
+                name: 'EUR/USD',
+                basePrice: 1.0850,
+                volatility: 0.005, // 0.5% daily volatility
+                atrMultiplier: 0.8,
+                bbDeviation: 2.0,
+                color: '#00CED1'
+            },
+            'us30': {
+                name: 'US30 (Dow Jones)',
+                basePrice: 35000,
+                volatility: 0.008, // 0.8% daily volatility
+                atrMultiplier: 1.0,
+                bbDeviation: 2.2,
+                color: '#32CD32'
+            },
+            'jump25': {
+                name: 'Jump 25',
+                basePrice: 100,
+                volatility: 0.025, // 2.5% daily volatility (high)
+                atrMultiplier: 1.5,
+                bbDeviation: 2.8,
+                color: '#FF4500'
+            },
+            'jump10': {
+                name: 'Jump 10',
+                basePrice: 50,
+                volatility: 0.01, // 1.0% daily volatility (medium)
+                atrMultiplier: 1.0,
+                bbDeviation: 2.4,
+                color: '#9370DB'
+            },
+            'jump50': {
+                name: 'Jump 50',
+                basePrice: 200,
+                volatility: 0.05, // 5.0% daily volatility (extreme)
+                atrMultiplier: 2.0,
+                bbDeviation: 3.5,
+                color: '#FF1493'
+            }
+        };
+
         // Initialize variables
+        let currentPair = 'gold';
         let atrPeriod = 200;
         let bbPeriod = 22;
         let bbDeviation = 2.4;
         let useATRFilter = true;
         let showSignals = true;
-        
-        // Chart data
-        let chart = null;
+        let timeframe = '1H';
         let priceData = [];
-        let bbUpperData = [];
-        let bbLowerData = [];
-        let eliteSignalData = [];
-        let eliteSignalUpperData = [];
-        let eliteSignalLowerData = [];
+        let timestamps = [];
+        let chart = null;
+        
+        // Signal tracking
         let buySignals = [];
         let sellSignals = [];
+        let lastSignal = null;
         
         // DOM elements
+        const pairSelect = document.getElementById('pairSelect');
         const atrSlider = document.getElementById('atrSlider');
         const atrValue = document.getElementById('atrValue');
         const bbPeriodSlider = document.getElementById('bbPeriodSlider');
@@ -417,314 +722,585 @@
         const showSignalsToggle = document.getElementById('showSignalsToggle');
         const resetBtn = document.getElementById('resetBtn');
         const applyBtn = document.getElementById('applyBtn');
+        const testSignalBtn = document.getElementById('testSignalBtn');
+        const clearSignalsBtn = document.getElementById('clearSignalsBtn');
         const buyCount = document.getElementById('buyCount');
         const sellCount = document.getElementById('sellCount');
+        const buyPrice = document.getElementById('buyPrice');
+        const sellPrice = document.getElementById('sellPrice');
         const trendDirection = document.getElementById('trendDirection');
-        const statusText = document.getElementById('statusText');
+        const signalStrength = document.getElementById('signalStrength');
+        const alertBanner = document.getElementById('alertBanner');
+        const chartLoading = document.getElementById('chartLoading');
+        const currentPairName = document.getElementById('currentPairName');
+        const pairVolatility = document.getElementById('pairVolatility');
+        const recommendedAtr = document.getElementById('recommendedAtr');
+        const recommendedBBDev = document.getElementById('recommendedBBDev');
+        const timeframeBtns = document.querySelectorAll('.timeframe-btn');
         
-        // Initialize with sample data
-        function initializeData() {
+        // Generate realistic price data for selected pair
+        function generatePriceData(pairKey, count = 200) {
+            const pair = tradingPairs[pairKey];
             priceData = [];
-            bbUpperData = [];
-            bbLowerData = [];
-            eliteSignalData = [];
-            eliteSignalUpperData = [];
-            eliteSignalLowerData = [];
-            buySignals = [];
-            sellSignals = [];
+            timestamps = [];
             
-            // Generate sample price data
-            let basePrice = 100;
-            for (let i = 0; i < 100; i++) {
-                // Random walk with slight upward bias
-                basePrice += (Math.random() - 0.45) * 3;
-                priceData.push(basePrice);
+            // Generate timestamps based on timeframe
+            const now = new Date();
+            let timeInterval;
+            
+            switch(timeframe) {
+                case '1H': timeInterval = 60 * 60 * 1000; break;
+                case '4H': timeInterval = 4 * 60 * 60 * 1000; break;
+                case '1D': timeInterval = 24 * 60 * 60 * 1000; break;
+                case '1W': timeInterval = 7 * 24 * 60 * 60 * 1000; break;
+                default: timeInterval = 60 * 60 * 1000;
             }
             
-            // Calculate indicator data
-            calculateIndicators();
+            // Start price
+            let price = pair.basePrice;
+            
+            // Generate data points
+            for (let i = count - 1; i >= 0; i--) {
+                // Generate timestamp
+                const timestamp = new Date(now.getTime() - (i * timeInterval));
+                timestamps.push(timestamp);
+                
+                // Random walk with pair-specific volatility
+                const randomChange = (Math.random() - 0.5) * 2 * pair.volatility * price;
+                
+                // Add some trend based on pair characteristics
+                let trend = 0;
+                if (pairKey === 'gold') trend = 0.0002; // Slight upward trend for gold
+                if (pairKey === 'eurusd') trend = -0.0001; // Slight downward trend for EUR/USD
+                if (pairKey === 'us30') trend = 0.0003; // Upward trend for US30
+                
+                // Add jumps for jump pairs
+                if (pairKey.includes('jump')) {
+                    const jumpChance = 0.05;
+                    if (Math.random() < jumpChance) {
+                        const jumpSize = parseInt(pairKey.replace('jump', '')) * (Math.random() > 0.5 ? 1 : -1);
+                        price += jumpSize;
+                    }
+                }
+                
+                price += randomChange + (trend * price);
+                
+                // Ensure price doesn't go negative
+                price = Math.max(price, 0.01);
+                
+                priceData.push(price);
+            }
+            
+            return priceData;
         }
         
-        // Calculate all indicators based on current settings
-        function calculateIndicators() {
-            // Clear previous data
-            bbUpperData = [];
-            bbLowerData = [];
-            eliteSignalData = [];
-            eliteSignalUpperData = [];
-            eliteSignalLowerData = [];
+        // Calculate ATR (Average True Range)
+        function calculateATR(prices, period) {
+            const atrValues = [];
+            
+            for (let i = 0; i < prices.length; i++) {
+                if (i < period) {
+                    atrValues.push(null);
+                    continue;
+                }
+                
+                let sum = 0;
+                for (let j = i - period + 1; j <= i; j++) {
+                    const high = prices[j] * (1 + 0.01); // Simulated high
+                    const low = prices[j] * (1 - 0.01); // Simulated low
+                    const range = high - low;
+                    sum += range;
+                }
+                
+                atrValues.push(sum / period);
+            }
+            
+            return atrValues;
+        }
+        
+        // Calculate Bollinger Bands
+        function calculateBollingerBands(prices, period, deviation) {
+            const upperBand = [];
+            const middleBand = [];
+            const lowerBand = [];
+            
+            for (let i = 0; i < prices.length; i++) {
+                if (i < period - 1) {
+                    upperBand.push(null);
+                    middleBand.push(null);
+                    lowerBand.push(null);
+                    continue;
+                }
+                
+                const slice = prices.slice(i - period + 1, i + 1);
+                const sma = slice.reduce((sum, price) => sum + price, 0) / period;
+                
+                const variance = slice.reduce((sum, price) => sum + Math.pow(price - sma, 2), 0) / period;
+                const stdev = Math.sqrt(variance);
+                
+                middleBand.push(sma);
+                upperBand.push(sma + stdev * deviation);
+                lowerBand.push(sma - stdev * deviation);
+            }
+            
+            return { upper: upperBand, middle: middleBand, lower: lowerBand };
+        }
+        
+        // Calculate TrendIQ signals
+        function calculateSignals(prices, bbUpper, bbLower, atrValues) {
+            const eliteSignals = [];
+            const eliteUpper = [];
+            const eliteLower = [];
+            const signals = [];
+            
+            let previousEliteSignal = null;
+            let currentTrend = 0;
+            let previousTrend = 0;
+            
             buySignals = [];
             sellSignals = [];
             
-            let buySignalCount = 0;
-            let sellSignalCount = 0;
-            let previousTrend = 0;
-            let currentTrend = 0;
-            
-            // Calculate Bollinger Bands
-            for (let i = bbPeriod - 1; i < priceData.length; i++) {
-                // Get the slice for SMA calculation
-                const slice = priceData.slice(i - bbPeriod + 1, i + 1);
-                const sma = slice.reduce((sum, price) => sum + price, 0) / bbPeriod;
-                
-                // Calculate standard deviation
-                const variance = slice.reduce((sum, price) => sum + Math.pow(price - sma, 2), 0) / bbPeriod;
-                const stdev = Math.sqrt(variance);
-                
-                // Calculate BB upper and lower
-                const bbUpper = sma + stdev * bbDeviation;
-                const bbLower = sma - stdev * bbDeviation;
-                
-                bbUpperData.push({x: i, y: bbUpper});
-                bbLowerData.push({x: i, y: bbLower});
-                
-                // Calculate ATR (simplified)
-                let atrValue = 0;
-                if (i >= atrPeriod) {
-                    let sum = 0;
-                    for (let j = i - atrPeriod + 1; j <= i; j++) {
-                        sum += Math.abs(priceData[j] - priceData[j-1]);
-                    }
-                    atrValue = sum / atrPeriod;
+            for (let i = 0; i < prices.length; i++) {
+                // Skip if we don't have enough data
+                if (bbUpper[i] === null || atrValues[i] === null) {
+                    eliteSignals.push(null);
+                    eliteUpper.push(null);
+                    eliteLower.push(null);
+                    continue;
                 }
                 
                 // Determine BB signal
                 let bbSignal = 0;
-                if (priceData[i] > bbUpper) bbSignal = 1;
-                else if (priceData[i] < bbLower) bbSignal = -1;
+                if (prices[i] > bbUpper[i]) bbSignal = 1;
+                else if (prices[i] < bbLower[i]) bbSignal = -1;
                 
                 // Calculate Elite Signal
-                let eliteSignal = 0;
+                let eliteSignal = null;
+                
                 if (bbSignal === 1) {
                     // Buy signal logic
-                    eliteSignal = priceData[i] - (useATRFilter ? atrValue : 0);
-                    if (i > 0 && eliteSignalData.length > 0 && eliteSignal < eliteSignalData[eliteSignalData.length-1].y) {
-                        eliteSignal = eliteSignalData[eliteSignalData.length-1].y;
+                    eliteSignal = prices[i] - (useATRFilter ? atrValues[i] : 0);
+                    
+                    if (previousEliteSignal !== null && eliteSignal < previousEliteSignal) {
+                        eliteSignal = previousEliteSignal;
                     }
+                    
+                    // Track trend
+                    if (previousEliteSignal !== null) {
+                        if (eliteSignal > previousEliteSignal) currentTrend = 1;
+                        else if (eliteSignal < previousEliteSignal) currentTrend = -1;
+                    }
+                    
+                    // Detect buy signal
+                    if (previousTrend === -1 && currentTrend === 1) {
+                        const buySignal = {
+                            index: i,
+                            price: eliteSignal - atrValues[i],
+                            timestamp: timestamps[i]
+                        };
+                        buySignals.push(buySignal);
+                        signals.push({ type: 'buy', index: i, price: buySignal.price });
+                        
+                        // Show alert
+                        showAlert('BUY SIGNAL', 'buy');
+                    }
+                    
                 } else if (bbSignal === -1) {
                     // Sell signal logic
-                    eliteSignal = priceData[i] + (useATRFilter ? atrValue : 0);
-                    if (i > 0 && eliteSignalData.length > 0 && eliteSignal > eliteSignalData[eliteSignalData.length-1].y) {
-                        eliteSignal = eliteSignalData[eliteSignalData.length-1].y;
+                    eliteSignal = prices[i] + (useATRFilter ? atrValues[i] : 0);
+                    
+                    if (previousEliteSignal !== null && eliteSignal > previousEliteSignal) {
+                        eliteSignal = previousEliteSignal;
                     }
+                    
+                    // Track trend
+                    if (previousEliteSignal !== null) {
+                        if (eliteSignal > previousEliteSignal) currentTrend = 1;
+                        else if (eliteSignal < previousEliteSignal) currentTrend = -1;
+                    }
+                    
+                    // Detect sell signal
+                    if (previousTrend === 1 && currentTrend === -1) {
+                        const sellSignal = {
+                            index: i,
+                            price: eliteSignal + atrValues[i],
+                            timestamp: timestamps[i]
+                        };
+                        sellSignals.push(sellSignal);
+                        signals.push({ type: 'sell', index: i, price: sellSignal.price });
+                        
+                        // Show alert
+                        showAlert('SELL SIGNAL', 'sell');
+                    }
+                    
                 } else {
-                    // No signal, continue previous trend
-                    eliteSignal = eliteSignalData.length > 0 ? eliteSignalData[eliteSignalData.length-1].y : priceData[i];
-                }
-                
-                eliteSignalData.push({x: i, y: eliteSignal});
-                
-                // Calculate trend direction
-                if (i > 0 && eliteSignalData.length > 1) {
-                    const prevSignal = eliteSignalData[eliteSignalData.length-2].y;
-                    if (eliteSignal > prevSignal) currentTrend = 1;
-                    else if (eliteSignal < prevSignal) currentTrend = -1;
-                    else currentTrend = previousTrend;
-                }
-                
-                // Detect buy/sell signals
-                if (i > 0) {
-                    if (previousTrend === -1 && currentTrend === 1) {
-                        buySignals.push({x: i, y: eliteSignal - atrValue});
-                        buySignalCount++;
-                    } else if (previousTrend === 1 && currentTrend === -1) {
-                        sellSignals.push({x: i, y: eliteSignal + atrValue});
-                        sellSignalCount++;
+                    // No BB signal, continue previous trend
+                    eliteSignal = previousEliteSignal !== null ? previousEliteSignal : prices[i];
+                    
+                    if (previousEliteSignal !== null) {
+                        if (eliteSignal > previousEliteSignal) currentTrend = 1;
+                        else if (eliteSignal < previousEliteSignal) currentTrend = -1;
                     }
                 }
                 
+                eliteSignals.push(eliteSignal);
+                previousEliteSignal = eliteSignal;
                 previousTrend = currentTrend;
                 
-                // Calculate upper and lower elite signals with gap
-                const gapSize = atrValue * 0.5;
-                eliteSignalUpperData.push({x: i, y: eliteSignal + gapSize});
-                eliteSignalLowerData.push({x: i, y: eliteSignal - gapSize});
+                // Calculate upper and lower elite signals with gap (0.5x ATR)
+                if (eliteSignal !== null && atrValues[i] !== null) {
+                    const gapSize = atrValues[i] * 0.5;
+                    eliteUpper.push(eliteSignal + gapSize);
+                    eliteLower.push(eliteSignal - gapSize);
+                } else {
+                    eliteUpper.push(null);
+                    eliteLower.push(null);
+                }
             }
             
             // Update signal counters
-            buyCount.textContent = buySignalCount;
-            sellCount.textContent = sellSignalCount;
+            updateSignalCounters();
             
-            // Update trend direction display
-            updateTrendDisplay(currentTrend);
+            // Update trend direction
+            updateTrendDirection(currentTrend);
+            
+            // Update signal strength
+            updateSignalStrength();
+            
+            // Update last signal price displays
+            updateLastSignalPrices();
+            
+            return {
+                eliteSignals,
+                eliteUpper,
+                eliteLower,
+                signals
+            };
+        }
+        
+        // Update signal counters
+        function updateSignalCounters() {
+            buyCount.textContent = buySignals.length;
+            sellCount.textContent = sellSignals.length;
+            
+            // Add animation to active signal boxes
+            const buySignalBox = document.getElementById('buySignalBox');
+            const sellSignalBox = document.getElementById('sellSignalBox');
+            
+            if (lastSignal === 'buy') {
+                buySignalBox.classList.add('active');
+                sellSignalBox.classList.remove('active');
+            } else if (lastSignal === 'sell') {
+                sellSignalBox.classList.add('active');
+                buySignalBox.classList.remove('active');
+            } else {
+                buySignalBox.classList.remove('active');
+                sellSignalBox.classList.remove('active');
+            }
         }
         
         // Update trend direction display
-        function updateTrendDisplay(trend) {
+        function updateTrendDirection(trend) {
             if (trend === 1) {
                 trendDirection.textContent = "BULLISH";
                 trendDirection.className = "trend-direction trend-up";
-                statusText.textContent = "Uptrend detected. Consider BUY opportunities.";
             } else if (trend === -1) {
                 trendDirection.textContent = "BEARISH";
                 trendDirection.className = "trend-direction trend-down";
-                statusText.textContent = "Downtrend detected. Consider SELL opportunities.";
             } else {
                 trendDirection.textContent = "NEUTRAL";
                 trendDirection.className = "trend-direction trend-neutral";
-                statusText.textContent = "No strong trend detected. Awaiting clear signal.";
             }
+        }
+        
+        // Update signal strength
+        function updateSignalStrength() {
+            const totalSignals = buySignals.length + sellSignals.length;
+            let strength = "LOW";
+            
+            if (totalSignals > 10) strength = "HIGH";
+            else if (totalSignals > 5) strength = "MEDIUM";
+            
+            signalStrength.textContent = strength;
+        }
+        
+        // Update last signal prices
+        function updateLastSignalPrices() {
+            if (buySignals.length > 0) {
+                const lastBuy = buySignals[buySignals.length - 1];
+                buyPrice.textContent = `Last: ${formatPrice(lastBuy.price)}`;
+            } else {
+                buyPrice.textContent = "-";
+            }
+            
+            if (sellSignals.length > 0) {
+                const lastSell = sellSignals[sellSignals.length - 1];
+                sellPrice.textContent = `Last: ${formatPrice(lastSell.price)}`;
+            } else {
+                sellPrice.textContent = "-";
+            }
+        }
+        
+        // Format price based on pair
+        function formatPrice(price) {
+            if (currentPair === 'eurusd') return price.toFixed(4);
+            if (currentPair === 'gold') return price.toFixed(2);
+            if (currentPair === 'us30') return price.toFixed(0);
+            return price.toFixed(2);
+        }
+        
+        // Show alert banner
+        function showAlert(message, type) {
+            lastSignal = type;
+            alertBanner.textContent = `${message} DETECTED for ${tradingPairs[currentPair].name}`;
+            alertBanner.className = `alert-banner alert-${type}`;
+            alertBanner.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                alertBanner.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Update pair information
+        function updatePairInfo() {
+            const pair = tradingPairs[currentPair];
+            currentPairName.textContent = pair.name;
+            
+            // Set volatility description
+            let volatilityDesc = "Low";
+            if (pair.volatility > 0.02) volatilityDesc = "Extreme";
+            else if (pair.volatility > 0.01) volatilityDesc = "High";
+            else if (pair.volatility > 0.005) volatilityDesc = "Medium";
+            
+            pairVolatility.textContent = volatilityDesc;
+            
+            // Set recommended values
+            const recommendedATR = Math.round(200 * pair.atrMultiplier);
+            const recommendedBBDev = (bbDeviation * pair.atrMultiplier).toFixed(2);
+            
+            recommendedAtr.textContent = recommendedATR;
+            recommendedBBDev.textContent = recommendedBBDev;
+            
+            // Update slider values based on pair
+            atrSlider.value = recommendedATR;
+            atrValue.textContent = recommendedATR;
+            
+            bbDeviationSlider.value = parseFloat(recommendedBBDev);
+            bbDeviationValue.textContent = recommendedBBDev;
         }
         
         // Initialize chart
         function initializeChart() {
-            const ctx = document.getElementById('priceChart').getContext('2d');
+            chartLoading.style.display = 'block';
             
-            if (chart) {
-                chart.destroy();
-            }
-            
-            // Prepare datasets
-            const datasets = [
-                {
-                    label: 'Price',
-                    data: priceData.map((price, index) => ({x: index, y: price})),
-                    borderColor: '#e2e8f0',
-                    backgroundColor: 'rgba(226, 232, 240, 0.1)',
-                    borderWidth: 2,
-                    fill: false,
-                    pointRadius: 0
-                },
-                {
-                    label: 'Bollinger Upper',
-                    data: bbUpperData,
-                    borderColor: 'rgba(59, 130, 246, 0.7)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderWidth: 1,
-                    fill: false,
-                    pointRadius: 0,
-                    borderDash: [5, 5]
-                },
-                {
-                    label: 'Bollinger Lower',
-                    data: bbLowerData,
-                    borderColor: 'rgba(59, 130, 246, 0.7)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderWidth: 1,
-                    fill: false,
-                    pointRadius: 0,
-                    borderDash: [5, 5]
-                },
-                {
-                    label: 'TrendIQ Signal',
-                    data: eliteSignalData,
-                    borderColor: '#ebfc02',
-                    backgroundColor: 'rgba(235, 252, 2, 0.1)',
-                    borderWidth: 3,
-                    fill: false,
-                    pointRadius: 0
-                }
-            ];
-            
-            // Add upper and lower trend lines if showSignals is true
-            if (showSignals) {
-                datasets.push({
-                    label: 'TrendIQ Upper',
-                    data: eliteSignalUpperData,
-                    borderColor: '#ebfc02',
-                    backgroundColor: 'rgba(235, 252, 2, 0.05)',
-                    borderWidth: 1,
-                    fill: false,
-                    pointRadius: 0
-                });
+            setTimeout(() => {
+                const ctx = document.getElementById('priceChart').getContext('2d');
                 
-                datasets.push({
-                    label: 'TrendIQ Lower',
-                    data: eliteSignalLowerData,
-                    borderColor: '#ebfc02',
-                    backgroundColor: 'rgba(235, 252, 2, 0.05)',
-                    borderWidth: 1,
-                    fill: false,
-                    pointRadius: 0
-                });
-            }
-            
-            // Add buy signals if showSignals is true
-            if (showSignals && buySignals.length > 0) {
-                datasets.push({
-                    label: 'BUY',
-                    data: buySignals,
-                    borderColor: '#ebfc02',
-                    backgroundColor: '#ebfc02',
-                    borderWidth: 0,
-                    pointRadius: 6,
-                    pointStyle: 'triangle',
-                    showLine: false
-                });
-            }
-            
-            // Add sell signals if showSignals is true
-            if (showSignals && sellSignals.length > 0) {
-                datasets.push({
-                    label: 'SELL',
-                    data: sellSignals,
-                    borderColor: '#f70000',
-                    backgroundColor: '#f70000',
-                    borderWidth: 0,
-                    pointRadius: 6,
-                    pointStyle: 'triangle',
-                    pointRotation: 180,
-                    showLine: false
-                });
-            }
-            
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: {
-                        legend: {
-                            position: 'top',
-                            labels: {
-                                color: '#e2e8f0',
-                                font: {
-                                    size: 12
+                if (chart) {
+                    chart.destroy();
+                }
+                
+                // Generate price data
+                generatePriceData(currentPair);
+                
+                // Calculate indicators
+                const atrValues = calculateATR(priceData, atrPeriod);
+                const bb = calculateBollingerBands(priceData, bbPeriod, bbDeviation);
+                const trendSignals = calculateSignals(priceData, bb.upper, bb.lower, atrValues);
+                
+                // Prepare datasets
+                const datasets = [
+                    {
+                        label: 'Price',
+                        data: timestamps.map((t, i) => ({x: t, y: priceData[i]})),
+                        borderColor: tradingPairs[currentPair].color,
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        pointRadius: 0,
+                        tension: 0.1
+                    },
+                    {
+                        label: 'Bollinger Upper',
+                        data: timestamps.map((t, i) => ({x: t, y: bb.upper[i]})),
+                        borderColor: 'rgba(59, 130, 246, 0.6)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 0,
+                        borderDash: [5, 5]
+                    },
+                    {
+                        label: 'Bollinger Lower',
+                        data: timestamps.map((t, i) => ({x: t, y: bb.lower[i]})),
+                        borderColor: 'rgba(59, 130, 246, 0.6)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 0,
+                        borderDash: [5, 5]
+                    },
+                    {
+                        label: 'TrendIQ Signal',
+                        data: timestamps.map((t, i) => ({x: t, y: trendSignals.eliteSignals[i]})),
+                        borderColor: '#ebfc02',
+                        backgroundColor: 'rgba(235, 252, 2, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        pointRadius: 0
+                    }
+                ];
+                
+                // Add upper and lower trend lines if showSignals is true
+                if (showSignals) {
+                    datasets.push({
+                        label: 'TrendIQ Upper',
+                        data: timestamps.map((t, i) => ({x: t, y: trendSignals.eliteUpper[i]})),
+                        borderColor: '#ebfc02',
+                        backgroundColor: 'rgba(235, 252, 2, 0.05)',
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 0
+                    });
+                    
+                    datasets.push({
+                        label: 'TrendIQ Lower',
+                        data: timestamps.map((t, i) => ({x: t, y: trendSignals.eliteLower[i]})),
+                        borderColor: '#ebfc02',
+                        backgroundColor: 'rgba(235, 252, 2, 0.05)',
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 0
+                    });
+                }
+                
+                // Add buy signals if showSignals is true
+                if (showSignals && buySignals.length > 0) {
+                    datasets.push({
+                        label: 'BUY',
+                        data: buySignals.map(signal => ({x: signal.timestamp, y: signal.price})),
+                        borderColor: '#ebfc02',
+                        backgroundColor: '#ebfc02',
+                        borderWidth: 0,
+                        pointRadius: 8,
+                        pointStyle: 'triangle',
+                        showLine: false
+                    });
+                }
+                
+                // Add sell signals if showSignals is true
+                if (showSignals && sellSignals.length > 0) {
+                    datasets.push({
+                        label: 'SELL',
+                        data: sellSignals.map(signal => ({x: signal.timestamp, y: signal.price})),
+                        borderColor: '#f70000',
+                        backgroundColor: '#f70000',
+                        borderWidth: 0,
+                        pointRadius: 8,
+                        pointStyle: 'triangle',
+                        pointRotation: 180,
+                        showLine: false
+                    });
+                }
+                
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    color: '#e2e8f0',
+                                    font: {
+                                        size: 12,
+                                        weight: '600'
+                                    },
+                                    padding: 20
+                                }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                titleColor: '#ebfc02',
+                                bodyColor: '#e2e8f0',
+                                borderColor: '#334155',
+                                borderWidth: 1,
+                                padding: 12,
+                                titleFont: {
+                                    size: 14,
+                                    weight: 'bold'
+                                },
+                                bodyFont: {
+                                    size: 13
                                 }
                             }
                         },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                            titleColor: '#ebfc02',
-                            bodyColor: '#e2e8f0',
-                            borderColor: '#334155',
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        x: {
-                            type: 'linear',
-                            position: 'bottom',
-                            ticks: {
-                                color: '#94a3b8'
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: timeframe === '1W' ? 'week' : 
+                                          timeframe === '1D' ? 'day' : 
+                                          timeframe === '4H' ? 'hour' : 'hour',
+                                    displayFormats: {
+                                        hour: 'MMM d, HH:mm',
+                                        day: 'MMM d, yyyy',
+                                        week: 'MMM d, yyyy'
+                                    }
+                                },
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: {
+                                        size: 11
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)'
+                                }
                             },
-                            grid: {
-                                color: 'rgba(148, 163, 184, 0.1)'
+                            y: {
+                                ticks: {
+                                    color: '#94a3b8',
+                                    font: {
+                                        size: 11
+                                    },
+                                    callback: function(value) {
+                                        return formatPrice(value);
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.1)'
+                                }
                             }
                         },
-                        y: {
-                            ticks: {
-                                color: '#94a3b8'
-                            },
-                            grid: {
-                                color: 'rgba(148, 163, 184, 0.1)'
-                            }
+                        interaction: {
+                            intersect: false,
+                            mode: 'nearest'
+                        },
+                        animation: {
+                            duration: 750
                         }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'nearest'
                     }
-                }
-            });
+                });
+                
+                chartLoading.style.display = 'none';
+            }, 500);
         }
         
-        // Event listeners
+        // Event Listeners
+        pairSelect.addEventListener('change', function() {
+            currentPair = this.value;
+            updatePairInfo();
+            initializeChart();
+        });
+        
         atrSlider.addEventListener('input', function() {
             atrValue.textContent = this.value;
         });
@@ -745,33 +1321,38 @@
             showSignals = this.checked;
         });
         
+        // Timeframe buttons
+        timeframeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                timeframeBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                timeframe = this.getAttribute('data-timeframe');
+                initializeChart();
+            });
+        });
+        
         resetBtn.addEventListener('click', function() {
-            // Reset sliders to default values
-            atrSlider.value = 200;
-            atrValue.textContent = '200';
+            // Reset to pair-specific defaults
+            updatePairInfo();
             
+            // Reset other controls
             bbPeriodSlider.value = 22;
             bbPeriodValue.textContent = '22';
-            
-            bbDeviationSlider.value = 2.4;
-            bbDeviationValue.textContent = '2.40';
             
             atrFilterToggle.checked = true;
             showSignalsToggle.checked = true;
             
             // Reset variables
-            atrPeriod = 200;
+            atrPeriod = parseInt(atrSlider.value);
             bbPeriod = 22;
-            bbDeviation = 2.4;
+            bbDeviation = parseFloat(bbDeviationSlider.value);
             useATRFilter = true;
             showSignals = true;
             
             // Recalculate and update chart
-            calculateIndicators();
             initializeChart();
             
-            // Show confirmation
-            statusText.textContent = "Settings reset to defaults. Chart updated.";
+            showAlert('Settings reset to defaults', 'buy');
         });
         
         applyBtn.addEventListener('click', function() {
@@ -783,19 +1364,52 @@
             showSignals = showSignalsToggle.checked;
             
             // Recalculate and update chart
-            calculateIndicators();
             initializeChart();
             
-            // Show confirmation
-            statusText.textContent = "Settings applied successfully. Chart updated with new parameters.";
+            showAlert('Settings applied successfully', 'buy');
         });
         
-        // Initialize the dashboard
-        function initializeDashboard() {
-            initializeData();
+        testSignalBtn.addEventListener('click', function() {
+            // Add a test signal
+            const testTypes = ['buy', 'sell'];
+            const testType = testTypes[Math.floor(Math.random() * testTypes.length)];
+            
+            const testSignal = {
+                index: priceData.length - 1,
+                price: priceData[priceData.length - 1],
+                timestamp: new Date()
+            };
+            
+            if (testType === 'buy') {
+                buySignals.push(testSignal);
+                showAlert('TEST BUY SIGNAL GENERATED', 'buy');
+            } else {
+                sellSignals.push(testSignal);
+                showAlert('TEST SELL SIGNAL GENERATED', 'sell');
+            }
+            
+            updateSignalCounters();
+            updateLastSignalPrices();
+            initializeChart();
+        });
+        
+        clearSignalsBtn.addEventListener('click', function() {
+            buySignals = [];
+            sellSignals = [];
+            lastSignal = null;
+            updateSignalCounters();
+            updateLastSignalPrices();
             initializeChart();
             
-            // Set initial values for display
+            showAlert('All signals cleared', 'sell');
+        });
+        
+        // Initialize dashboard
+        function initializeDashboard() {
+            updatePairInfo();
+            initializeChart();
+            
+            // Set initial values
             atrValue.textContent = atrSlider.value;
             bbPeriodValue.textContent = bbPeriodSlider.value;
             bbDeviationValue.textContent = parseFloat(bbDeviationSlider.value).toFixed(2);
@@ -803,6 +1417,47 @@
         
         // Start the dashboard
         initializeDashboard();
+        
+        // Simulate real-time updates
+        setInterval(() => {
+            // Occasionally add new data points to simulate real-time
+            if (Math.random() > 0.7) {
+                const pair = tradingPairs[currentPair];
+                const lastPrice = priceData[priceData.length - 1];
+                
+                // Generate new price
+                const randomChange = (Math.random() - 0.5) * 2 * pair.volatility * lastPrice;
+                let trend = 0;
+                if (currentPair === 'gold') trend = 0.0002;
+                if (currentPair === 'eurusd') trend = -0.0001;
+                if (currentPair === 'us30') trend = 0.0003;
+                
+                const newPrice = lastPrice + randomChange + (trend * lastPrice);
+                priceData.push(newPrice);
+                
+                // Add new timestamp
+                const lastTimestamp = timestamps[timestamps.length - 1];
+                let newTimestamp;
+                
+                switch(timeframe) {
+                    case '1H': newTimestamp = new Date(lastTimestamp.getTime() + 60 * 60 * 1000); break;
+                    case '4H': newTimestamp = new Date(lastTimestamp.getTime() + 4 * 60 * 60 * 1000); break;
+                    case '1D': newTimestamp = new Date(lastTimestamp.getTime() + 24 * 60 * 60 * 1000); break;
+                    case '1W': newTimestamp = new Date(lastTimestamp.getTime() + 7 * 24 * 60 * 60 * 1000); break;
+                }
+                
+                timestamps.push(newTimestamp);
+                
+                // Keep arrays at reasonable size
+                if (priceData.length > 300) {
+                    priceData.shift();
+                    timestamps.shift();
+                }
+                
+                // Update chart with new data
+                initializeChart();
+            }
+        }, 10000); // Update every 10 seconds
     </script>
 </body>
 </html>
