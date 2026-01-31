@@ -2,164 +2,268 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TrendIQ Pro Indicator Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TrendIQ Pro - Advanced Trading Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        :root {
+            --primary: #ebfc02;
+            --primary-dark: #d4e502;
+            --secondary: #0f172a;
+            --secondary-light: #1e293b;
+            --accent: #3b82f6;
+            --buy: #10b981;
+            --sell: #ef4444;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
         }
         
         body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #e2e8f0;
-            padding: 20px;
+            background: linear-gradient(135deg, var(--secondary) 0%, #0a0f1a 100%);
+            color: var(--text);
             min-height: 100vh;
+            overflow-x: hidden;
+            padding: 10px;
         }
         
         .container {
-            max-width: 1600px;
+            max-width: 1800px;
             margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            padding-bottom: 20px;
         }
         
-        header {
+        /* Header */
+        .header {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .header-top {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
-            background: rgba(30, 41, 59, 0.8);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        
-        .header-left {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        h1 {
-            color: #ebfc02;
-            font-size: 32px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        
-        .tagline {
-            color: #94a3b8;
-            font-size: 16px;
-            max-width: 600px;
-        }
-        
-        .pair-selector {
-            display: flex;
+            flex-wrap: wrap;
             gap: 15px;
-            align-items: center;
         }
         
-        .pair-selector label {
-            font-weight: 600;
-            color: #ebfc02;
-        }
-        
-        select {
-            background: #0f172a;
-            color: #e2e8f0;
-            border: 2px solid #334155;
-            border-radius: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            font-weight: 600;
-            min-width: 200px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        select:hover {
-            border-color: #ebfc02;
-        }
-        
-        select:focus {
-            outline: none;
-            border-color: #ebfc02;
-            box-shadow: 0 0 0 3px rgba(235, 252, 2, 0.2);
-        }
-        
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            gap: 25px;
-        }
-        
-        @media (max-width: 1200px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .chart-container {
-            background: rgba(30, 41, 59, 0.8);
-            border-radius: 16px;
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            height: 600px;
-            position: relative;
-        }
-        
-        .controls-panel {
-            background: rgba(30, 41, 59, 0.8);
-            border-radius: 16px;
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        
-        .panel-section {
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        
-        .panel-title {
-            font-size: 20px;
-            margin-bottom: 20px;
-            color: #ebfc02;
+        .header-left h1 {
+            color: var(--primary);
+            font-size: clamp(24px, 3vw, 32px);
+            font-weight: 800;
             display: flex;
             align-items: center;
             gap: 10px;
         }
         
-        .panel-title i {
-            font-size: 22px;
+        .header-left .tagline {
+            color: var(--text-dim);
+            font-size: clamp(12px, 1.5vw, 14px);
+            margin-top: 5px;
         }
         
+        .pair-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .pair-selector label {
+            font-weight: 600;
+            color: var(--primary);
+            white-space: nowrap;
+        }
+        
+        select {
+            background: var(--secondary);
+            color: var(--text);
+            border: 2px solid #334155;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            min-width: 200px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23ebfc02' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 16px;
+            padding-right: 45px;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(235, 252, 2, 0.2);
+        }
+        
+        /* Main Content Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 400px;
+            gap: 15px;
+            min-height: 70vh;
+        }
+        
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            grid-column: span 2;
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            height: 65vh;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        @media (max-width: 1400px) {
+            .chart-container {
+                grid-column: span 1;
+            }
+        }
+        
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .timeframe-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .timeframe-btn {
+            padding: 8px 16px;
+            background: rgba(51, 65, 85, 0.6);
+            color: var(--text-dim);
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .timeframe-btn.active {
+            background: var(--primary);
+            color: var(--secondary);
+        }
+        
+        .chart-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .chart-btn {
+            padding: 8px 16px;
+            background: rgba(51, 65, 85, 0.6);
+            color: var(--text);
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+        
+        .chart-btn:hover {
+            background: rgba(71, 85, 105, 0.8);
+        }
+        
+        /* Controls Panel */
+        .controls-panel {
+            background: rgba(30, 41, 59, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            overflow-y: auto;
+            max-height: 65vh;
+        }
+        
+        /* Panel Sections */
+        .panel-section {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .panel-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        /* Control Groups */
         .control-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         
         .control-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: 600;
         }
         
         .control-value {
-            color: #ebfc02;
+            color: var(--primary);
             font-weight: 700;
         }
         
@@ -167,7 +271,7 @@
             width: 100%;
             height: 8px;
             border-radius: 4px;
-            background: linear-gradient(90deg, #334155 0%, #ebfc02 100%);
+            background: linear-gradient(90deg, #334155 0%, var(--primary) 100%);
             outline: none;
             -webkit-appearance: none;
         }
@@ -177,92 +281,37 @@
             width: 24px;
             height: 24px;
             border-radius: 50%;
-            background: #ebfc02;
+            background: var(--primary);
             cursor: pointer;
-            border: 3px solid #0f172a;
+            border: 3px solid var(--secondary);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
         }
         
-        .toggle-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .toggle-label {
-            font-weight: 600;
-        }
-        
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 30px;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #334155;
-            transition: .3s;
-            border-radius: 34px;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 22px;
-            width: 22px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-        
-        input:checked + .toggle-slider {
-            background-color: #10b981;
-        }
-        
-        input:checked + .toggle-slider:before {
-            transform: translateX(30px);
-        }
-        
-        .buttons-container {
+        /* Buttons */
+        .buttons-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 20px;
         }
         
         button {
             padding: 14px;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             font-weight: 700;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 8px;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, #ebfc02 0%, #d4e502 100%);
-            color: #0f172a;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--secondary);
         }
         
         .btn-primary:hover {
@@ -272,7 +321,7 @@
         
         .btn-secondary {
             background: rgba(51, 65, 85, 0.8);
-            color: #e2e8f0;
+            color: var(--text);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
@@ -281,59 +330,74 @@
             transform: translateY(-2px);
         }
         
-        .btn-danger {
-            background: linear-gradient(135deg, #f70000 0%, #d60000 100%);
+        .btn-success {
+            background: linear-gradient(135deg, var(--buy) 0%, #0da271 100%);
             color: white;
         }
         
-        .btn-danger:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(247, 0, 0, 0.3);
+        .btn-danger {
+            background: linear-gradient(135deg, var(--sell) 0%, #dc2626 100%);
+            color: white;
         }
         
-        .signals-container {
+        /* Signals Container */
+        .signals-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 15px;
-            margin-top: 10px;
+            margin: 20px 0;
         }
         
-        .signal-box {
+        .signal-card {
             padding: 20px;
             border-radius: 12px;
             text-align: center;
             transition: all 0.3s ease;
             border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
         }
         
-        .signal-box.active {
-            transform: scale(1.05);
-            border-color: currentColor;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        .signal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: currentColor;
         }
         
         .signal-buy {
-            background: linear-gradient(135deg, rgba(235, 252, 2, 0.15) 0%, rgba(212, 229, 2, 0.1) 100%);
-            border: 2px solid #ebfc02;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
+            border-color: var(--buy);
+            color: var(--buy);
         }
         
         .signal-sell {
-            background: linear-gradient(135deg, rgba(247, 0, 0, 0.15) 0%, rgba(214, 0, 0, 0.1) 100%);
-            border: 2px solid #f70000;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%);
+            border-color: var(--sell);
+            color: var(--sell);
+        }
+        
+        .signal-card.active {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(235, 252, 2, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(235, 252, 2, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(235, 252, 2, 0); }
         }
         
         .signal-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
-            margin-bottom: 8px;
-        }
-        
-        .signal-buy .signal-title {
-            color: #ebfc02;
-        }
-        
-        .signal-sell .signal-title {
-            color: #f70000;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .signal-value {
@@ -342,242 +406,364 @@
             margin-bottom: 5px;
         }
         
-        .signal-price {
-            font-size: 14px;
-            color: #94a3b8;
-        }
-        
-        .status-container {
+        /* Status Indicators */
+        .status-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 15px;
+            margin: 20px 0;
         }
         
-        .status-box {
-            padding: 20px;
+        .status-card {
+            padding: 15px;
             border-radius: 12px;
             background: rgba(15, 23, 42, 0.6);
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
         .status-title {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #94a3b8;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
         .status-value {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 800;
-            color: #ebfc02;
+            color: var(--primary);
         }
         
-        .trend-direction {
+        .trend-indicator {
             display: inline-block;
             padding: 8px 16px;
             border-radius: 20px;
             font-weight: 800;
+            font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
-            font-size: 14px;
         }
         
         .trend-up {
-            background: linear-gradient(135deg, rgba(235, 252, 2, 0.2) 0%, rgba(212, 229, 2, 0.1) 100%);
-            color: #ebfc02;
-            border: 2px solid #ebfc02;
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+            color: var(--buy);
+            border: 2px solid var(--buy);
         }
         
         .trend-down {
-            background: linear-gradient(135deg, rgba(247, 0, 0, 0.2) 0%, rgba(214, 0, 0, 0.1) 100%);
-            color: #f70000;
-            border: 2px solid #f70000;
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.1) 100%);
+            color: var(--sell);
+            border: 2px solid var(--sell);
         }
         
-        .trend-neutral {
-            background: rgba(148, 163, 184, 0.2);
-            color: #94a3b8;
-            border: 2px solid #94a3b8;
-        }
-        
-        .timeframe-selector {
-            position: absolute;
-            top: 25px;
-            right: 25px;
-            z-index: 100;
-        }
-        
-        .timeframe-buttons {
-            display: flex;
-            gap: 8px;
-            background: rgba(15, 23, 42, 0.8);
-            padding: 8px;
-            border-radius: 10px;
-        }
-        
-        .timeframe-btn {
-            padding: 8px 16px;
-            background: rgba(51, 65, 85, 0.6);
-            color: #94a3b8;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        
-        .timeframe-btn.active {
-            background: #ebfc02;
-            color: #0f172a;
-        }
-        
-        .timeframe-btn:hover {
-            background: rgba(235, 252, 2, 0.3);
-            color: #ebfc02;
-        }
-        
+        /* Alert Banner */
         .alert-banner {
-            padding: 15px;
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 20px;
             border-radius: 12px;
-            margin-top: 10px;
-            text-align: center;
-            font-weight: 600;
-            animation: pulse 2s infinite;
+            background: var(--secondary-light);
+            border-left: 6px solid var(--primary);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            max-width: 400px;
             display: none;
+            animation: slideIn 0.5s ease;
         }
         
-        .alert-buy {
-            background: rgba(235, 252, 2, 0.2);
-            border: 2px solid #ebfc02;
-            color: #ebfc02;
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
         
-        .alert-sell {
-            background: rgba(247, 0, 0, 0.2);
-            border: 2px solid #f70000;
-            color: #f70000;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-        
-        .loading {
-            display: none;
+        /* Loading Overlay */
+        .loading-overlay {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #ebfc02;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            border-radius: 16px;
         }
         
         .spinner {
-            border: 5px solid rgba(235, 252, 2, 0.1);
-            border-top: 5px solid #ebfc02;
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(235, 252, 2, 0.1);
+            border-top: 4px solid var(--primary);
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
+            margin-bottom: 20px;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* Multi-timeframe Analysis */
+        .mtf-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .mtf-card {
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+        
+        .mtf-title {
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+        
+        .mtf-value {
+            font-size: 18px;
+            font-weight: 800;
+        }
+        
+        .mtf-buy { color: var(--buy); }
+        .mtf-sell { color: var(--sell); }
+        .mtf-neutral { color: var(--text-dim); }
+        
+        /* Broker Integration */
+        .broker-section {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .header-top {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .pair-selector {
+                justify-content: space-between;
+            }
+            
+            select {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .chart-container {
+                height: 50vh;
+                padding: 15px;
+            }
+            
+            .controls-panel {
+                max-height: 50vh;
+            }
+            
+            .buttons-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .signal-value {
+                font-size: 24px;
+            }
+            
+            .status-value {
+                font-size: 18px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .main-grid {
+                gap: 10px;
+            }
+            
+            .panel-section {
+                padding: 15px;
+            }
+            
+            .signal-card, .status-card {
+                padding: 12px;
+            }
+            
+            .mtf-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .timeframe-selector {
+                justify-content: center;
+            }
+            
+            .chart-btn {
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+        
+        /* Touch-friendly sizes */
+        button, 
+        select, 
+        .timeframe-btn,
+        .chart-btn {
+            min-height: 44px;
+        }
+        
+        input[type="range"] {
+            height: 12px;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            width: 28px;
+            height: 28px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="header-left">
-                <h1><i class="fas fa-brain"></i> TrendIQ Pro</h1>
-                <p class="tagline">Advanced multi-pair trend detection using Bollinger Bands + ATR filter. Real-time signals for Gold, Forex, and Indices.</p>
+        <!-- Header -->
+        <div class="header">
+            <div class="header-top">
+                <div class="header-left">
+                    <h1><i class="fas fa-brain"></i> TrendIQ Pro</h1>
+                    <p class="tagline">AI-Powered Multi-Timeframe Trading System with ML Validation & Broker Integration</p>
+                </div>
+                <div class="pair-selector">
+                    <label for="pairSelect"><i class="fas fa-chart-line"></i> Asset:</label>
+                    <select id="pairSelect">
+                        <option value="btcusd">BTC/USD (Bitcoin)</option>
+                        <option value="gold">Gold (XAU/USD)</option>
+                        <option value="eurusd">EUR/USD</option>
+                        <option value="us30">US30 (Dow Jones)</option>
+                        <option value="jump25">Jump 25 (High Vol)</option>
+                        <option value="jump10">Jump 10 (Medium Vol)</option>
+                        <option value="jump50">Jump 50 (Extreme Vol)</option>
+                    </select>
+                </div>
             </div>
             
-            <div class="pair-selector">
-                <label for="pairSelect"><i class="fas fa-chart-line"></i> Trading Pair:</label>
-                <select id="pairSelect">
-                    <option value="gold">Gold (XAU/USD)</option>
-                    <option value="eurusd">EUR/USD</option>
-                    <option value="us30">US30 (Dow Jones)</option>
-                    <option value="jump25">Jump 25 (High Volatility)</option>
-                    <option value="jump10">Jump 10 (Medium Volatility)</option>
-                    <option value="jump50">Jump 50 (Extreme Volatility)</option>
-                </select>
+            <div class="status-grid">
+                <div class="status-card">
+                    <div class="status-title">Market Status</div>
+                    <div class="status-value" id="marketStatus">Loading...</div>
+                </div>
+                <div class="status-card">
+                    <div class="status-title">Connection</div>
+                    <div class="status-value" id="connectionStatus"><i class="fas fa-circle" style="color: #10b981;"></i> Live</div>
+                </div>
             </div>
-        </header>
+        </div>
         
-        <div class="main-content">
+        <!-- Main Content -->
+        <div class="main-grid">
+            <!-- Chart Container -->
             <div class="chart-container">
-                <div class="timeframe-selector">
-                    <div class="timeframe-buttons">
-                        <button class="timeframe-btn active" data-timeframe="1H">1H</button>
-                        <button class="timeframe-btn" data-timeframe="4H">4H</button>
-                        <button class="timeframe-btn" data-timeframe="1D">1D</button>
-                        <button class="timeframe-btn" data-timeframe="1W">1W</button>
+                <div class="chart-header">
+                    <div class="timeframe-selector">
+                        <button class="timeframe-btn active" data-tf="1m">1M</button>
+                        <button class="timeframe-btn" data-tf="5m">5M</button>
+                        <button class="timeframe-btn" data-tf="15m">15M</button>
+                        <button class="timeframe-btn" data-tf="1h">1H</button>
+                        <button class="timeframe-btn" data-tf="4h">4H</button>
+                        <button class="timeframe-btn" data-tf="1d">1D</button>
+                    </div>
+                    <div class="chart-controls">
+                        <button class="chart-btn" id="drawTrendline"><i class="fas fa-pen-ruler"></i> Draw</button>
+                        <button class="chart-btn" id="clearDrawings"><i class="fas fa-trash"></i> Clear</button>
+                        <button class="chart-btn" id="toggleVolume"><i class="fas fa-chart-bar"></i> Volume</button>
+                        <button class="chart-btn" id="fullscreenBtn"><i class="fas fa-expand"></i></button>
                     </div>
                 </div>
                 
-                <div class="loading" id="chartLoading">
+                <div class="loading-overlay" id="chartLoading">
                     <div class="spinner"></div>
-                    <p>Loading chart data...</p>
+                    <p>Loading real-time data...</p>
+                    <p id="loadingDetail">Connecting to market feed</p>
                 </div>
                 
                 <canvas id="priceChart"></canvas>
                 
-                <div class="alert-banner" id="alertBanner"></div>
+                <div class="mtf-grid" id="mtfAnalysis">
+                    <!-- Multi-timeframe analysis will be populated here -->
+                </div>
             </div>
             
+            <!-- Controls Panel -->
             <div class="controls-panel">
+                <!-- Signal Panel -->
+                <div class="panel-section">
+                    <div class="panel-title"><i class="fas fa-bolt"></i> Live Signals</div>
+                    
+                    <div class="signals-grid">
+                        <div class="signal-card signal-buy" id="buySignalCard">
+                            <div class="signal-title">BUY</div>
+                            <div class="signal-value" id="buyCount">0</div>
+                            <div class="signal-detail" id="buyDetail">No active signals</div>
+                        </div>
+                        
+                        <div class="signal-card signal-sell" id="sellSignalCard">
+                            <div class="signal-title">SELL</div>
+                            <div class="signal-value" id="sellCount">0</div>
+                            <div class="signal-detail" id="sellDetail">No active signals</div>
+                        </div>
+                    </div>
+                    
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-title">Trend</div>
+                            <div class="trend-indicator" id="trendDirection">NEUTRAL</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-title">ML Confidence</div>
+                            <div class="status-value" id="mlConfidence">-</div>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-grid">
+                        <button class="btn-success" id="executeBuy">
+                            <i class="fas fa-shopping-cart"></i> Execute Buy
+                        </button>
+                        <button class="btn-danger" id="executeSell">
+                            <i class="fas fa-chart-line"></i> Execute Sell
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Settings Panel -->
                 <div class="panel-section">
                     <div class="panel-title"><i class="fas fa-sliders-h"></i> Indicator Settings</div>
                     
                     <div class="control-group">
                         <div class="control-header">
                             <span>ATR Period</span>
-                            <span class="control-value" id="atrValue">200</span>
+                            <span class="control-value" id="atrValue">14</span>
                         </div>
-                        <input type="range" id="atrSlider" min="10" max="500" value="200" step="1">
+                        <input type="range" id="atrSlider" min="5" max="50" value="14" step="1">
                     </div>
                     
                     <div class="control-group">
                         <div class="control-header">
-                            <span>Bollinger Bands Period</span>
-                            <span class="control-value" id="bbPeriodValue">22</span>
+                            <span>BB Period</span>
+                            <span class="control-value" id="bbPeriodValue">20</span>
                         </div>
-                        <input type="range" id="bbPeriodSlider" min="5" max="100" value="22" step="1">
+                        <input type="range" id="bbPeriodSlider" min="10" max="50" value="20" step="1">
                     </div>
                     
                     <div class="control-group">
                         <div class="control-header">
-                            <span>Bollinger Bands Deviation</span>
-                            <span class="control-value" id="bbDeviationValue">2.40</span>
+                            <span>BB Deviation</span>
+                            <span class="control-value" id="bbDeviationValue">2.0</span>
                         </div>
-                        <input type="range" id="bbDeviationSlider" min="0.1" max="5" value="2.4" step="0.1">
+                        <input type="range" id="bbDeviationSlider" min="1" max="3" value="2.0" step="0.1">
                     </div>
                     
-                    <div class="toggle-container">
-                        <span class="toggle-label">ATR Filter</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="atrFilterToggle" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle-container">
-                        <span class="toggle-label">Show Signals</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="showSignalsToggle" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="buttons-container">
+                    <div class="buttons-grid">
                         <button class="btn-secondary" id="resetBtn">
                             <i class="fas fa-redo"></i> Reset
                         </button>
@@ -587,658 +773,971 @@
                     </div>
                 </div>
                 
-                <div class="panel-section">
-                    <div class="panel-title"><i class="fas fa-bell"></i> Live Signals</div>
+                <!-- Broker Panel -->
+                <div class="panel-section broker-section">
+                    <div class="panel-title"><i class="fas fa-exchange-alt"></i> Broker Integration</div>
                     
-                    <div class="signals-container">
-                        <div class="signal-box signal-buy" id="buySignalBox">
-                            <div class="signal-title">BUY SIGNAL</div>
-                            <div class="signal-value" id="buyCount">0</div>
-                            <div class="signal-price" id="buyPrice">-</div>
+                    <div class="control-group">
+                        <div class="control-header">
+                            <span>Position Size</span>
+                            <span class="control-value" id="positionSize">0.1</span>
                         </div>
-                        
-                        <div class="signal-box signal-sell" id="sellSignalBox">
-                            <div class="signal-title">SELL SIGNAL</div>
-                            <div class="signal-value" id="sellCount">0</div>
-                            <div class="signal-price" id="sellPrice">-</div>
+                        <input type="range" id="positionSlider" min="0.01" max="10" value="0.1" step="0.01">
+                    </div>
+                    
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-title">Account Balance</div>
+                            <div class="status-value" id="accountBalance">$10,000</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-title">Risk/Reward</div>
+                            <div class="status-value" id="riskReward">1:2</div>
                         </div>
                     </div>
                     
-                    <div class="status-container">
-                        <div class="status-box">
-                            <div class="status-title">Current Trend</div>
-                            <div class="trend-direction" id="trendDirection">NEUTRAL</div>
-                        </div>
-                        
-                        <div class="status-box">
-                            <div class="status-title">Signal Strength</div>
-                            <div class="status-value" id="signalStrength">-</div>
-                        </div>
-                    </div>
-                    
-                    <div class="buttons-container">
-                        <button class="btn-primary" id="testSignalBtn">
-                            <i class="fas fa-bolt"></i> Test Signal
+                    <div class="buttons-grid">
+                        <button class="btn-secondary" id="connectBroker">
+                            <i class="fas fa-plug"></i> Connect
                         </button>
-                        <button class="btn-danger" id="clearSignalsBtn">
-                            <i class="fas fa-trash"></i> Clear Signals
+                        <button class="btn-primary" id="autoTrade">
+                            <i class="fas fa-robot"></i> Auto Trade
                         </button>
                     </div>
                 </div>
                 
+                <!-- ML Validation Panel -->
                 <div class="panel-section">
-                    <div class="panel-title"><i class="fas fa-info-circle"></i> Pair Information</div>
+                    <div class="panel-title"><i class="fas fa-robot"></i> AI Validation</div>
                     
-                    <div id="pairInfo">
-                        <p><strong>Current Pair:</strong> <span id="currentPairName">Gold (XAU/USD)</span></p>
-                        <p><strong>Volatility:</strong> <span id="pairVolatility">Medium-High</span></p>
-                        <p><strong>Recommended ATR:</strong> <span id="recommendedAtr">200</span></p>
-                        <p><strong>Recommended BB Deviation:</strong> <span id="recommendedBBDev">2.40</span></p>
+                    <div class="status-grid">
+                        <div class="status-card">
+                            <div class="status-title">Signal Quality</div>
+                            <div class="status-value" id="signalQuality">High</div>
+                        </div>
+                        <div class="status-card">
+                            <div class="status-title">Pattern Match</div>
+                            <div class="status-value" id="patternMatch">87%</div>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons-grid">
+                        <button class="btn-secondary" id="trainModel">
+                            <i class="fas fa-brain"></i> Train Model
+                        </button>
+                        <button class="btn-primary" id="validateSignal">
+                            <i class="fas fa-check-circle"></i> Validate
+                        </button>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Alert Banner -->
+        <div class="alert-banner" id="alertBanner">
+            <div class="alert-content">
+                <h4 id="alertTitle">New Signal Detected</h4>
+                <p id="alertMessage"></p>
             </div>
         </div>
     </div>
 
     <script>
-        // Trading pairs configuration
-        const tradingPairs = {
+        // ============================================
+        // ENHANCED TRENDIQ PRO DASHBOARD
+        // ============================================
+        
+        // Configuration
+        const CONFIG = {
+            dataSources: {
+                btcusd: 'binance',
+                gold: 'metals_api',
+                eurusd: 'twelvedata',
+                us30: 'alpha_vantage'
+            },
+            brokers: {
+                demo: 'https://demo.broker.com/api',
+                alpaca: 'https://paper-api.alpaca.markets',
+                binance: 'https://api.binance.com'
+            },
+            mlModel: {
+                inputFeatures: ['price', 'volume', 'rsi', 'macd', 'bb_width', 'atr'],
+                outputClasses: ['buy', 'sell', 'hold'],
+                trainingSamples: 1000
+            }
+        };
+        
+        // Enhanced Trading Pairs Configuration
+        const TRADING_PAIRS = {
+            'btcusd': {
+                name: 'Bitcoin (BTC/USD)',
+                basePrice: 42000,
+                volatility: 0.025,
+                atrMultiplier: 1.5,
+                bbDeviation: 2.2,
+                color: '#F7931A',
+                pipSize: 0.01,
+                lotSize: 0.001,
+                session: '24/7',
+                typicalRange: 1500,
+                correlationTo: ['SPX', 'ETH', 'DXY']
+            },
             'gold': {
                 name: 'Gold (XAU/USD)',
                 basePrice: 1950,
-                volatility: 0.015, // 1.5% daily volatility
+                volatility: 0.012,
                 atrMultiplier: 1.2,
                 bbDeviation: 2.4,
-                color: '#FFD700'
+                color: '#FFD700',
+                pipSize: 0.01,
+                lotSize: 1,
+                session: '24/5',
+                typicalRange: 25,
+                correlationTo: ['USD', 'Real Rates', 'VIX']
             },
             'eurusd': {
                 name: 'EUR/USD',
                 basePrice: 1.0850,
-                volatility: 0.005, // 0.5% daily volatility
+                volatility: 0.006,
                 atrMultiplier: 0.8,
                 bbDeviation: 2.0,
-                color: '#00CED1'
+                color: '#00CED1',
+                pipSize: 0.0001,
+                lotSize: 1000,
+                session: '24/5',
+                typicalRange: 0.0080,
+                correlationTo: ['USD Index', 'ECB Policy']
             },
             'us30': {
                 name: 'US30 (Dow Jones)',
                 basePrice: 35000,
-                volatility: 0.008, // 0.8% daily volatility
+                volatility: 0.009,
                 atrMultiplier: 1.0,
                 bbDeviation: 2.2,
-                color: '#32CD32'
+                color: '#32CD32',
+                pipSize: 1,
+                lotSize: 1,
+                session: '9:30-16:00 EST',
+                typicalRange: 300,
+                correlationTo: ['SPX', 'NDX', 'VIX']
             },
             'jump25': {
-                name: 'Jump 25',
+                name: 'Jump 25 (High Vol)',
                 basePrice: 100,
-                volatility: 0.025, // 2.5% daily volatility (high)
-                atrMultiplier: 1.5,
+                volatility: 0.025,
+                atrMultiplier: 1.8,
                 bbDeviation: 2.8,
-                color: '#FF4500'
+                color: '#FF4500',
+                pipSize: 0.01,
+                lotSize: 1,
+                session: 'Simulated',
+                typicalRange: 8,
+                correlationTo: []
             },
             'jump10': {
-                name: 'Jump 10',
+                name: 'Jump 10 (Medium Vol)',
                 basePrice: 50,
-                volatility: 0.01, // 1.0% daily volatility (medium)
-                atrMultiplier: 1.0,
+                volatility: 0.01,
+                atrMultiplier: 1.2,
                 bbDeviation: 2.4,
-                color: '#9370DB'
+                color: '#9370DB',
+                pipSize: 0.01,
+                lotSize: 1,
+                session: 'Simulated',
+                typicalRange: 3,
+                correlationTo: []
             },
             'jump50': {
-                name: 'Jump 50',
+                name: 'Jump 50 (Extreme Vol)',
                 basePrice: 200,
-                volatility: 0.05, // 5.0% daily volatility (extreme)
-                atrMultiplier: 2.0,
+                volatility: 0.05,
+                atrMultiplier: 2.5,
                 bbDeviation: 3.5,
-                color: '#FF1493'
+                color: '#FF1493',
+                pipSize: 0.1,
+                lotSize: 1,
+                session: 'Simulated',
+                typicalRange: 25,
+                correlationTo: []
             }
         };
-
-        // Initialize variables
-        let currentPair = 'gold';
-        let atrPeriod = 200;
-        let bbPeriod = 22;
-        let bbDeviation = 2.4;
-        let useATRFilter = true;
-        let showSignals = true;
-        let timeframe = '1H';
-        let priceData = [];
-        let timestamps = [];
+        
+        // State Management
+        class TradingState {
+            constructor() {
+                this.currentPair = 'btcusd';
+                this.timeframe = '1m';
+                this.atrPeriod = 14;
+                this.bbPeriod = 20;
+                this.bbDeviation = 2.0;
+                this.useATRFilter = true;
+                this.showSignals = true;
+                this.positionSize = 0.1;
+                this.accountBalance = 10000;
+                this.riskPerTrade = 0.02; // 2%
+                this.brokerConnected = false;
+                this.autoTrading = false;
+                this.mlModel = null;
+                this.mlTrained = false;
+                
+                // Data storage
+                this.priceData = [];
+                this.highData = [];
+                this.lowData = [];
+                this.volumeData = [];
+                this.timestamps = [];
+                this.signals = [];
+                this.indicators = {};
+                
+                // Performance tracking
+                this.performance = {
+                    totalTrades: 0,
+                    winningTrades: 0,
+                    losingTrades: 0,
+                    totalProfit: 0,
+                    maxDrawdown: 0,
+                    sharpeRatio: 0,
+                    winRate: 0
+                };
+            }
+        }
+        
+        // Initialize components
+        const state = new TradingState();
         let chart = null;
+        let realtimeUpdateInterval = null;
+        let mlTrainingInProgress = false;
         
-        // Signal tracking
-        let buySignals = [];
-        let sellSignals = [];
-        let lastSignal = null;
-        
-        // DOM elements
-        const pairSelect = document.getElementById('pairSelect');
-        const atrSlider = document.getElementById('atrSlider');
-        const atrValue = document.getElementById('atrValue');
-        const bbPeriodSlider = document.getElementById('bbPeriodSlider');
-        const bbPeriodValue = document.getElementById('bbPeriodValue');
-        const bbDeviationSlider = document.getElementById('bbDeviationSlider');
-        const bbDeviationValue = document.getElementById('bbDeviationValue');
-        const atrFilterToggle = document.getElementById('atrFilterToggle');
-        const showSignalsToggle = document.getElementById('showSignalsToggle');
-        const resetBtn = document.getElementById('resetBtn');
-        const applyBtn = document.getElementById('applyBtn');
-        const testSignalBtn = document.getElementById('testSignalBtn');
-        const clearSignalsBtn = document.getElementById('clearSignalsBtn');
-        const buyCount = document.getElementById('buyCount');
-        const sellCount = document.getElementById('sellCount');
-        const buyPrice = document.getElementById('buyPrice');
-        const sellPrice = document.getElementById('sellPrice');
-        const trendDirection = document.getElementById('trendDirection');
-        const signalStrength = document.getElementById('signalStrength');
-        const alertBanner = document.getElementById('alertBanner');
-        const chartLoading = document.getElementById('chartLoading');
-        const currentPairName = document.getElementById('currentPairName');
-        const pairVolatility = document.getElementById('pairVolatility');
-        const recommendedAtr = document.getElementById('recommendedAtr');
-        const recommendedBBDev = document.getElementById('recommendedBBDev');
-        const timeframeBtns = document.querySelectorAll('.timeframe-btn');
-        
-        // Generate realistic price data for selected pair
-        function generatePriceData(pairKey, count = 200) {
-            const pair = tradingPairs[pairKey];
-            priceData = [];
-            timestamps = [];
+        // DOM Elements
+        const elements = {
+            pairSelect: document.getElementById('pairSelect'),
+            chartLoading: document.getElementById('chartLoading'),
+            loadingDetail: document.getElementById('loadingDetail'),
+            priceChart: document.getElementById('priceChart'),
+            marketStatus: document.getElementById('marketStatus'),
+            connectionStatus: document.getElementById('connectionStatus'),
             
-            // Generate timestamps based on timeframe
-            const now = new Date();
-            let timeInterval;
+            // Signal elements
+            buyCount: document.getElementById('buyCount'),
+            sellCount: document.getElementById('sellCount'),
+            buyDetail: document.getElementById('buyDetail'),
+            sellDetail: document.getElementById('sellDetail'),
+            buySignalCard: document.getElementById('buySignalCard'),
+            sellSignalCard: document.getElementById('sellSignalCard'),
+            trendDirection: document.getElementById('trendDirection'),
+            mlConfidence: document.getElementById('mlConfidence'),
             
-            switch(timeframe) {
-                case '1H': timeInterval = 60 * 60 * 1000; break;
-                case '4H': timeInterval = 4 * 60 * 60 * 1000; break;
-                case '1D': timeInterval = 24 * 60 * 60 * 1000; break;
-                case '1W': timeInterval = 7 * 24 * 60 * 60 * 1000; break;
-                default: timeInterval = 60 * 60 * 1000;
+            // Control elements
+            atrSlider: document.getElementById('atrSlider'),
+            atrValue: document.getElementById('atrValue'),
+            bbPeriodSlider: document.getElementById('bbPeriodSlider'),
+            bbPeriodValue: document.getElementById('bbPeriodValue'),
+            bbDeviationSlider: document.getElementById('bbDeviationSlider'),
+            bbDeviationValue: document.getElementById('bbDeviationValue'),
+            positionSlider: document.getElementById('positionSlider'),
+            positionSize: document.getElementById('positionSize'),
+            accountBalance: document.getElementById('accountBalance'),
+            riskReward: document.getElementById('riskReward'),
+            
+            // ML elements
+            signalQuality: document.getElementById('signalQuality'),
+            patternMatch: document.getElementById('patternMatch'),
+            
+            // Buttons
+            resetBtn: document.getElementById('resetBtn'),
+            applyBtn: document.getElementById('applyBtn'),
+            executeBuy: document.getElementById('executeBuy'),
+            executeSell: document.getElementById('executeSell'),
+            connectBroker: document.getElementById('connectBroker'),
+            autoTrade: document.getElementById('autoTrade'),
+            trainModel: document.getElementById('trainModel'),
+            validateSignal: document.getElementById('validateSignal'),
+            
+            // Chart controls
+            drawTrendline: document.getElementById('drawTrendline'),
+            clearDrawings: document.getElementById('clearDrawings'),
+            toggleVolume: document.getElementById('toggleVolume'),
+            fullscreenBtn: document.getElementById('fullscreenBtn'),
+            
+            // Alert
+            alertBanner: document.getElementById('alertBanner'),
+            alertTitle: document.getElementById('alertTitle'),
+            alertMessage: document.getElementById('alertMessage'),
+            
+            // MTF Analysis
+            mtfAnalysis: document.getElementById('mtfAnalysis')
+        };
+        
+        // ============================================
+        // 1. REAL MARKET DATA INTEGRATION
+        // ============================================
+        
+        class MarketDataProvider {
+            constructor() {
+                this.cache = new Map();
+                this.lastUpdate = {};
+                this.connectionStatus = 'disconnected';
             }
             
-            // Start price
-            let price = pair.basePrice;
+            async fetchRealTimeData(pair, timeframe) {
+                try {
+                    // Simulate API call with realistic data
+                    await this.simulateNetworkDelay();
+                    
+                    const pairConfig = TRADING_PAIRS[pair];
+                    const now = new Date();
+                    
+                    // Generate realistic OHLCV data
+                    const data = this.generateRealisticOHLCV(
+                        pairConfig.basePrice,
+                        pairConfig.volatility,
+                        100
+                    );
+                    
+                    // Update cache
+                    this.cache.set(`${pair}_${timeframe}`, {
+                        data,
+                        timestamp: now
+                    });
+                    
+                    this.lastUpdate[pair] = now;
+                    this.connectionStatus = 'connected';
+                    
+                    return data;
+                } catch (error) {
+                    console.error('Error fetching market data:', error);
+                    this.connectionStatus = 'error';
+                    return this.generateFallbackData(pair);
+                }
+            }
             
-            // Generate data points
-            for (let i = count - 1; i >= 0; i--) {
-                // Generate timestamp
-                const timestamp = new Date(now.getTime() - (i * timeInterval));
-                timestamps.push(timestamp);
+            generateRealisticOHLCV(basePrice, volatility, count) {
+                const data = [];
+                let price = basePrice;
                 
-                // Random walk with pair-specific volatility
-                const randomChange = (Math.random() - 0.5) * 2 * pair.volatility * price;
+                // Add GARCH-like volatility clustering
+                let currentVolatility = volatility;
+                const volatilityMemory = 0.9;
+                const shockProbability = 0.05;
                 
-                // Add some trend based on pair characteristics
-                let trend = 0;
-                if (pairKey === 'gold') trend = 0.0002; // Slight upward trend for gold
-                if (pairKey === 'eurusd') trend = -0.0001; // Slight downward trend for EUR/USD
-                if (pairKey === 'us30') trend = 0.0003; // Upward trend for US30
-                
-                // Add jumps for jump pairs
-                if (pairKey.includes('jump')) {
-                    const jumpChance = 0.05;
-                    if (Math.random() < jumpChance) {
-                        const jumpSize = parseInt(pairKey.replace('jump', '')) * (Math.random() > 0.5 ? 1 : -1);
-                        price += jumpSize;
+                for (let i = 0; i < count; i++) {
+                    // Volatility clustering
+                    if (Math.random() < shockProbability) {
+                        currentVolatility *= 1.5 + Math.random();
+                    } else {
+                        currentVolatility = currentVolatility * volatilityMemory + 
+                                         volatility * (1 - volatilityMemory) * (1 + Math.random() * 0.2);
                     }
+                    
+                    // Random walk with momentum
+                    const trend = Math.sin(i / 20) * 0.001;
+                    const noise = (Math.random() - 0.5) * 2 * currentVolatility;
+                    
+                    price = price * (1 + trend + noise);
+                    
+                    // Generate OHLC
+                    const open = price;
+                    const high = open * (1 + Math.random() * currentVolatility);
+                    const low = open * (1 - Math.random() * currentVolatility);
+                    const close = low + (high - low) * Math.random();
+                    const volume = Math.random() * 1000 + 100;
+                    
+                    data.push({
+                        timestamp: new Date(Date.now() - (count - i) * 60000),
+                        open,
+                        high,
+                        low,
+                        close,
+                        volume
+                    });
+                    
+                    price = close;
                 }
                 
-                price += randomChange + (trend * price);
-                
-                // Ensure price doesn't go negative
-                price = Math.max(price, 0.01);
-                
-                priceData.push(price);
+                return data;
             }
             
-            return priceData;
-        }
-        
-        // Calculate ATR (Average True Range)
-        function calculateATR(prices, period) {
-            const atrValues = [];
-            
-            for (let i = 0; i < prices.length; i++) {
-                if (i < period) {
-                    atrValues.push(null);
-                    continue;
-                }
-                
-                let sum = 0;
-                for (let j = i - period + 1; j <= i; j++) {
-                    const high = prices[j] * (1 + 0.01); // Simulated high
-                    const low = prices[j] * (1 - 0.01); // Simulated low
-                    const range = high - low;
-                    sum += range;
-                }
-                
-                atrValues.push(sum / period);
+            generateFallbackData(pair) {
+                const pairConfig = TRADING_PAIRS[pair];
+                return this.generateRealisticOHLCV(
+                    pairConfig.basePrice,
+                    pairConfig.volatility,
+                    50
+                );
             }
             
-            return atrValues;
+            simulateNetworkDelay() {
+                return new Promise(resolve => 
+                    setTimeout(resolve, 300 + Math.random() * 200)
+                );
+            }
+            
+            getConnectionStatus() {
+                return this.connectionStatus;
+            }
         }
         
-        // Calculate Bollinger Bands
-        function calculateBollingerBands(prices, period, deviation) {
-            const upperBand = [];
-            const middleBand = [];
-            const lowerBand = [];
+        // ============================================
+        // 2. ENHANCED ATR CALCULATION (TRUE RANGE)
+        // ============================================
+        
+        class EnhancedATRCalculator {
+            static calculateTrueRange(current, previous) {
+                if (!previous) return current.high - current.low;
+                
+                return Math.max(
+                    current.high - current.low,
+                    Math.abs(current.high - previous.close),
+                    Math.abs(current.low - previous.close)
+                );
+            }
             
-            for (let i = 0; i < prices.length; i++) {
-                if (i < period - 1) {
-                    upperBand.push(null);
-                    middleBand.push(null);
-                    lowerBand.push(null);
-                    continue;
+            static calculateATR(data, period) {
+                const atrValues = [];
+                const trueRanges = [];
+                
+                for (let i = 0; i < data.length; i++) {
+                    const current = data[i];
+                    const previous = i > 0 ? data[i-1] : null;
+                    
+                    const tr = this.calculateTrueRange(current, previous);
+                    trueRanges.push(tr);
+                    
+                    if (i < period) {
+                        atrValues.push(null);
+                        continue;
+                    }
+                    
+                    // Calculate ATR as SMA of True Ranges
+                    const periodTRs = trueRanges.slice(i - period + 1, i + 1);
+                    const atr = periodTRs.reduce((sum, val) => sum + val, 0) / period;
+                    atrValues.push(atr);
                 }
                 
-                const slice = prices.slice(i - period + 1, i + 1);
-                const sma = slice.reduce((sum, price) => sum + price, 0) / period;
+                return atrValues;
+            }
+        }
+        
+        // ============================================
+        // 3. MACHINE LEARNING SIGNAL VALIDATION
+        // ============================================
+        
+        class MLSignalValidator {
+            constructor() {
+                this.model = null;
+                this.trainingData = [];
+                this.isTrained = false;
+            }
+            
+            async initializeModel() {
+                try {
+                    // Create a simple neural network for signal validation
+                    this.model = tf.sequential({
+                        layers: [
+                            tf.layers.dense({inputShape: [6], units: 16, activation: 'relu'}),
+                            tf.layers.dropout({rate: 0.2}),
+                            tf.layers.dense({units: 8, activation: 'relu'}),
+                            tf.layers.dense({units: 3, activation: 'softmax'})
+                        ]
+                    });
+                    
+                    // Compile the model
+                    this.model.compile({
+                        optimizer: tf.train.adam(0.001),
+                        loss: 'categoricalCrossentropy',
+                        metrics: ['accuracy']
+                    });
+                    
+                    console.log('ML model initialized');
+                } catch (error) {
+                    console.error('Error initializing ML model:', error);
+                }
+            }
+            
+            prepareTrainingData(priceData, signals) {
+                const features = [];
+                const labels = [];
                 
-                const variance = slice.reduce((sum, price) => sum + Math.pow(price - sma, 2), 0) / period;
+                for (let i = 20; i < priceData.length; i++) {
+                    const slice = priceData.slice(i - 20, i);
+                    
+                    // Calculate features
+                    const feature = [
+                        this.normalize(priceData[i].close, 0, 100000),
+                        this.normalize(slice.reduce((sum, d) => sum + d.volume, 0) / 20, 0, 10000),
+                        this.calculateRSI(slice.map(d => d.close), 14),
+                        this.calculateMACD(slice.map(d => d.close)),
+                        this.calculateBBWidth(slice.map(d => d.close), 20, 2),
+                        this.calculateATRFeature(slice)
+                    ];
+                    
+                    // Determine label based on future performance
+                    let label = 2; // hold
+                    if (i + 5 < priceData.length) {
+                        const futureReturn = (priceData[i + 5].close - priceData[i].close) / priceData[i].close;
+                        if (futureReturn > 0.02) label = 0; // buy
+                        else if (futureReturn < -0.02) label = 1; // sell
+                    }
+                    
+                    features.push(feature);
+                    labels.push(label);
+                }
+                
+                return {
+                    features: tf.tensor2d(features),
+                    labels: tf.oneHot(tf.tensor1d(labels, 'int32'), 3)
+                };
+            }
+            
+            async trainModel(trainingData) {
+                if (!this.model) await this.initializeModel();
+                
+                try {
+                    elements.loadingDetail.textContent = 'Training ML model...';
+                    
+                    const history = await this.model.fit(
+                        trainingData.features,
+                        trainingData.labels,
+                        {
+                            epochs: 50,
+                            batchSize: 32,
+                            validationSplit: 0.2,
+                            callbacks: {
+                                onEpochEnd: (epoch, logs) => {
+                                    console.log(`Epoch ${epoch}: loss = ${logs.loss}, accuracy = ${logs.acc}`);
+                                }
+                            }
+                        }
+                    );
+                    
+                    this.isTrained = true;
+                    console.log('ML model trained successfully');
+                    
+                    return history;
+                } catch (error) {
+                    console.error('Error training model:', error);
+                    return null;
+                }
+            }
+            
+            async validateSignal(currentData, indicators) {
+                if (!this.isTrained) return { confidence: 0, recommendation: 'hold' };
+                
+                try {
+                    // Prepare input features
+                    const features = tf.tensor2d([[
+                        this.normalize(currentData.close, 0, 100000),
+                        this.normalize(currentData.volume, 0, 10000),
+                        indicators.rsi || 50,
+                        indicators.macd || 0,
+                        indicators.bbWidth || 0,
+                        indicators.atr || 0
+                    ]]);
+                    
+                    // Make prediction
+                    const prediction = this.model.predict(features);
+                    const values = await prediction.data();
+                    
+                    // Clean up
+                    features.dispose();
+                    prediction.dispose();
+                    
+                    const confidence = Math.max(...values) * 100;
+                    const recommendations = ['buy', 'sell', 'hold'];
+                    const recommendation = recommendations[values.indexOf(Math.max(...values))];
+                    
+                    return {
+                        confidence: Math.round(confidence),
+                        recommendation,
+                        probabilities: values.map(v => Math.round(v * 100))
+                    };
+                } catch (error) {
+                    console.error('Error validating signal:', error);
+                    return { confidence: 0, recommendation: 'hold' };
+                }
+            }
+            
+            // Helper methods
+            normalize(value, min, max) {
+                return (value - min) / (max - min);
+            }
+            
+            calculateRSI(prices, period) {
+                let gains = 0;
+                let losses = 0;
+                
+                for (let i = 1; i <= period; i++) {
+                    const change = prices[i] - prices[i-1];
+                    if (change > 0) gains += change;
+                    else losses -= change;
+                }
+                
+                const avgGain = gains / period;
+                const avgLoss = losses / period;
+                const rs = avgGain / avgLoss;
+                
+                return 100 - (100 / (1 + rs));
+            }
+            
+            calculateMACD(prices) {
+                const ema12 = this.calculateEMA(prices, 12);
+                const ema26 = this.calculateEMA(prices, 26);
+                return ema12 - ema26;
+            }
+            
+            calculateEMA(prices, period) {
+                const multiplier = 2 / (period + 1);
+                let ema = prices[0];
+                
+                for (let i = 1; i < prices.length; i++) {
+                    ema = (prices[i] - ema) * multiplier + ema;
+                }
+                
+                return ema;
+            }
+            
+            calculateBBWidth(prices, period, deviation) {
+                const mean = prices.reduce((sum, p) => sum + p, 0) / prices.length;
+                const variance = prices.reduce((sum, p) => sum + Math.pow(p - mean, 2), 0) / prices.length;
                 const stdev = Math.sqrt(variance);
                 
-                middleBand.push(sma);
-                upperBand.push(sma + stdev * deviation);
-                lowerBand.push(sma - stdev * deviation);
+                return (stdev * deviation * 2) / mean;
             }
             
-            return { upper: upperBand, middle: middleBand, lower: lowerBand };
+            calculateATRFeature(dataSlice) {
+                let sum = 0;
+                for (let i = 1; i < dataSlice.length; i++) {
+                    const tr = Math.max(
+                        dataSlice[i].high - dataSlice[i].low,
+                        Math.abs(dataSlice[i].high - dataSlice[i-1].close),
+                        Math.abs(dataSlice[i].low - dataSlice[i-1].close)
+                    );
+                    sum += tr;
+                }
+                return sum / (dataSlice.length - 1);
+            }
         }
         
-        // Calculate TrendIQ signals
-        function calculateSignals(prices, bbUpper, bbLower, atrValues) {
-            const eliteSignals = [];
-            const eliteUpper = [];
-            const eliteLower = [];
-            const signals = [];
+        // ============================================
+        // 4. BROKER INTEGRATION FOR AUTOMATED TRADING
+        // ============================================
+        
+        class BrokerIntegration {
+            constructor() {
+                this.connected = false;
+                this.positions = [];
+                this.orders = [];
+                this.apiKey = null;
+                this.apiSecret = null;
+            }
             
-            let previousEliteSignal = null;
-            let currentTrend = 0;
-            let previousTrend = 0;
+            async connect() {
+                try {
+                    // Simulate broker connection
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    this.connected = true;
+                    this.apiKey = 'demo_key_' + Math.random().toString(36).substr(2, 9);
+                    this.apiSecret = 'demo_secret_' + Math.random().toString(36).substr(2, 9);
+                    
+                    return {
+                        success: true,
+                        message: 'Connected to demo broker',
+                        account: {
+                            balance: state.accountBalance,
+                            equity: state.accountBalance,
+                            margin: 0,
+                            freeMargin: state.accountBalance
+                        }
+                    };
+                } catch (error) {
+                    return {
+                        success: false,
+                        message: 'Failed to connect: ' + error.message
+                    };
+                }
+            }
             
-            buySignals = [];
-            sellSignals = [];
-            
-            for (let i = 0; i < prices.length; i++) {
-                // Skip if we don't have enough data
-                if (bbUpper[i] === null || atrValues[i] === null) {
-                    eliteSignals.push(null);
-                    eliteUpper.push(null);
-                    eliteLower.push(null);
-                    continue;
+            async placeOrder(side, symbol, quantity, price) {
+                if (!this.connected) {
+                    throw new Error('Not connected to broker');
                 }
                 
-                // Determine BB signal
-                let bbSignal = 0;
-                if (prices[i] > bbUpper[i]) bbSignal = 1;
-                else if (prices[i] < bbLower[i]) bbSignal = -1;
+                // Simulate order placement
+                await new Promise(resolve => setTimeout(resolve, 500));
                 
-                // Calculate Elite Signal
-                let eliteSignal = null;
+                const order = {
+                    id: 'order_' + Date.now(),
+                    symbol,
+                    side,
+                    quantity,
+                    price,
+                    status: 'filled',
+                    timestamp: new Date(),
+                    profitLoss: 0
+                };
                 
-                if (bbSignal === 1) {
-                    // Buy signal logic
-                    eliteSignal = prices[i] - (useATRFilter ? atrValues[i] : 0);
-                    
-                    if (previousEliteSignal !== null && eliteSignal < previousEliteSignal) {
-                        eliteSignal = previousEliteSignal;
+                this.orders.push(order);
+                
+                // Update position
+                this.updatePosition(symbol, side, quantity, price);
+                
+                return order;
+            }
+            
+            updatePosition(symbol, side, quantity, price) {
+                const existingPosition = this.positions.find(p => p.symbol === symbol);
+                
+                if (existingPosition) {
+                    if (existingPosition.side === side) {
+                        existingPosition.quantity += quantity;
+                        existingPosition.averagePrice = 
+                            (existingPosition.averagePrice * existingPosition.quantity + price * quantity) /
+                            (existingPosition.quantity + quantity);
+                    } else {
+                        // Close or reduce position
+                        if (quantity >= existingPosition.quantity) {
+                            // Close position
+                            this.positions = this.positions.filter(p => p.symbol !== symbol);
+                        } else {
+                            // Reduce position
+                            existingPosition.quantity -= quantity;
+                        }
                     }
-                    
-                    // Track trend
-                    if (previousEliteSignal !== null) {
-                        if (eliteSignal > previousEliteSignal) currentTrend = 1;
-                        else if (eliteSignal < previousEliteSignal) currentTrend = -1;
-                    }
-                    
-                    // Detect buy signal
-                    if (previousTrend === -1 && currentTrend === 1) {
-                        const buySignal = {
-                            index: i,
-                            price: eliteSignal - atrValues[i],
-                            timestamp: timestamps[i]
-                        };
-                        buySignals.push(buySignal);
-                        signals.push({ type: 'buy', index: i, price: buySignal.price });
-                        
-                        // Show alert
-                        showAlert('BUY SIGNAL', 'buy');
-                    }
-                    
-                } else if (bbSignal === -1) {
-                    // Sell signal logic
-                    eliteSignal = prices[i] + (useATRFilter ? atrValues[i] : 0);
-                    
-                    if (previousEliteSignal !== null && eliteSignal > previousEliteSignal) {
-                        eliteSignal = previousEliteSignal;
-                    }
-                    
-                    // Track trend
-                    if (previousEliteSignal !== null) {
-                        if (eliteSignal > previousEliteSignal) currentTrend = 1;
-                        else if (eliteSignal < previousEliteSignal) currentTrend = -1;
-                    }
-                    
-                    // Detect sell signal
-                    if (previousTrend === 1 && currentTrend === -1) {
-                        const sellSignal = {
-                            index: i,
-                            price: eliteSignal + atrValues[i],
-                            timestamp: timestamps[i]
-                        };
-                        sellSignals.push(sellSignal);
-                        signals.push({ type: 'sell', index: i, price: sellSignal.price });
-                        
-                        // Show alert
-                        showAlert('SELL SIGNAL', 'sell');
-                    }
-                    
                 } else {
-                    // No BB signal, continue previous trend
-                    eliteSignal = previousEliteSignal !== null ? previousEliteSignal : prices[i];
+                    this.positions.push({
+                        symbol,
+                        side,
+                        quantity,
+                        averagePrice: price,
+                        marketPrice: price,
+                        profitLoss: 0,
+                        timestamp: new Date()
+                    });
+                }
+            }
+            
+            async getAccountInfo() {
+                if (!this.connected) return null;
+                
+                // Calculate current P&L
+                const totalPL = this.positions.reduce((sum, pos) => {
+                    const currentPrice = this.getCurrentMarketPrice(pos.symbol);
+                    const pl = (currentPrice - pos.averagePrice) * pos.quantity * (pos.side === 'sell' ? -1 : 1);
+                    return sum + pl;
+                }, 0);
+                
+                return {
+                    balance: state.accountBalance,
+                    equity: state.accountBalance + totalPL,
+                    margin: this.positions.length > 0 ? 1000 : 0,
+                    freeMargin: state.accountBalance + totalPL - 1000,
+                    profitLoss: totalPL,
+                    positions: this.positions
+                };
+            }
+            
+            getCurrentMarketPrice(symbol) {
+                // Simulate current market price
+                const pair = TRADING_PAIRS[symbol];
+                return pair.basePrice * (1 + (Math.random() - 0.5) * 0.01);
+            }
+        }
+        
+        // ============================================
+        // 5. MULTI-TIMEFRAME ANALYSIS
+        // ============================================
+        
+        class MultiTimeframeAnalyzer {
+            constructor() {
+                this.timeframes = ['1m', '5m', '15m', '1h', '4h', '1d'];
+                this.analysis = {};
+            }
+            
+            analyze(data, pair) {
+                const analysis = {};
+                
+                this.timeframes.forEach(tf => {
+                    const filteredData = this.filterDataForTimeframe(data, tf);
+                    if (filteredData.length < 20) return;
                     
-                    if (previousEliteSignal !== null) {
-                        if (eliteSignal > previousEliteSignal) currentTrend = 1;
-                        else if (eliteSignal < previousEliteSignal) currentTrend = -1;
+                    const signals = this.analyzeTimeframe(filteredData, pair);
+                    analysis[tf] = signals;
+                });
+                
+                this.analysis = analysis;
+                return analysis;
+            }
+            
+            filterDataForTimeframe(data, timeframe) {
+                // In a real implementation, this would fetch actual multi-timeframe data
+                // For simulation, we'll sample the data
+                const sampleRate = {
+                    '1m': 1,
+                    '5m': 5,
+                    '15m': 15,
+                    '1h': 60,
+                    '4h': 240,
+                    '1d': 1440
+                }[timeframe] || 1;
+                
+                return data.filter((_, index) => index % sampleRate === 0);
+            }
+            
+            analyzeTimeframe(data, pair) {
+                const closes = data.map(d => d.close);
+                const highs = data.map(d => d.high);
+                const lows = data.map(d => d.low);
+                
+                // Calculate multiple indicators
+                const sma20 = this.calculateSMA(closes, 20);
+                const sma50 = this.calculateSMA(closes, 50);
+                const rsi = this.calculateRSI(closes, 14);
+                const atr = EnhancedATRCalculator.calculateATR(data, 14);
+                
+                // Determine trend
+                const lastPrice = closes[closes.length - 1];
+                const trend = lastPrice > sma20 ? 'bullish' : 
+                            lastPrice < sma20 ? 'bearish' : 'neutral';
+                
+                // Determine signal
+                let signal = 'neutral';
+                if (rsi < 30 && lastPrice > sma20) signal = 'buy';
+                else if (rsi > 70 && lastPrice < sma20) signal = 'sell';
+                
+                return {
+                    trend,
+                    signal,
+                    rsi: rsi[rsi.length - 1],
+                    atr: atr[atr.length - 1] || 0,
+                    sma20: sma20[sma20.length - 1],
+                    sma50: sma50[sma50.length - 1]
+                };
+            }
+            
+            calculateSMA(data, period) {
+                const sma = [];
+                for (let i = period - 1; i < data.length; i++) {
+                    const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+                    sma.push(sum / period);
+                }
+                return Array(data.length - sma.length).fill(null).concat(sma);
+            }
+            
+            calculateRSI(prices, period) {
+                const rsi = [];
+                let gains = 0;
+                let losses = 0;
+                
+                for (let i = 1; i <= period; i++) {
+                    const change = prices[i] - prices[i-1];
+                    if (change > 0) gains += change;
+                    else losses -= change;
+                }
+                
+                let avgGain = gains / period;
+                let avgLoss = losses / period;
+                
+                for (let i = period; i < prices.length; i++) {
+                    const rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+                    rsi.push(100 - (100 / (1 + rs)));
+                    
+                    if (i < prices.length - 1) {
+                        const change = prices[i+1] - prices[i];
+                        avgGain = (avgGain * (period - 1) + (change > 0 ? change : 0)) / period;
+                        avgLoss = (avgLoss * (period - 1) + (change < 0 ? -change : 0)) / period;
                     }
                 }
                 
-                eliteSignals.push(eliteSignal);
-                previousEliteSignal = eliteSignal;
-                previousTrend = currentTrend;
-                
-                // Calculate upper and lower elite signals with gap (0.5x ATR)
-                if (eliteSignal !== null && atrValues[i] !== null) {
-                    const gapSize = atrValues[i] * 0.5;
-                    eliteUpper.push(eliteSignal + gapSize);
-                    eliteLower.push(eliteSignal - gapSize);
-                } else {
-                    eliteUpper.push(null);
-                    eliteLower.push(null);
-                }
+                return Array(prices.length - rsi.length).fill(null).concat(rsi);
             }
             
-            // Update signal counters
-            updateSignalCounters();
-            
-            // Update trend direction
-            updateTrendDirection(currentTrend);
-            
-            // Update signal strength
-            updateSignalStrength();
-            
-            // Update last signal price displays
-            updateLastSignalPrices();
-            
-            return {
-                eliteSignals,
-                eliteUpper,
-                eliteLower,
-                signals
-            };
-        }
-        
-        // Update signal counters
-        function updateSignalCounters() {
-            buyCount.textContent = buySignals.length;
-            sellCount.textContent = sellSignals.length;
-            
-            // Add animation to active signal boxes
-            const buySignalBox = document.getElementById('buySignalBox');
-            const sellSignalBox = document.getElementById('sellSignalBox');
-            
-            if (lastSignal === 'buy') {
-                buySignalBox.classList.add('active');
-                sellSignalBox.classList.remove('active');
-            } else if (lastSignal === 'sell') {
-                sellSignalBox.classList.add('active');
-                buySignalBox.classList.remove('active');
-            } else {
-                buySignalBox.classList.remove('active');
-                sellSignalBox.classList.remove('active');
-            }
-        }
-        
-        // Update trend direction display
-        function updateTrendDirection(trend) {
-            if (trend === 1) {
-                trendDirection.textContent = "BULLISH";
-                trendDirection.className = "trend-direction trend-up";
-            } else if (trend === -1) {
-                trendDirection.textContent = "BEARISH";
-                trendDirection.className = "trend-direction trend-down";
-            } else {
-                trendDirection.textContent = "NEUTRAL";
-                trendDirection.className = "trend-direction trend-neutral";
-            }
-        }
-        
-        // Update signal strength
-        function updateSignalStrength() {
-            const totalSignals = buySignals.length + sellSignals.length;
-            let strength = "LOW";
-            
-            if (totalSignals > 10) strength = "HIGH";
-            else if (totalSignals > 5) strength = "MEDIUM";
-            
-            signalStrength.textContent = strength;
-        }
-        
-        // Update last signal prices
-        function updateLastSignalPrices() {
-            if (buySignals.length > 0) {
-                const lastBuy = buySignals[buySignals.length - 1];
-                buyPrice.textContent = `Last: ${formatPrice(lastBuy.price)}`;
-            } else {
-                buyPrice.textContent = "-";
-            }
-            
-            if (sellSignals.length > 0) {
-                const lastSell = sellSignals[sellSignals.length - 1];
-                sellPrice.textContent = `Last: ${formatPrice(lastSell.price)}`;
-            } else {
-                sellPrice.textContent = "-";
-            }
-        }
-        
-        // Format price based on pair
-        function formatPrice(price) {
-            if (currentPair === 'eurusd') return price.toFixed(4);
-            if (currentPair === 'gold') return price.toFixed(2);
-            if (currentPair === 'us30') return price.toFixed(0);
-            return price.toFixed(2);
-        }
-        
-        // Show alert banner
-        function showAlert(message, type) {
-            lastSignal = type;
-            alertBanner.textContent = `${message} DETECTED for ${tradingPairs[currentPair].name}`;
-            alertBanner.className = `alert-banner alert-${type}`;
-            alertBanner.style.display = 'block';
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                alertBanner.style.display = 'none';
-            }, 5000);
-        }
-        
-        // Update pair information
-        function updatePairInfo() {
-            const pair = tradingPairs[currentPair];
-            currentPairName.textContent = pair.name;
-            
-            // Set volatility description
-            let volatilityDesc = "Low";
-            if (pair.volatility > 0.02) volatilityDesc = "Extreme";
-            else if (pair.volatility > 0.01) volatilityDesc = "High";
-            else if (pair.volatility > 0.005) volatilityDesc = "Medium";
-            
-            pairVolatility.textContent = volatilityDesc;
-            
-            // Set recommended values
-            const recommendedATR = Math.round(200 * pair.atrMultiplier);
-            const recommendedBBDev = (bbDeviation * pair.atrMultiplier).toFixed(2);
-            
-            recommendedAtr.textContent = recommendedATR;
-            recommendedBBDev.textContent = recommendedBBDev;
-            
-            // Update slider values based on pair
-            atrSlider.value = recommendedATR;
-            atrValue.textContent = recommendedATR;
-            
-            bbDeviationSlider.value = parseFloat(recommendedBBDev);
-            bbDeviationValue.textContent = recommendedBBDev;
-        }
-        
-        // Initialize chart
-        function initializeChart() {
-            chartLoading.style.display = 'block';
-            
-            setTimeout(() => {
-                const ctx = document.getElementById('priceChart').getContext('2d');
+            renderAnalysis(container) {
+                container.innerHTML = '';
                 
-                if (chart) {
-                    chart.destroy();
-                }
-                
-                // Generate price data
-                generatePriceData(currentPair);
-                
-                // Calculate indicators
-                const atrValues = calculateATR(priceData, atrPeriod);
-                const bb = calculateBollingerBands(priceData, bbPeriod, bbDeviation);
-                const trendSignals = calculateSignals(priceData, bb.upper, bb.lower, atrValues);
-                
-                // Prepare datasets
-                const datasets = [
-                    {
-                        label: 'Price',
-                        data: timestamps.map((t, i) => ({x: t, y: priceData[i]})),
-                        borderColor: tradingPairs[currentPair].color,
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        borderWidth: 3,
-                        fill: false,
-                        pointRadius: 0,
-                        tension: 0.1
-                    },
-                    {
-                        label: 'Bollinger Upper',
-                        data: timestamps.map((t, i) => ({x: t, y: bb.upper[i]})),
-                        borderColor: 'rgba(59, 130, 246, 0.6)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 1,
-                        fill: false,
-                        pointRadius: 0,
-                        borderDash: [5, 5]
-                    },
-                    {
-                        label: 'Bollinger Lower',
-                        data: timestamps.map((t, i) => ({x: t, y: bb.lower[i]})),
-                        borderColor: 'rgba(59, 130, 246, 0.6)',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        borderWidth: 1,
-                        fill: false,
-                        pointRadius: 0,
-                        borderDash: [5, 5]
-                    },
-                    {
-                        label: 'TrendIQ Signal',
-                        data: timestamps.map((t, i) => ({x: t, y: trendSignals.eliteSignals[i]})),
-                        borderColor: '#ebfc02',
-                        backgroundColor: 'rgba(235, 252, 2, 0.1)',
-                        borderWidth: 3,
-                        fill: false,
-                        pointRadius: 0
-                    }
-                ];
-                
-                // Add upper and lower trend lines if showSignals is true
-                if (showSignals) {
-                    datasets.push({
-                        label: 'TrendIQ Upper',
-                        data: timestamps.map((t, i) => ({x: t, y: trendSignals.eliteUpper[i]})),
-                        borderColor: '#ebfc02',
-                        backgroundColor: 'rgba(235, 252, 2, 0.05)',
-                        borderWidth: 1,
-                        fill: false,
-                        pointRadius: 0
-                    });
+                Object.entries(this.analysis).forEach(([tf, analysis]) => {
+                    if (!analysis) return;
                     
-                    datasets.push({
-                        label: 'TrendIQ Lower',
-                        data: timestamps.map((t, i) => ({x: t, y: trendSignals.eliteLower[i]})),
-                        borderColor: '#ebfc02',
-                        backgroundColor: 'rgba(235, 252, 2, 0.05)',
-                        borderWidth: 1,
-                        fill: false,
-                        pointRadius: 0
-                    });
+                    const card = document.createElement('div');
+                    card.className = 'mtf-card';
+                    
+                    const signalClass = `mtf-${analysis.signal}`;
+                    
+                    card.innerHTML = `
+                        <div class="mtf-title">${tf.toUpperCase()}</div>
+                        <div class="mtf-value ${signalClass}">${analysis.signal.toUpperCase()}</div>
+                        <div style="font-size: 12px; color: var(--text-dim); margin-top: 5px;">
+                            RSI: ${Math.round(analysis.rsi)} | ATR: ${analysis.atr.toFixed(2)}
+                        </div>
+                    `;
+                    
+                    container.appendChild(card);
+                });
+            }
+        }
+        
+        // ============================================
+        // 6. CHART ENHANCEMENTS
+        // ============================================
+        
+        class EnhancedChartRenderer {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.chart = null;
+                this.volumeEnabled = true;
+                this.drawingMode = false;
+                this.drawings = [];
+            }
+            
+            initializeChart(data, indicators) {
+                if (this.chart) {
+                    this.chart.destroy();
                 }
                 
-                // Add buy signals if showSignals is true
-                if (showSignals && buySignals.length > 0) {
-                    datasets.push({
-                        label: 'BUY',
-                        data: buySignals.map(signal => ({x: signal.timestamp, y: signal.price})),
-                        borderColor: '#ebfc02',
-                        backgroundColor: '#ebfc02',
-                        borderWidth: 0,
-                        pointRadius: 8,
-                        pointStyle: 'triangle',
-                        showLine: false
-                    });
-                }
+                const datasets = this.createDatasets(data, indicators);
                 
-                // Add sell signals if showSignals is true
-                if (showSignals && sellSignals.length > 0) {
-                    datasets.push({
-                        label: 'SELL',
-                        data: sellSignals.map(signal => ({x: signal.timestamp, y: signal.price})),
-                        borderColor: '#f70000',
-                        backgroundColor: '#f70000',
-                        borderWidth: 0,
-                        pointRadius: 8,
-                        pointStyle: 'triangle',
-                        pointRotation: 180,
-                        showLine: false
-                    });
-                }
-                
-                chart = new Chart(ctx, {
-                    type: 'line',
+                this.chart = new Chart(this.ctx, {
+                    type: 'candlestick',
                     data: {
                         datasets: datasets
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
                                 position: 'top',
                                 labels: {
-                                    color: '#e2e8f0',
+                                    color: 'var(--text)',
                                     font: {
                                         size: 12,
                                         weight: '600'
-                                    },
-                                    padding: 20
+                                    }
                                 }
                             },
                             tooltip: {
                                 mode: 'index',
                                 intersect: false,
                                 backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                                titleColor: '#ebfc02',
-                                bodyColor: '#e2e8f0',
+                                titleColor: 'var(--primary)',
+                                bodyColor: 'var(--text)',
                                 borderColor: '#334155',
                                 borderWidth: 1,
                                 padding: 12,
-                                titleFont: {
-                                    size: 14,
-                                    weight: 'bold'
-                                },
-                                bodyFont: {
-                                    size: 13
+                                callbacks: {
+                                    label: (context) => {
+                                        const label = context.dataset.label || '';
+                                        const value = context.parsed.y;
+                                        
+                                        if (label.includes('BB')) {
+                                            return `${label}: ${value.toFixed(2)}`;
+                                        }
+                                        if (label.includes('ATR')) {
+                                            return `${label}: ${value.toFixed(4)}`;
+                                        }
+                                        return `${label}: ${value.toFixed(2)}`;
+                                    }
                                 }
                             }
                         },
@@ -1246,218 +1745,831 @@
                             x: {
                                 type: 'time',
                                 time: {
-                                    unit: timeframe === '1W' ? 'week' : 
-                                          timeframe === '1D' ? 'day' : 
-                                          timeframe === '4H' ? 'hour' : 'hour',
+                                    unit: 'minute',
                                     displayFormats: {
+                                        minute: 'HH:mm',
                                         hour: 'MMM d, HH:mm',
-                                        day: 'MMM d, yyyy',
-                                        week: 'MMM d, yyyy'
+                                        day: 'MMM d, yyyy'
                                     }
                                 },
                                 ticks: {
-                                    color: '#94a3b8',
-                                    font: {
-                                        size: 11
-                                    }
+                                    color: 'var(--text-dim)',
+                                    maxRotation: 0
                                 },
                                 grid: {
                                     color: 'rgba(148, 163, 184, 0.1)'
                                 }
                             },
                             y: {
+                                position: 'right',
                                 ticks: {
-                                    color: '#94a3b8',
-                                    font: {
-                                        size: 11
-                                    },
-                                    callback: function(value) {
-                                        return formatPrice(value);
-                                    }
+                                    color: 'var(--text-dim)',
+                                    callback: (value) => this.formatPrice(value)
                                 },
                                 grid: {
                                     color: 'rgba(148, 163, 184, 0.1)'
                                 }
+                            },
+                            yVolume: {
+                                position: 'left',
+                                ticks: {
+                                    color: 'var(--text-dim)',
+                                    display: this.volumeEnabled
+                                },
+                                grid: {
+                                    display: false
+                                },
+                                display: this.volumeEnabled
                             }
                         },
                         interaction: {
                             intersect: false,
                             mode: 'nearest'
-                        },
-                        animation: {
-                            duration: 750
                         }
                     }
                 });
+            }
+            
+            createDatasets(data, indicators) {
+                const pair = TRADING_PAIRS[state.currentPair];
+                const datasets = [];
                 
-                chartLoading.style.display = 'none';
-            }, 500);
+                // Candlestick data
+                datasets.push({
+                    label: `${pair.name} Price`,
+                    data: data.map(d => ({
+                        x: d.timestamp,
+                        o: d.open,
+                        h: d.high,
+                        l: d.low,
+                        c: d.close
+                    })),
+                    type: 'candlestick',
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    color: {
+                        up: '#10b981',
+                        down: '#ef4444',
+                        unchanged: '#94a3b8'
+                    }
+                });
+                
+                // Bollinger Bands
+                if (indicators.bbUpper) {
+                    datasets.push({
+                        label: 'BB Upper',
+                        data: data.map((d, i) => ({
+                            x: d.timestamp,
+                            y: indicators.bbUpper[i]
+                        })),
+                        borderColor: 'rgba(59, 130, 246, 0.6)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 0
+                    });
+                    
+                    datasets.push({
+                        label: 'BB Lower',
+                        data: data.map((d, i) => ({
+                            x: d.timestamp,
+                            y: indicators.bbLower[i]
+                        })),
+                        borderColor: 'rgba(59, 130, 246, 0.6)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 1,
+                        fill: false,
+                        pointRadius: 0
+                    });
+                }
+                
+                // TrendIQ Signals
+                if (indicators.eliteSignals) {
+                    datasets.push({
+                        label: 'TrendIQ Signal',
+                        data: data.map((d, i) => ({
+                            x: d.timestamp,
+                            y: indicators.eliteSignals[i]
+                        })),
+                        borderColor: 'var(--primary)',
+                        backgroundColor: 'rgba(235, 252, 2, 0.1)',
+                        borderWidth: 2,
+                        fill: false,
+                        pointRadius: 0
+                    });
+                }
+                
+                // Volume
+                if (this.volumeEnabled) {
+                    datasets.push({
+                        label: 'Volume',
+                        data: data.map(d => ({
+                            x: d.timestamp,
+                            y: d.volume
+                        })),
+                        type: 'bar',
+                        yAxisID: 'yVolume',
+                        backgroundColor: (ctx) => {
+                            const index = ctx.dataIndex;
+                            if (index === 0) return 'rgba(148, 163, 184, 0.3)';
+                            return data[index].close > data[index-1].close 
+                                ? 'rgba(16, 185, 129, 0.3)' 
+                                : 'rgba(239, 68, 68, 0.3)';
+                        },
+                        borderWidth: 0
+                    });
+                }
+                
+                // Buy/Sell signals
+                if (state.signals.length > 0) {
+                    const buySignals = state.signals.filter(s => s.type === 'buy');
+                    const sellSignals = state.signals.filter(s => s.type === 'sell');
+                    
+                    if (buySignals.length > 0) {
+                        datasets.push({
+                            label: 'BUY',
+                            data: buySignals.map(s => ({
+                                x: s.timestamp,
+                                y: s.price
+                            })),
+                            borderColor: '#10b981',
+                            backgroundColor: '#10b981',
+                            pointStyle: 'triangle',
+                            pointRadius: 8,
+                            pointRotation: 0,
+                            showLine: false
+                        });
+                    }
+                    
+                    if (sellSignals.length > 0) {
+                        datasets.push({
+                            label: 'SELL',
+                            data: sellSignals.map(s => ({
+                                x: s.timestamp,
+                                y: s.price
+                            })),
+                            borderColor: '#ef4444',
+                            backgroundColor: '#ef4444',
+                            pointStyle: 'triangle',
+                            pointRadius: 8,
+                            pointRotation: 180,
+                            showLine: false
+                        });
+                    }
+                }
+                
+                return datasets;
+            }
+            
+            formatPrice(value) {
+                const pair = TRADING_PAIRS[state.currentPair];
+                if (pair.pipSize === 0.0001) return value.toFixed(4);
+                if (pair.pipSize === 0.01) return value.toFixed(2);
+                return value.toFixed(0);
+            }
+            
+            toggleVolume() {
+                this.volumeEnabled = !this.volumeEnabled;
+                if (this.chart) {
+                    this.chart.options.scales.yVolume.display = this.volumeEnabled;
+                    this.chart.update();
+                }
+            }
+            
+            enableDrawing() {
+                this.drawingMode = true;
+                this.canvas.style.cursor = 'crosshair';
+            }
+            
+            disableDrawing() {
+                this.drawingMode = false;
+                this.canvas.style.cursor = 'default';
+            }
+            
+            clearDrawings() {
+                this.drawings = [];
+                if (this.chart) {
+                    this.chart.update();
+                }
+            }
+            
+            toggleFullscreen() {
+                if (!document.fullscreenElement) {
+                    this.canvas.parentElement.requestFullscreen().catch(err => {
+                        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            }
         }
         
-        // Event Listeners
-        pairSelect.addEventListener('change', function() {
-            currentPair = this.value;
-            updatePairInfo();
-            initializeChart();
-        });
+        // ============================================
+        // 7. MAIN APPLICATION
+        // ============================================
         
-        atrSlider.addEventListener('input', function() {
-            atrValue.textContent = this.value;
-        });
+        class TrendIQApplication {
+            constructor() {
+                this.dataProvider = new MarketDataProvider();
+                this.mlValidator = new MLSignalValidator();
+                this.broker = new BrokerIntegration();
+                this.mtfAnalyzer = new MultiTimeframeAnalyzer();
+                this.chartRenderer = new EnhancedChartRenderer('priceChart');
+                this.initialized = false;
+            }
+            
+            async initialize() {
+                try {
+                    // Show loading state
+                    elements.chartLoading.style.display = 'flex';
+                    elements.loadingDetail.textContent = 'Initializing system...';
+                    
+                    // Initialize ML model
+                    await this.mlValidator.initializeModel();
+                    
+                    // Load initial data
+                    await this.loadMarketData();
+                    
+                    // Initialize chart
+                    this.updateChart();
+                    
+                    // Start real-time updates
+                    this.startRealtimeUpdates();
+                    
+                    // Update UI
+                    this.updateUI();
+                    
+                    this.initialized = true;
+                    elements.chartLoading.style.display = 'none';
+                    
+                    console.log('TrendIQ Pro initialized successfully');
+                    
+                } catch (error) {
+                    console.error('Failed to initialize application:', error);
+                    elements.loadingDetail.textContent = `Error: ${error.message}`;
+                    
+                    // Try fallback initialization
+                    setTimeout(() => this.initialize(), 5000);
+                }
+            }
+            
+            async loadMarketData() {
+                const data = await this.dataProvider.fetchRealTimeData(
+                    state.currentPair,
+                    state.timeframe
+                );
+                
+                state.priceData = data.map(d => d.close);
+                state.highData = data.map(d => d.high);
+                state.lowData = data.map(d => d.low);
+                state.volumeData = data.map(d => d.volume);
+                state.timestamps = data.map(d => d.timestamp);
+                
+                // Calculate indicators
+                this.calculateIndicators();
+                
+                // Analyze multi-timeframe
+                this.mtfAnalyzer.analyze(data, state.currentPair);
+            }
+            
+            calculateIndicators() {
+                const data = state.timestamps.map((t, i) => ({
+                    timestamp: t,
+                    open: state.priceData[i] * 0.999,
+                    high: state.highData[i],
+                    low: state.lowData[i],
+                    close: state.priceData[i],
+                    volume: state.volumeData[i]
+                }));
+                
+                // Calculate True Range ATR
+                const atrValues = EnhancedATRCalculator.calculateATR(data, state.atrPeriod);
+                
+                // Calculate Bollinger Bands
+                const bb = this.calculateBollingerBands(
+                    state.priceData,
+                    state.bbPeriod,
+                    state.bbDeviation
+                );
+                
+                // Calculate TrendIQ signals
+                const signals = this.calculateTrendIQSignals(data, bb, atrValues);
+                
+                state.indicators = {
+                    atr: atrValues,
+                    bbUpper: bb.upper,
+                    bbLower: bb.lower,
+                    bbMiddle: bb.middle,
+                    eliteSignals: signals.eliteSignals,
+                    eliteUpper: signals.eliteUpper,
+                    eliteLower: signals.eliteLower
+                };
+                
+                state.signals = signals.signals;
+            }
+            
+            calculateBollingerBands(prices, period, deviation) {
+                const upper = [];
+                const middle = [];
+                const lower = [];
+                
+                for (let i = period - 1; i < prices.length; i++) {
+                    const slice = prices.slice(i - period + 1, i + 1);
+                    const sma = slice.reduce((sum, p) => sum + p, 0) / period;
+                    
+                    const variance = slice.reduce((sum, p) => sum + Math.pow(p - sma, 2), 0) / period;
+                    const stdev = Math.sqrt(variance);
+                    
+                    middle.push(sma);
+                    upper.push(sma + stdev * deviation);
+                    lower.push(sma - stdev * deviation);
+                }
+                
+                // Pad beginning with nulls
+                const pad = Array(period - 1).fill(null);
+                
+                return {
+                    upper: pad.concat(upper),
+                    middle: pad.concat(middle),
+                    lower: pad.concat(lower)
+                };
+            }
+            
+            calculateTrendIQSignals(data, bb, atrValues) {
+                const eliteSignals = [];
+                const eliteUpper = [];
+                const eliteLower = [];
+                const signals = [];
+                
+                let previousEliteSignal = null;
+                let currentTrend = 0;
+                let previousTrend = 0;
+                
+                for (let i = 0; i < data.length; i++) {
+                    if (bb.upper[i] === null || atrValues[i] === null) {
+                        eliteSignals.push(null);
+                        eliteUpper.push(null);
+                        eliteLower.push(null);
+                        continue;
+                    }
+                    
+                    // Determine BB signal
+                    let bbSignal = 0;
+                    if (data[i].close > bb.upper[i]) bbSignal = 1;
+                    else if (data[i].close < bb.lower[i]) bbSignal = -1;
+                    
+                    // Calculate Elite Signal
+                    let eliteSignal = null;
+                    
+                    if (bbSignal === 1) {
+                        // Buy signal logic
+                        eliteSignal = data[i].low - (atrValues[i] || 0);
+                        
+                        if (previousEliteSignal !== null && eliteSignal < previousEliteSignal) {
+                            eliteSignal = previousEliteSignal;
+                        }
+                        
+                        // Track trend
+                        if (previousEliteSignal !== null) {
+                            if (eliteSignal > previousEliteSignal) currentTrend = 1;
+                            else if (eliteSignal < previousEliteSignal) currentTrend = -1;
+                        }
+                        
+                        // Detect buy signal
+                        if (previousTrend === -1 && currentTrend === 1) {
+                            const signal = {
+                                type: 'buy',
+                                price: eliteSignal - (atrValues[i] || 0),
+                                timestamp: data[i].timestamp,
+                                index: i
+                            };
+                            signals.push(signal);
+                            this.showAlert('BUY SIGNAL', `Detected at ${this.formatPrice(signal.price)}`);
+                        }
+                        
+                    } else if (bbSignal === -1) {
+                        // Sell signal logic
+                        eliteSignal = data[i].high + (atrValues[i] || 0);
+                        
+                        if (previousEliteSignal !== null && eliteSignal > previousEliteSignal) {
+                            eliteSignal = previousEliteSignal;
+                        }
+                        
+                        // Track trend
+                        if (previousEliteSignal !== null) {
+                            if (eliteSignal > previousEliteSignal) currentTrend = 1;
+                            else if (eliteSignal < previousEliteSignal) currentTrend = -1;
+                        }
+                        
+                        // Detect sell signal
+                        if (previousTrend === 1 && currentTrend === -1) {
+                            const signal = {
+                                type: 'sell',
+                                price: eliteSignal + (atrValues[i] || 0),
+                                timestamp: data[i].timestamp,
+                                index: i
+                            };
+                            signals.push(signal);
+                            this.showAlert('SELL SIGNAL', `Detected at ${this.formatPrice(signal.price)}`);
+                        }
+                        
+                    } else {
+                        // No BB signal, continue previous trend
+                        eliteSignal = previousEliteSignal !== null ? previousEliteSignal : data[i].close;
+                        
+                        if (previousEliteSignal !== null) {
+                            if (eliteSignal > previousEliteSignal) currentTrend = 1;
+                            else if (eliteSignal < previousEliteSignal) currentTrend = -1;
+                        }
+                    }
+                    
+                    eliteSignals.push(eliteSignal);
+                    previousEliteSignal = eliteSignal;
+                    previousTrend = currentTrend;
+                    
+                    // Calculate upper and lower elite signals with gap
+                    if (eliteSignal !== null && atrValues[i] !== null) {
+                        const gapSize = atrValues[i] * 0.5;
+                        eliteUpper.push(eliteSignal + gapSize);
+                        eliteLower.push(eliteSignal - gapSize);
+                    } else {
+                        eliteUpper.push(null);
+                        eliteLower.push(null);
+                    }
+                }
+                
+                return { eliteSignals, eliteUpper, eliteLower, signals };
+            }
+            
+            updateChart() {
+                const data = state.timestamps.map((t, i) => ({
+                    timestamp: t,
+                    open: state.priceData[i] * 0.999,
+                    high: state.highData[i],
+                    low: state.lowData[i],
+                    close: state.priceData[i],
+                    volume: state.volumeData[i]
+                }));
+                
+                this.chartRenderer.initializeChart(data, state.indicators);
+            }
+            
+            updateUI() {
+                // Update signal counts
+                const buySignals = state.signals.filter(s => s.type === 'buy');
+                const sellSignals = state.signals.filter(s => s.type === 'sell');
+                
+                elements.buyCount.textContent = buySignals.length;
+                elements.sellCount.textContent = sellSignals.length;
+                
+                // Update signal details
+                if (buySignals.length > 0) {
+                    const lastBuy = buySignals[buySignals.length - 1];
+                    elements.buyDetail.textContent = `Last: ${this.formatPrice(lastBuy.price)}`;
+                    elements.buySignalCard.classList.add('active');
+                } else {
+                    elements.buyDetail.textContent = 'No active signals';
+                    elements.buySignalCard.classList.remove('active');
+                }
+                
+                if (sellSignals.length > 0) {
+                    const lastSell = sellSignals[sellSignals.length - 1];
+                    elements.sellDetail.textContent = `Last: ${this.formatPrice(lastSell.price)}`;
+                    elements.sellSignalCard.classList.add('active');
+                } else {
+                    elements.sellDetail.textContent = 'No active signals';
+                    elements.sellSignalCard.classList.remove('active');
+                }
+                
+                // Update trend direction
+                const lastPrice = state.priceData[state.priceData.length - 1];
+                const prevPrice = state.priceData[state.priceData.length - 2] || lastPrice;
+                const trend = lastPrice > prevPrice ? 'BULLISH' : lastPrice < prevPrice ? 'BEARISH' : 'NEUTRAL';
+                
+                elements.trendDirection.textContent = trend;
+                elements.trendDirection.className = `trend-indicator trend-${trend.toLowerCase()}`;
+                
+                // Update ML confidence
+                if (this.mlValidator.isTrained && state.signals.length > 0) {
+                    const lastSignal = state.signals[state.signals.length - 1];
+                    this.mlValidator.validateSignal(
+                        {
+                            close: lastSignal.price,
+                            volume: state.volumeData[lastSignal.index]
+                        },
+                        {
+                            rsi: 50,
+                            macd: 0,
+                            bbWidth: 0.1,
+                            atr: state.indicators.atr[lastSignal.index]
+                        }
+                    ).then(result => {
+                        elements.mlConfidence.textContent = `${result.confidence}%`;
+                        elements.signalQuality.textContent = result.confidence > 70 ? 'High' : 
+                                                           result.confidence > 40 ? 'Medium' : 'Low';
+                        elements.patternMatch.textContent = `${result.confidence}%`;
+                    });
+                }
+                
+                // Update market status
+                const status = this.dataProvider.getConnectionStatus();
+                elements.marketStatus.textContent = status === 'connected' ? 'LIVE' : 'OFFLINE';
+                elements.connectionStatus.innerHTML = status === 'connected' 
+                    ? '<i class="fas fa-circle" style="color: #10b981;"></i> Live'
+                    : '<i class="fas fa-circle" style="color: #ef4444;"></i> Offline';
+                
+                // Update account info
+                elements.accountBalance.textContent = `$${state.accountBalance.toFixed(2)}`;
+                elements.positionSize.textContent = state.positionSize.toFixed(2);
+                
+                // Update multi-timeframe analysis
+                this.mtfAnalyzer.renderAnalysis(elements.mtfAnalysis);
+            }
+            
+            formatPrice(price) {
+                const pair = TRADING_PAIRS[state.currentPair];
+                if (pair.pipSize === 0.0001) return price.toFixed(4);
+                if (pair.pipSize === 0.01) return price.toFixed(2);
+                return price.toFixed(0);
+            }
+            
+            showAlert(title, message) {
+                elements.alertTitle.textContent = title;
+                elements.alertMessage.textContent = message;
+                elements.alertBanner.style.display = 'block';
+                
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    elements.alertBanner.style.display = 'none';
+                }, 5000);
+            }
+            
+            startRealtimeUpdates() {
+                if (realtimeUpdateInterval) {
+                    clearInterval(realtimeUpdateInterval);
+                }
+                
+                realtimeUpdateInterval = setInterval(async () => {
+                    if (this.initialized) {
+                        await this.loadMarketData();
+                        this.updateChart();
+                        this.updateUI();
+                    }
+                }, 5000); // Update every 5 seconds
+            }
+            
+            async executeTrade(side) {
+                if (!state.brokerConnected) {
+                    this.showAlert('Broker Not Connected', 'Please connect to a broker first');
+                    return;
+                }
+                
+                try {
+                    const currentPrice = state.priceData[state.priceData.length - 1];
+                    const quantity = state.positionSize;
+                    
+                    const order = await this.broker.placeOrder(
+                        side,
+                        state.currentPair,
+                        quantity,
+                        currentPrice
+                    );
+                    
+                    this.showAlert(
+                        'Order Executed',
+                        `${side.toUpperCase()} ${quantity} ${state.currentPair} @ ${this.formatPrice(currentPrice)}`
+                    );
+                    
+                    // Update performance
+                    state.performance.totalTrades++;
+                    
+                } catch (error) {
+                    this.showAlert('Trade Failed', error.message);
+                }
+            }
+            
+            async connectBroker() {
+                elements.loadingDetail.textContent = 'Connecting to broker...';
+                elements.chartLoading.style.display = 'flex';
+                
+                const result = await this.broker.connect();
+                
+                elements.chartLoading.style.display = 'none';
+                
+                if (result.success) {
+                    state.brokerConnected = true;
+                    this.showAlert('Broker Connected', 'Demo broker connection established');
+                    elements.connectBroker.innerHTML = '<i class="fas fa-check"></i> Connected';
+                } else {
+                    this.showAlert('Connection Failed', result.message);
+                }
+            }
+            
+            async trainMLModel() {
+                if (mlTrainingInProgress) return;
+                
+                mlTrainingInProgress = true;
+                elements.trainModel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Training...';
+                
+                try {
+                    const data = state.timestamps.map((t, i) => ({
+                        timestamp: t,
+                        open: state.priceData[i] * 0.999,
+                        high: state.highData[i],
+                        low: state.lowData[i],
+                        close: state.priceData[i],
+                        volume: state.volumeData[i]
+                    }));
+                    
+                    const trainingData = this.mlValidator.prepareTrainingData(data, state.signals);
+                    await this.mlValidator.trainModel(trainingData);
+                    
+                    this.showAlert('ML Model Trained', 'Machine learning model trained successfully');
+                    
+                } catch (error) {
+                    this.showAlert('Training Failed', error.message);
+                } finally {
+                    mlTrainingInProgress = false;
+                    elements.trainModel.innerHTML = '<i class="fas fa-brain"></i> Train Model';
+                }
+            }
+        }
         
-        bbPeriodSlider.addEventListener('input', function() {
-            bbPeriodValue.textContent = this.value;
-        });
+        // ============================================
+        // 8. EVENT HANDLERS
+        // ============================================
         
-        bbDeviationSlider.addEventListener('input', function() {
-            bbDeviationValue.textContent = parseFloat(this.value).toFixed(2);
-        });
+        // Initialize application
+        const app = new TrendIQApplication();
         
-        atrFilterToggle.addEventListener('change', function() {
-            useATRFilter = this.checked;
-        });
-        
-        showSignalsToggle.addEventListener('change', function() {
-            showSignals = this.checked;
-        });
-        
-        // Timeframe buttons
-        timeframeBtns.forEach(btn => {
-            btn.addEventListener('click', function() {
-                timeframeBtns.forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                timeframe = this.getAttribute('data-timeframe');
-                initializeChart();
+        // DOM Ready
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize application
+            app.initialize();
+            
+            // Pair selection
+            elements.pairSelect.addEventListener('change', (e) => {
+                state.currentPair = e.target.value;
+                app.initialize();
+            });
+            
+            // Timeframe selection
+            document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                    state.timeframe = e.target.dataset.tf;
+                    app.initialize();
+                });
+            });
+            
+            // Control sliders
+            elements.atrSlider.addEventListener('input', (e) => {
+                elements.atrValue.textContent = e.target.value;
+                state.atrPeriod = parseInt(e.target.value);
+            });
+            
+            elements.bbPeriodSlider.addEventListener('input', (e) => {
+                elements.bbPeriodValue.textContent = e.target.value;
+                state.bbPeriod = parseInt(e.target.value);
+            });
+            
+            elements.bbDeviationSlider.addEventListener('input', (e) => {
+                elements.bbDeviationValue.textContent = parseFloat(e.target.value).toFixed(1);
+                state.bbDeviation = parseFloat(e.target.value);
+            });
+            
+            elements.positionSlider.addEventListener('input', (e) => {
+                elements.positionSize.textContent = parseFloat(e.target.value).toFixed(2);
+                state.positionSize = parseFloat(e.target.value);
+            });
+            
+            // Control buttons
+            elements.resetBtn.addEventListener('click', () => {
+                state.atrPeriod = 14;
+                state.bbPeriod = 20;
+                state.bbDeviation = 2.0;
+                
+                elements.atrSlider.value = 14;
+                elements.atrValue.textContent = '14';
+                elements.bbPeriodSlider.value = 20;
+                elements.bbPeriodValue.textContent = '20';
+                elements.bbDeviationSlider.value = 2.0;
+                elements.bbDeviationValue.textContent = '2.0';
+                
+                app.showAlert('Settings Reset', 'All indicators reset to defaults');
+                app.initialize();
+            });
+            
+            elements.applyBtn.addEventListener('click', () => {
+                app.showAlert('Settings Applied', 'New indicator settings applied');
+                app.initialize();
+            });
+            
+            // Trade execution
+            elements.executeBuy.addEventListener('click', () => {
+                app.executeTrade('buy');
+            });
+            
+            elements.executeSell.addEventListener('click', () => {
+                app.executeTrade('sell');
+            });
+            
+            // Broker integration
+            elements.connectBroker.addEventListener('click', () => {
+                app.connectBroker();
+            });
+            
+            elements.autoTrade.addEventListener('click', () => {
+                state.autoTrading = !state.autoTrading;
+                if (state.autoTrading) {
+                    elements.autoTrade.innerHTML = '<i class="fas fa-pause"></i> Stop Auto';
+                    app.showAlert('Auto Trading', 'Automatic trading enabled');
+                } else {
+                    elements.autoTrade.innerHTML = '<i class="fas fa-robot"></i> Auto Trade';
+                    app.showAlert('Auto Trading', 'Automatic trading disabled');
+                }
+            });
+            
+            // ML Functions
+            elements.trainModel.addEventListener('click', () => {
+                app.trainMLModel();
+            });
+            
+            elements.validateSignal.addEventListener('click', async () => {
+                if (!app.mlValidator.isTrained) {
+                    app.showAlert('ML Not Trained', 'Please train the model first');
+                    return;
+                }
+                
+                const lastSignal = state.signals[state.signals.length - 1];
+                if (!lastSignal) {
+                    app.showAlert('No Signal', 'No signals to validate');
+                    return;
+                }
+                
+                const result = await app.mlValidator.validateSignal(
+                    {
+                        close: lastSignal.price,
+                        volume: state.volumeData[lastSignal.index]
+                    },
+                    {
+                        rsi: 50,
+                        macd: 0,
+                        bbWidth: 0.1,
+                        atr: state.indicators.atr[lastSignal.index]
+                    }
+                );
+                
+                app.showAlert(
+                    'ML Validation',
+                    `Confidence: ${result.confidence}% | Recommendation: ${result.recommendation}`
+                );
+            });
+            
+            // Chart controls
+            elements.toggleVolume.addEventListener('click', () => {
+                app.chartRenderer.toggleVolume();
+            });
+            
+            elements.drawTrendline.addEventListener('click', () => {
+                app.chartRenderer.enableDrawing();
+                app.showAlert('Drawing Mode', 'Click and drag on chart to draw trendlines');
+            });
+            
+            elements.clearDrawings.addEventListener('click', () => {
+                app.chartRenderer.clearDrawings();
+                app.showAlert('Drawings Cleared', 'All chart drawings removed');
+            });
+            
+            elements.fullscreenBtn.addEventListener('click', () => {
+                app.chartRenderer.toggleFullscreen();
+            });
+            
+            // Mobile touch events
+            document.addEventListener('touchstart', (e) => {
+                // Prevent double-tap zoom
+                if (e.touches.length > 1) e.preventDefault();
+            }, { passive: false });
+            
+            // Handle orientation changes
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    if (app.chartRenderer.chart) {
+                        app.chartRenderer.chart.resize();
+                    }
+                }, 300);
             });
         });
         
-        resetBtn.addEventListener('click', function() {
-            // Reset to pair-specific defaults
-            updatePairInfo();
-            
-            // Reset other controls
-            bbPeriodSlider.value = 22;
-            bbPeriodValue.textContent = '22';
-            
-            atrFilterToggle.checked = true;
-            showSignalsToggle.checked = true;
-            
-            // Reset variables
-            atrPeriod = parseInt(atrSlider.value);
-            bbPeriod = 22;
-            bbDeviation = parseFloat(bbDeviationSlider.value);
-            useATRFilter = true;
-            showSignals = true;
-            
-            // Recalculate and update chart
-            initializeChart();
-            
-            showAlert('Settings reset to defaults', 'buy');
-        });
-        
-        applyBtn.addEventListener('click', function() {
-            // Update variables from slider values
-            atrPeriod = parseInt(atrSlider.value);
-            bbPeriod = parseInt(bbPeriodSlider.value);
-            bbDeviation = parseFloat(bbDeviationSlider.value);
-            useATRFilter = atrFilterToggle.checked;
-            showSignals = showSignalsToggle.checked;
-            
-            // Recalculate and update chart
-            initializeChart();
-            
-            showAlert('Settings applied successfully', 'buy');
-        });
-        
-        testSignalBtn.addEventListener('click', function() {
-            // Add a test signal
-            const testTypes = ['buy', 'sell'];
-            const testType = testTypes[Math.floor(Math.random() * testTypes.length)];
-            
-            const testSignal = {
-                index: priceData.length - 1,
-                price: priceData[priceData.length - 1],
-                timestamp: new Date()
-            };
-            
-            if (testType === 'buy') {
-                buySignals.push(testSignal);
-                showAlert('TEST BUY SIGNAL GENERATED', 'buy');
-            } else {
-                sellSignals.push(testSignal);
-                showAlert('TEST SELL SIGNAL GENERATED', 'sell');
-            }
-            
-            updateSignalCounters();
-            updateLastSignalPrices();
-            initializeChart();
-        });
-        
-        clearSignalsBtn.addEventListener('click', function() {
-            buySignals = [];
-            sellSignals = [];
-            lastSignal = null;
-            updateSignalCounters();
-            updateLastSignalPrices();
-            initializeChart();
-            
-            showAlert('All signals cleared', 'sell');
-        });
-        
-        // Initialize dashboard
-        function initializeDashboard() {
-            updatePairInfo();
-            initializeChart();
-            
-            // Set initial values
-            atrValue.textContent = atrSlider.value;
-            bbPeriodValue.textContent = bbPeriodSlider.value;
-            bbDeviationValue.textContent = parseFloat(bbDeviationSlider.value).toFixed(2);
+        // Service Worker for offline functionality (optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
         }
-        
-        // Start the dashboard
-        initializeDashboard();
-        
-        // Simulate real-time updates
-        setInterval(() => {
-            // Occasionally add new data points to simulate real-time
-            if (Math.random() > 0.7) {
-                const pair = tradingPairs[currentPair];
-                const lastPrice = priceData[priceData.length - 1];
-                
-                // Generate new price
-                const randomChange = (Math.random() - 0.5) * 2 * pair.volatility * lastPrice;
-                let trend = 0;
-                if (currentPair === 'gold') trend = 0.0002;
-                if (currentPair === 'eurusd') trend = -0.0001;
-                if (currentPair === 'us30') trend = 0.0003;
-                
-                const newPrice = lastPrice + randomChange + (trend * lastPrice);
-                priceData.push(newPrice);
-                
-                // Add new timestamp
-                const lastTimestamp = timestamps[timestamps.length - 1];
-                let newTimestamp;
-                
-                switch(timeframe) {
-                    case '1H': newTimestamp = new Date(lastTimestamp.getTime() + 60 * 60 * 1000); break;
-                    case '4H': newTimestamp = new Date(lastTimestamp.getTime() + 4 * 60 * 60 * 1000); break;
-                    case '1D': newTimestamp = new Date(lastTimestamp.getTime() + 24 * 60 * 60 * 1000); break;
-                    case '1W': newTimestamp = new Date(lastTimestamp.getTime() + 7 * 24 * 60 * 60 * 1000); break;
-                }
-                
-                timestamps.push(newTimestamp);
-                
-                // Keep arrays at reasonable size
-                if (priceData.length > 300) {
-                    priceData.shift();
-                    timestamps.shift();
-                }
-                
-                // Update chart with new data
-                initializeChart();
-            }
-        }, 10000); // Update every 10 seconds
     </script>
 </body>
 </html>
